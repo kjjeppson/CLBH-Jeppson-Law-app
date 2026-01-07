@@ -1,0 +1,193 @@
+{
+  "design_system": {
+    "identity": {
+      "name": "Clean Legal Bill of Health (CLBH)",
+      "persona": "The Architectural Blueprint",
+      "core_concept": "Legal health as a structural foundation. Precision, clarity, and confidence.",
+      "emotional_tone": "Professional, Reassuring, Structural, Clear",
+      "theme_mode": "light"
+    },
+    "typography": {
+      "font_family": {
+        "headings": "Manrope, sans-serif",
+        "body": "Inter, sans-serif",
+        "brand": "Playfair Display, serif",
+        "mono": "JetBrains Mono, monospace"
+      },
+      "scale": {
+        "h1": "text-4xl md:text-6xl font-bold tracking-tight",
+        "h2": "text-3xl md:text-4xl font-semibold tracking-tight",
+        "h3": "text-2xl font-semibold",
+        "body_lg": "text-lg leading-relaxed",
+        "body_base": "text-base leading-relaxed",
+        "caption": "text-sm text-muted-foreground uppercase tracking-wider"
+      },
+      "imports": [
+        "@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@400;600;700;800&family=Playfair+Display:wght@600;700&display=swap');"
+      ]
+    },
+    "colors": {
+      "palette": {
+        "primary": {
+          "name": "Blueprint Navy",
+          "hex": "#0F172A",
+          "tailwind": "slate-900",
+          "usage": "Primary buttons, heavy text, structural borders"
+        },
+        "secondary": {
+          "name": "Steel Beam",
+          "hex": "#334155",
+          "tailwind": "slate-700",
+          "usage": "Secondary text, icons, inactive states"
+        },
+        "accent": {
+          "name": "Safety Orange",
+          "hex": "#F97316",
+          "tailwind": "orange-500",
+          "usage": "Call to actions (CTAs), critical alerts, highlights"
+        },
+        "success": {
+          "name": "Certified Mint",
+          "hex": "#10B981",
+          "tailwind": "emerald-500",
+          "usage": "Green scores, success states, 'Clean Bill' markers"
+        },
+        "warning": {
+          "name": "Caution Yellow",
+          "hex": "#F59E0B",
+          "tailwind": "amber-500",
+          "usage": "Yellow scores, moderate risks"
+        },
+        "danger": {
+          "name": "Risk Red",
+          "hex": "#EF4444",
+          "tailwind": "red-500",
+          "usage": "Red scores, high risks, error states"
+        },
+        "background": {
+          "name": "Drafting Paper",
+          "hex": "#F8FAFC",
+          "tailwind": "slate-50",
+          "usage": "Page backgrounds"
+        },
+        "surface": {
+          "name": "Clean White",
+          "hex": "#FFFFFF",
+          "tailwind": "white",
+          "usage": "Cards, modals, input fields"
+        }
+      },
+      "gradients": {
+        "hero_overlay": "linear-gradient(180deg, rgba(15, 23, 42, 0.8) 0%, rgba(15, 23, 42, 0.95) 100%)",
+        "subtle_glow": "radial-gradient(circle at 50% 50%, rgba(249, 115, 22, 0.15), transparent 70%)"
+      }
+    },
+    "layout": {
+      "spacing": {
+        "container_padding": "p-6 md:p-12 lg:p-24",
+        "section_gap": "gap-16 md:gap-24",
+        "element_gap": "gap-4 md:gap-8"
+      },
+      "grids": {
+        "landing": "grid grid-cols-1 md:grid-cols-12 gap-8",
+        "wizard": "max-w-3xl mx-auto",
+        "dashboard": "grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6"
+      },
+      "border_radius": {
+        "default": "rounded-none",
+        "buttons": "rounded-md",
+        "cards": "rounded-sm"
+      },
+      "shadows": {
+        "card": "shadow-[0_2px_8px_rgba(15,23,42,0.08)]",
+        "hover": "shadow-[0_8px_24px_rgba(15,23,42,0.12)]",
+        "focus": "ring-2 ring-slate-900 ring-offset-2"
+      }
+    },
+    "components": {
+      "buttons": {
+        "primary": "bg-slate-900 text-white hover:bg-slate-800 shadow-lg hover:shadow-xl transition-all duration-300 font-manrope font-semibold tracking-wide px-8 py-3 rounded-md",
+        "secondary": "bg-white text-slate-900 border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-all duration-200 font-manrope font-medium px-6 py-3 rounded-md",
+        "accent": "bg-orange-500 text-white hover:bg-orange-600 shadow-md hover:shadow-lg transition-all duration-300 font-manrope font-bold px-8 py-4 rounded-md uppercase tracking-wider"
+      },
+      "cards": {
+        "base": "bg-white border border-slate-100 shadow-sm p-8 relative overflow-hidden group hover:border-slate-200 transition-colors",
+        "interactive": "cursor-pointer hover:-translate-y-1 transition-transform duration-300"
+      },
+      "inputs": {
+        "base": "h-12 bg-white border-slate-200 focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-all rounded-md"
+      },
+      "progress_bar": {
+        "container": "h-2 bg-slate-100 rounded-full overflow-hidden",
+        "fill": "h-full bg-slate-900 transition-all duration-500 ease-out"
+      }
+    },
+    "visual_enhancers": {
+      "textures": "Use subtle grid patterns (bg-[url('/grid.svg')]) on section backgrounds to reinforce the 'blueprint' theme.",
+      "icons": "Lucide React icons. Use thin strokes (stroke-width={1.5}) for a technical feel.",
+      "decorations": "Use 1px lines (border-slate-200) to separate sections. Avoid heavy drop shadows; prefer borders and layout structure."
+    },
+    "motion": {
+      "transitions": "transition-all duration-300 ease-out",
+      "page_load": "animate-in fade-in slide-in-from-bottom-4 duration-700",
+      "hover_lift": "hover:-translate-y-1 hover:shadow-lg",
+      "stagger": "stagger-children-100"
+    },
+    "accessibility": {
+      "contrast": "Ensure all text meets WCAG AA (4.5:1). Use Slate-900 for text on white.",
+      "focus_states": "Visible focus rings on all interactive elements.",
+      "reduced_motion": "Respect prefers-reduced-motion media query."
+    }
+  },
+  "assets": {
+    "images": {
+      "hero_bg": {
+        "url": "https://images.unsplash.com/photo-1581674662583-5e89b374fae6?crop=entropy&cs=srgb&fm=jpg&q=85",
+        "alt": "Professional analyzing blueprints with magnifying glass",
+        "usage": "Hero section background with heavy dark overlay"
+      },
+      "module_lease": {
+        "url": "https://images.unsplash.com/photo-1754780960162-839cda44d736?crop=entropy&cs=srgb&fm=jpg&q=85",
+        "alt": "Seal on technical drawings",
+        "usage": "Commercial Lease Risk Check card"
+      },
+      "module_acquisition": {
+        "url": "https://images.unsplash.com/photo-1565688527174-775059ac429c?crop=entropy&cs=srgb&fm=jpg&q=85",
+        "alt": "Professional meeting in modern office",
+        "usage": "Entity Purchase Risk Check card"
+      },
+      "module_partnership": {
+        "url": "https://images.unsplash.com/photo-1698846296220-e44d9d4b9100?crop=entropy&cs=srgb&fm=jpg&q=85",
+        "alt": "Drawing floor plan",
+        "usage": "Ownership Agreement Risk Check card"
+      },
+      "trust_signals": {
+        "lawyer_portrait": "https://images.unsplash.com/photo-1565688527174-775059ac429c?crop=entropy&cs=srgb&fm=jpg&q=85",
+        "usage": "About/Contact section"
+      }
+    },
+    "icons": {
+      "library": "lucide-react",
+      "style": "Stroke width 1.5px, size 20px or 24px"
+    }
+  },
+  "implementation_guide": {
+    "instructions_to_main_agent": [
+      "1. SETUP: Install 'lucide-react' and 'framer-motion' immediately.",
+      "2. FONTS: Add Manrope and Playfair Display to index.css via Google Fonts import.",
+      "3. TAILWIND: Update tailwind.config.js to include the custom colors (slate-900 as primary, orange-500 as accent).",
+      "4. LAYOUT: Build the Landing Page using the 'Tetris Grid' strategy. Do not stack everything in a single column.",
+      "5. WIZARD: Create a 'WizardLayout' component that handles the progress bar and step transitions centrally.",
+      "6. RESULTS: The Results page must be dramatic. Use a large radial gauge or big typography for the score.",
+      "7. FORMS: Use Shadcn Form components but style them with the 'inputs.base' styles defined above.",
+      "8. DATA-TESTID: Add data-testid attributes to all buttons, inputs, and result cards (e.g., 'start-assessment-btn', 'risk-score-display')."
+    ],
+    "universal_guidelines": [
+      "Avoid gradients for backgrounds; use solid colors or subtle patterns.",
+      "Do not use 'Inter' for headings; use 'Manrope'.",
+      "Ensure the 'Jeppsonlaw, LLP' brand name always uses 'Playfair Display'.",
+      "Use 'sonner' for all toast notifications.",
+      "Keep the UI 'clean' - ample whitespace is part of the 'Clean Bill of Health' metaphor."
+    ]
+  }
+}
