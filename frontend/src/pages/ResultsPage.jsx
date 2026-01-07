@@ -377,6 +377,18 @@ export default function ResultsPage() {
         </div>
       </main>
 
+      {/* Floating Book Now Button */}
+      <div className="fixed bottom-6 right-6 z-40 no-print">
+        <Button
+          onClick={() => setShowLeadCapture(true)}
+          className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-6 text-lg font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 rounded-full group"
+          data-testid="floating-book-btn"
+        >
+          <Calendar className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
+          Book Now
+        </Button>
+      </div>
+
       {/* Lead Capture Dialog */}
       <Dialog open={showLeadCapture} onOpenChange={setShowLeadCapture}>
         <DialogContent className="max-w-md">
