@@ -1,0 +1,210 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { toast } from "sonner";
+import { Shield, Building2, FileCheck, Users, ArrowRight, ArrowLeft, CheckCircle2 } from "lucide-react";
+
+const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+
+const modules = [
+  {
+    id: "lease",
+    title: "Commercial Lease Risk",
+    description: "Assess potential risks within your commercial lease agreements—personal guarantees, assignment restrictions, default terms, and more.",
+    icon: <Building2 className="w-8 h-8" />,
+    questions: 10,
+    timeEstimate: "3-4 min"
+  },
+  {
+    id: "acquisition",
+    title: "Entity Purchase / Acquisition Risk",
+    description: "Identify risks associated with buying or selling business entities—due diligence gaps, representations, indemnification issues.",
+    icon: <FileCheck className="w-8 h-8" />,
+    questions: 10,
+    timeEstimate: "3-4 min"
+  },
+  {
+    id: "ownership",
+    title: "Ownership / Partner Agreement Risk",
+    description: "Evaluate the clarity and completeness of your ownership and partnership agreements—buy-sell terms, decision authority, exit provisions.",
+    icon: <Users className="w-8 h-8" />,
+    questions: 10,
+    timeEstimate: "3-4 min"
+  }
+];
+
+export default function ModuleSelection() {
+  const navigate = useNavigate();
+  const [selectedModules, setSelectedModules] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const toggleModule = (moduleId) => {
+    setSelectedModules(prev => 
+      prev.includes(moduleId)
+        ? prev.filter(id => id !== moduleId)
+        : [...prev, moduleId]
+    );
+  };
+
+  const handleStartAssessment = async () => {
+    if (selectedModules.length === 0) {
+      toast.error("Please select at least one module to assess");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await axios.post(`${API}/assessments`, {
+        modules: selectedModules
+      });
+      
+      navigate(`/assessment/${response.data.id}`);
+    } catch (error) {
+      console.error("Error creating assessment:", error);
+      toast.error("Failed to start assessment. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const totalQuestions = selectedModules.reduce((acc, moduleId) => {
+    const module = modules.find(m => m.id === moduleId);
+    return acc + (module?.questions || 0);
+  }, 0);
+
+  const estimatedTime = selectedModules.length > 0 
+    ? `${selectedModules.length * 3}-${selectedModules.length * 4} minutes`
+    : "Select modules";
+
+  return (
+    <div className="min-h-screen bg-slate-50">
+      {/* Navigation */}
+      <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <Shield className="w-8 h-8 text-slate-900" />
+            <span className="font-brand text-xl font-bold text-slate-900">
+              Jeppsonlaw<span className="text-slate-500">, LLP</span>
+            </span>
+          </div>
+          <Button 
+            variant="ghost"
+            onClick={() => navigate("/")}
+            className="text-slate-600"
+            data-testid="back-to-home-btn"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Home
+          </Button>
+        </div>
+      </nav>
+
+      <main className="max-w-4xl mx-auto px-6 py-12">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <h1 className="font-heading text-3xl md:text-4xl font-bold text-slate-900 mb-4">
+            Select Assessment Areas
+          </h1>
+          <p className="text-slate-600 text-lg max-w-2xl mx-auto">
+            Choose one or more areas of your business you'd like to assess. 
+            Each module focuses on specific agreement types and risk factors.
+          </p>
+        </div>
+
+        {/* Module Cards */}
+        <div className="space-y-4 mb-8">
+          {modules.map((module) => {
+            const isSelected = selectedModules.includes(module.id);
+            return (
+              <Card 
+                key={module.id}
+                className={`cursor-pointer transition-all duration-300 ${
+                  isSelected 
+                    ? 'border-slate-900 shadow-md ring-2 ring-slate-900/10' 
+                    : 'border-slate-200 hover:border-slate-300 hover:shadow-sm'
+                }`}
+                onClick={() => toggleModule(module.id)}
+                data-testid={`module-card-${module.id}`}
+              >
+                <CardContent className="p-6">
+                  <div className="flex items-start gap-4">
+                    <div className="flex items-center pt-1">
+                      <Checkbox 
+                        checked={isSelected}
+                        onCheckedChange={() => toggleModule(module.id)}
+                        className="h-5 w-5 data-[state=checked]:bg-slate-900"
+                        data-testid={`module-checkbox-${module.id}`}
+                      />
+                    </div>
+                    <div className={`w-14 h-14 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                      isSelected ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700'
+                    }`}>
+                      {module.icon}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="font-heading text-xl font-semibold text-slate-900">
+                          {module.title}
+                        </h3>
+                        {isSelected && (
+                          <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                        )}
+                      </div>
+                      <p className="text-slate-600 text-sm mb-3">
+                        {module.description}
+                      </p>
+                      <div className="flex gap-4 text-xs text-slate-500">
+                        <span className="flex items-center gap-1">
+                          <span className="font-medium">{module.questions}</span> questions
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <span className="font-medium">{module.timeEstimate}</span>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+
+        {/* Summary and CTA */}
+        <div className="bg-white border border-slate-200 rounded-lg p-6 mb-8">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <p className="text-slate-600 text-sm mb-1">
+                <span className="font-semibold text-slate-900">{selectedModules.length}</span> module{selectedModules.length !== 1 ? 's' : ''} selected
+              </p>
+              <p className="text-slate-500 text-sm">
+                {totalQuestions > 0 
+                  ? `${totalQuestions} questions • Estimated time: ${estimatedTime}`
+                  : 'Select at least one module to continue'
+                }
+              </p>
+            </div>
+            <Button 
+              onClick={handleStartAssessment}
+              disabled={selectedModules.length === 0 || isLoading}
+              className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-6 text-lg font-semibold disabled:opacity-50"
+              data-testid="start-assessment-btn"
+            >
+              {isLoading ? "Starting..." : "Begin Assessment"}
+              <ArrowRight className="ml-2 w-5 h-5" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Info Note */}
+        <div className="text-center">
+          <p className="text-slate-500 text-sm">
+            Your answers are confidential. Results will help identify potential risks and next steps.
+          </p>
+        </div>
+      </main>
+    </div>
+  );
+}
