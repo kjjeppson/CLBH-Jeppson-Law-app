@@ -60,21 +60,21 @@ export default function ResultsPage() {
   });
 
   useEffect(() => {
-    loadResults();
-  }, [assessmentId]);
+    const loadResults = async () => {
+      try {
+        const response = await axios.get(`${API}/assessments/${assessmentId}`);
+        setResults(response.data);
+      } catch (error) {
+        console.error("Error loading results:", error);
+        toast.error("Failed to load results");
+        navigate("/");
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  const loadResults = async () => {
-    try {
-      const response = await axios.get(`${API}/assessments/${assessmentId}`);
-      setResults(response.data);
-    } catch (error) {
-      console.error("Error loading results:", error);
-      toast.error("Failed to load results");
-      navigate("/");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    loadResults();
+  }, [assessmentId, navigate]);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -112,6 +112,22 @@ export default function ResultsPage() {
 
   const handleEmailResults = () => {
     setShowLeadCapture(true);
+  };
+
+  const handleLeadDialogOpenChange = (open) => {
+    setShowLeadCapture(open);
+    if (!open) {
+      setLeadSubmitted(false);
+      setIsSubmittingLead(false);
+      setFormData({
+        name: "",
+        email: "",
+        phone: "",
+        business_name: "",
+        state: "",
+        situation: ""
+      });
+    }
   };
 
   const getScoreIcon = () => {
@@ -390,7 +406,7 @@ export default function ResultsPage() {
       </div>
 
       {/* Lead Capture Dialog */}
-      <Dialog open={showLeadCapture} onOpenChange={setShowLeadCapture}>
+      <Dialog open={showLeadCapture} onOpenChange={handleLeadDialogOpenChange}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="font-heading text-xl">
@@ -480,7 +496,13 @@ export default function ResultsPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {US_STATES.map((state) => (
-                      <SelectItem key={state} value={state}>{state}</SelectItem>
+                      <SelectItem
+                        key={state}
+                        value={state}
+                        data-testid={`lead-state-option-${state.replace(/\s+/g, "-")}`}
+                      >
+                        {state}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -494,7 +516,13 @@ export default function ResultsPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {SITUATIONS.map((situation) => (
-                      <SelectItem key={situation} value={situation}>{situation}</SelectItem>
+                      <SelectItem
+                        key={situation}
+                        value={situation}
+                        data-testid={`lead-situation-option-${situation.replace(/\s+/g, "-")}`}
+                      >
+                        {situation}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

@@ -16,10 +16,27 @@ import csv
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-# MongoDB connection
-mongo_url = os.environ['MONGO_URL']
-client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
+# Configure logging early (so startup/config warnings are visible)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+# MongoDB connection (initialized on startup to avoid crashing on import)
+mongo_url = os.getenv("MONGO_URL")
+db_name = os.getenv("DB_NAME")
+client: Optional[AsyncIOMotorClient] = None
+db = None
+
+def require_db():
+    """Return the configured Mongo DB handle or raise a clear error."""
+    if db is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Database is not configured (missing MONGO_URL/DB_NAME).",
+        )
+    return db
 
 # Create the main app
 app = FastAPI()
@@ -623,6 +640,7 @@ async def get_all_questions():
 @api_router.post("/assessments")
 async def create_assessment(data: AssessmentCreate):
     """Create a new assessment session"""
+    db = require_db()
     assessment = AssessmentResult(modules=data.modules)
     doc = assessment.model_dump()
     doc['timestamp'] = doc['timestamp'].isoformat()
@@ -632,6 +650,7 @@ async def create_assessment(data: AssessmentCreate):
 @api_router.post("/assessments/submit")
 async def submit_assessment(data: AssessmentSubmit):
     """Submit answers and get results"""
+    db = require_db()
     # Find the assessment
     assessment = await db.assessments.find_one({"id": data.assessment_id}, {"_id": 0})
     if not assessment:
@@ -672,6 +691,7 @@ async def submit_assessment(data: AssessmentSubmit):
 @api_router.get("/assessments/{assessment_id}")
 async def get_assessment(assessment_id: str):
     """Get assessment results"""
+    db = require_db()
     assessment = await db.assessments.find_one({"id": assessment_id}, {"_id": 0})
     if not assessment:
         raise HTTPException(status_code=404, detail="Assessment not found")
@@ -680,6 +700,7 @@ async def get_assessment(assessment_id: str):
 @api_router.post("/leads")
 async def create_lead(data: LeadCreate):
     """Submit lead capture form"""
+    db = require_db()
     lead = Lead(**data.model_dump())
     
     # If assessment_id provided, get score info
@@ -699,12 +720,14 @@ async def create_lead(data: LeadCreate):
 @api_router.get("/admin/leads")
 async def get_leads():
     """Get all leads for admin dashboard"""
+    db = require_db()
     leads = await db.leads.find({}, {"_id": 0}).sort("timestamp", -1).to_list(1000)
     return {"leads": leads}
 
 @api_router.get("/admin/leads/export")
 async def export_leads():
     """Export leads as CSV"""
+    db = require_db()
     leads = await db.leads.find({}, {"_id": 0}).sort("timestamp", -1).to_list(1000)
     
     if not leads:
@@ -746,18 +769,24 @@ app.include_router(api_router)
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
+    allow_origins=[o for o in os.getenv('CORS_ORIGINS', '*').split(',') if o] or ["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
+@app.on_event("startup")
+async def startup_db_client():
+    global client, db
+    if not mongo_url or not db_name:
+        logger.warning("MONGO_URL/DB_NAME not set; DB-backed endpoints will return 503.")
+        client = None
+        db = None
+        return
+
+    client = AsyncIOMotorClient(mongo_url)
+    db = client[db_name]
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
-    client.close()
+    if client is not None:
+        client.close()
