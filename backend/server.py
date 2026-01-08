@@ -1,10 +1,11 @@
-from fastapi import FastAPI, APIRouter, HTTPException
+from fastapi import FastAPI, APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
+import secrets
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict, EmailStr
 from typing import List, Optional, Dict, Any
@@ -37,6 +38,22 @@ def require_db():
             detail="Database is not configured (missing MONGO_URL/DB_NAME).",
         )
     return db
+
+def require_admin(request: Request) -> None:
+    """
+    Minimal admin protection for MVP.
+
+    If ADMIN_KEY is set, callers must supply it via:
+    - Header: X-Admin-Key
+    - OR query param: admin_key
+    """
+    admin_key = os.getenv("ADMIN_KEY")
+    if not admin_key:
+        return
+
+    provided = request.headers.get("X-Admin-Key") or request.query_params.get("admin_key")
+    if not provided or not secrets.compare_digest(provided, admin_key):
+        raise HTTPException(status_code=401, detail="Unauthorized")
 
 # Create the main app
 app = FastAPI()
@@ -718,15 +735,17 @@ async def create_lead(data: LeadCreate):
     return {"success": True, "lead_id": lead.id}
 
 @api_router.get("/admin/leads")
-async def get_leads():
+async def get_leads(request: Request):
     """Get all leads for admin dashboard"""
+    require_admin(request)
     db = require_db()
     leads = await db.leads.find({}, {"_id": 0}).sort("timestamp", -1).to_list(1000)
     return {"leads": leads}
 
 @api_router.get("/admin/leads/export")
-async def export_leads():
+async def export_leads(request: Request):
     """Export leads as CSV"""
+    require_admin(request)
     db = require_db()
     leads = await db.leads.find({}, {"_id": 0}).sort("timestamp", -1).to_list(1000)
     
