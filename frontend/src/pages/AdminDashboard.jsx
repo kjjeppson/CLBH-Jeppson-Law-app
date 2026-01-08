@@ -1,43 +1,57 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Shield, Download, RefreshCw, Loader2, Users, TrendingUp, AlertTriangle, ArrowLeft } from "lucide-react";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const ADMIN_KEY_STORAGE = "clbh_admin_key";
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const [leads, setLeads] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
+  const [adminKey, setAdminKey] = useState(() => sessionStorage.getItem(ADMIN_KEY_STORAGE) || "");
+  const adminHeaders = useMemo(() => {
+    return adminKey ? { "X-Admin-Key": adminKey } : {};
+  }, [adminKey]);
 
-  useEffect(() => {
-    loadLeads();
-  }, []);
-
-  const loadLeads = async () => {
+  const loadLeads = useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await axios.get(`${API}/admin/leads`);
+      const response = await axios.get(`${API}/admin/leads`, {
+        headers: adminHeaders
+      });
       setLeads(response.data.leads || []);
     } catch (error) {
       console.error("Error loading leads:", error);
-      toast.error("Failed to load leads");
+      if (error?.response?.status === 401) {
+        toast.error("Admin key required (or incorrect).");
+      } else {
+        toast.error("Failed to load leads");
+      }
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [adminHeaders]);
+
+  useEffect(() => {
+    loadLeads();
+  }, [loadLeads]);
 
   const handleExport = async () => {
     setIsExporting(true);
     try {
       const response = await axios.get(`${API}/admin/leads/export`, {
-        responseType: 'blob'
+        responseType: 'blob',
+        headers: adminHeaders
       });
       
       const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -52,7 +66,11 @@ export default function AdminDashboard() {
       toast.success("Leads exported successfully");
     } catch (error) {
       console.error("Error exporting leads:", error);
-      toast.error("Failed to export leads");
+      if (error?.response?.status === 401) {
+        toast.error("Admin key required (or incorrect).");
+      } else {
+        toast.error("Failed to export leads");
+      }
     } finally {
       setIsExporting(false);
     }
@@ -114,6 +132,56 @@ export default function AdminDashboard() {
       </nav>
 
       <main className="max-w-7xl mx-auto px-6 py-8">
+        {/* Admin Key */}
+        <Card className="border-slate-200 mb-6">
+          <CardContent className="p-6">
+            <div className="flex flex-col md:flex-row md:items-end gap-3 md:gap-4">
+              <div className="flex-1">
+                <Label htmlFor="admin-key">Admin Key</Label>
+                <Input
+                  id="admin-key"
+                  type="password"
+                  value={adminKey}
+                  onChange={(e) => setAdminKey(e.target.value)}
+                  placeholder="Enter admin key (if enabled)"
+                  className="mt-1"
+                  data-testid="admin-key-input"
+                />
+                <p className="text-xs text-slate-500 mt-2">
+                  If the backend has <code>ADMIN_KEY</code> set, this is required to view/export leads.
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    sessionStorage.setItem(ADMIN_KEY_STORAGE, adminKey);
+                    toast.success("Admin key saved for this session");
+                    loadLeads();
+                  }}
+                  data-testid="save-admin-key-btn"
+                >
+                  Save & Refresh
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => {
+                    sessionStorage.removeItem(ADMIN_KEY_STORAGE);
+                    setAdminKey("");
+                    toast.success("Admin key cleared");
+                    loadLeads();
+                  }}
+                  data-testid="clear-admin-key-btn"
+                >
+                  Clear
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>

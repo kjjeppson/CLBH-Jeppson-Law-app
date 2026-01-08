@@ -31,30 +31,30 @@ export default function AssessmentWizard() {
   const [uploadedFiles, setUploadedFiles] = useState([]);
 
   useEffect(() => {
-    loadAssessment();
-  }, [assessmentId]);
+    const loadAssessment = async () => {
+      try {
+        // Get assessment details
+        const assessmentRes = await axios.get(`${API}/assessments/${assessmentId}`);
+        setAssessment(assessmentRes.data);
 
-  const loadAssessment = async () => {
-    try {
-      // Get assessment details
-      const assessmentRes = await axios.get(`${API}/assessments/${assessmentId}`);
-      setAssessment(assessmentRes.data);
-
-      // Get questions for all selected modules
-      const allQuestions = [];
-      for (const module of assessmentRes.data.modules) {
-        const questionsRes = await axios.get(`${API}/questions/${module}`);
-        allQuestions.push(...questionsRes.data.questions);
+        // Get questions for all selected modules
+        const allQuestions = [];
+        for (const module of assessmentRes.data.modules) {
+          const questionsRes = await axios.get(`${API}/questions/${module}`);
+          allQuestions.push(...questionsRes.data.questions);
+        }
+        setQuestions(allQuestions);
+      } catch (error) {
+        console.error("Error loading assessment:", error);
+        toast.error("Failed to load assessment");
+        navigate("/select-modules");
+      } finally {
+        setIsLoading(false);
       }
-      setQuestions(allQuestions);
-    } catch (error) {
-      console.error("Error loading assessment:", error);
-      toast.error("Failed to load assessment");
-      navigate("/select-modules");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    };
+
+    loadAssessment();
+  }, [assessmentId, navigate]);
 
   const currentQuestion = questions[currentQuestionIndex];
   const progress = questions.length > 0 
