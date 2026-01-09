@@ -14,6 +14,8 @@ from datetime import datetime, timezone
 import io
 import csv
 
+from openai import OpenAI
+
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
@@ -54,6 +56,12 @@ def require_admin(request: Request) -> None:
     provided = request.headers.get("X-Admin-Key") or request.query_params.get("admin_key")
     if not provided or not secrets.compare_digest(provided, admin_key):
         raise HTTPException(status_code=401, detail="Unauthorized")
+
+def require_openai_client() -> OpenAI:
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        raise HTTPException(status_code=503, detail="OPENAI_API_KEY is not configured.")
+    return OpenAI(api_key=api_key)
 
 # Create the main app
 app = FastAPI()
@@ -123,6 +131,12 @@ class Lead(BaseModel):
     risk_level: Optional[str] = None
     top_risks: List[str] = []
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+# ----- AI MODELS -----
+
+class HaikuRequest(BaseModel):
+    prompt: str = "write a haiku about ai"
+    model: str = "gpt-5-nano"
 
 # ----- QUESTIONS DATA -----
 
@@ -641,6 +655,19 @@ def generate_action_plan(top_risks: List[Dict], risk_level: str, modules: List[s
 @api_router.get("/")
 async def root():
     return {"message": "CLBH Quick Checkup API"}
+
+@api_router.post("/ai/haiku")
+async def ai_haiku(data: HaikuRequest):
+    """
+    Minimal OpenAI integration example for MVP.
+    Provide OPENAI_API_KEY via env var (never hardcode secrets).
+    """
+    client = require_openai_client()
+    resp = client.responses.create(
+        model=data.model,
+        input=data.prompt,
+    )
+    return {"text": resp.output_text}
 
 @api_router.get("/questions/{module}")
 async def get_questions(module: str):
