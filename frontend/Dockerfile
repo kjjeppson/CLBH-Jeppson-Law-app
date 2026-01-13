@@ -21,6 +21,12 @@ RUN yarn global add serve
 
 COPY --from=build /app/build /app/build
 
+# Create non-root user
+RUN adduser -D -u 1000 appuser && \
+    chown -R appuser:appuser /app
+
+USER appuser
+
 EXPOSE 3000
 
 CMD ["serve", "-s", "build", "-l", "3000"]

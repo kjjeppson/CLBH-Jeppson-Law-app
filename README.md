@@ -9,23 +9,100 @@ This repo contains a **minimum viable product** for the “Clean Legal Bill of H
 
 Requirements: Docker + Docker Compose.
 
+#### Production Setup
+
+1. **Copy and configure environment variables:**
+   ```bash
+   cp .env.example .env
+   ```
+
+2. **Edit `.env` and set secure values:**
+   - Generate a secure `ADMIN_KEY`:
+     ```bash
+     python -c "import secrets; print(secrets.token_urlsafe(32))"
+     ```
+   - Set a strong `MONGO_ROOT_PASSWORD`
+   - Update `CORS_ORIGINS` if needed
+
+3. **Build and start all services:**
+   ```bash
+   docker compose up --build
+   ```
+
+4. **Access the application:**
+   - **Frontend**: `http://localhost:3000`
+   - **Backend API**: `http://localhost:8000/api/`
+   - **Admin Dashboard**: `http://localhost:3000/admin`
+
+#### Development Setup (with Hot-Reloading)
+
+For development with automatic code reloading:
+
 ```bash
-docker compose up --build
+# Use the development configuration
+docker compose -f docker-compose.dev.yml up --build
 ```
 
-Then open:
-- **Frontend**: `http://localhost:3000`
-- **Backend API**: `http://localhost:8000/api/`
+This will:
+- Mount source code directories for hot-reloading
+- Use development database (`clbh_dev`)
+- Enable debug logging
+- Auto-restart on code changes
 
-### Admin access (MVP protection)
+#### Docker Features
 
-You can optionally protect admin endpoints:
+✅ **Security Hardened:**
+- Non-root users in all containers
+- MongoDB authentication enabled
+- Admin endpoints protected by `ADMIN_KEY`
+- `.dockerignore` files to prevent leaking sensitive data
 
-- Set `ADMIN_KEY` in `docker-compose.yml` (backend service) **or** in `backend/.env`.
-- Open `http://localhost:3000/admin`
-- Enter the same key in the **Admin Key** field to load/export leads.
+✅ **Production Ready:**
+- Health checks for all services
+- Automatic restart policies
+- Resource limits (CPU/memory)
+- Multi-stage builds for optimized images
 
-If `ADMIN_KEY` is not set, admin endpoints are accessible (MVP/local dev convenience).
+✅ **Developer Friendly:**
+- Hot-reloading in development mode
+- Separate dev/prod configurations
+- Easy environment variable management
+
+#### Docker Commands
+
+```bash
+# Start services
+docker compose up
+
+# Start in background
+docker compose up -d
+
+# View logs
+docker compose logs -f
+
+# Stop services
+docker compose down
+
+# Stop and remove volumes (deletes data!)
+docker compose down -v
+
+# Rebuild specific service
+docker compose build backend
+docker compose up -d backend
+
+# Check service health
+docker compose ps
+```
+
+### Admin access
+
+Admin endpoints are protected by the `ADMIN_KEY` environment variable:
+
+1. Set `ADMIN_KEY` in your `.env` file
+2. Open `http://localhost:3000/admin`
+3. Enter the admin key to access the dashboard
+
+**Security Note:** Always set a strong `ADMIN_KEY` in production!
 
 ### Local dev (without Docker)
 
