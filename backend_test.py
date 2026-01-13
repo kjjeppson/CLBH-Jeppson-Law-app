@@ -90,6 +90,43 @@ class CLBHAPITester:
         
         return self.run_test("Get Assessment", "GET", f"assessments/{self.assessment_id}", 200)
 
+    def test_save_progress(self):
+        """Test saving partial assessment progress"""
+        if not self.assessment_id:
+            print("❌ No assessment ID available for testing")
+            return False
+
+        # Sample partial answers
+        sample_answers = [
+            {
+                "question_id": "lease_1",
+                "answer_value": "yes_not_reviewed",
+                "points": 5,
+                "trigger_flag": False
+            },
+            {
+                "question_id": "lease_2",
+                "answer_value": "unlimited",
+                "points": 15,
+                "trigger_flag": True
+            }
+        ]
+
+        data = {
+            "answers": sample_answers,
+            "current_question_index": 2,
+            "show_upload": False,
+            "uploaded_files": []
+        }
+
+        return self.run_test(
+            "Save Assessment Progress",
+            "POST",
+            f"assessments/{self.assessment_id}/save-progress",
+            200,
+            data
+        )
+
     def test_submit_assessment(self):
         """Test submitting assessment answers"""
         if not self.assessment_id:
@@ -105,7 +142,7 @@ class CLBHAPITester:
                 "trigger_flag": False
             },
             {
-                "question_id": "lease_2", 
+                "question_id": "lease_2",
                 "answer_value": "unlimited",
                 "points": 15,
                 "trigger_flag": True
@@ -122,7 +159,7 @@ class CLBHAPITester:
             "assessment_id": self.assessment_id,
             "answers": sample_answers
         }
-        
+
         return self.run_test("Submit Assessment", "POST", "assessments/submit", 200, data)
 
     def test_create_lead(self):
@@ -162,6 +199,7 @@ def main():
         ("Get Module Questions", tester.test_get_module_questions),
         ("Create Assessment", tester.test_create_assessment),
         ("Get Assessment", tester.test_get_assessment),
+        ("Save Progress (Session Recovery)", tester.test_save_progress),
         ("Submit Assessment", tester.test_submit_assessment),
         ("Create Lead", tester.test_create_lead),
         ("Get Admin Leads", tester.test_get_admin_leads),

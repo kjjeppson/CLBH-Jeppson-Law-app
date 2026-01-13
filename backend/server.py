@@ -82,6 +82,12 @@ class AssessmentSubmit(BaseModel):
     assessment_id: str
     answers: List[AssessmentAnswer]
 
+class AssessmentProgressSave(BaseModel):
+    answers: List[AssessmentAnswer]
+    current_question_index: int = 0
+    show_upload: bool = False
+    uploaded_files: List[str] = []
+
 class AssessmentResult(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -713,6 +719,37 @@ async def get_assessment(assessment_id: str):
     if not assessment:
         raise HTTPException(status_code=404, detail="Assessment not found")
     return assessment
+
+@api_router.post("/assessments/{assessment_id}/save-progress")
+async def save_assessment_progress(assessment_id: str, data: AssessmentProgressSave):
+    """Save partial progress for an assessment (for session recovery)"""
+    db = require_db()
+
+    # Verify assessment exists
+    assessment = await db.assessments.find_one({"id": assessment_id})
+    if not assessment:
+        raise HTTPException(status_code=404, detail="Assessment not found")
+
+    # Update with partial progress
+    update_data = {
+        "partial_answers": [a.model_dump() for a in data.answers],
+        "current_question_index": data.current_question_index,
+        "show_upload": data.show_upload,
+        "uploaded_files": data.uploaded_files,
+        "last_saved_at": datetime.now(timezone.utc).isoformat()
+    }
+
+    await db.assessments.update_one(
+        {"id": assessment_id},
+        {"$set": update_data}
+    )
+
+    return {
+        "success": True,
+        "assessment_id": assessment_id,
+        "answers_saved": len(data.answers),
+        "last_saved_at": update_data["last_saved_at"]
+    }
 
 @api_router.post("/leads")
 async def create_lead(data: LeadCreate):

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Shield, ArrowRight, ArrowLeft, Loader2, Upload, X } from "lucide-react";
+import { Shield, ArrowRight, ArrowLeft, Loader2, Upload, X, Save } from "lucide-react";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -17,10 +17,46 @@ const MODULE_LABELS = {
   ownership: "Ownership / Partner Agreement Risk"
 };
 
+// Session storage key helper
+const getSessionKey = (assessmentId) => `clbh_session_${assessmentId}`;
+
+// Save session to localStorage
+const saveSession = (assessmentId, data) => {
+  try {
+    localStorage.setItem(getSessionKey(assessmentId), JSON.stringify({
+      ...data,
+      lastSaved: new Date().toISOString()
+    }));
+  } catch (error) {
+    console.error("Failed to save session:", error);
+  }
+};
+
+// Load session from localStorage
+const loadSession = (assessmentId) => {
+  try {
+    const saved = localStorage.getItem(getSessionKey(assessmentId));
+    return saved ? JSON.parse(saved) : null;
+  } catch (error) {
+    console.error("Failed to load session:", error);
+    return null;
+  }
+};
+
+// Clear session from localStorage
+const clearSession = (assessmentId) => {
+  try {
+    localStorage.removeItem(getSessionKey(assessmentId));
+  } catch (error) {
+    console.error("Failed to clear session:", error);
+  }
+};
+
 export default function AssessmentWizard() {
   const { assessmentId } = useParams();
   const navigate = useNavigate();
-  
+  const [searchParams] = useSearchParams();
+
   const [assessment, setAssessment] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -29,6 +65,8 @@ export default function AssessmentWizard() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showUpload, setShowUpload] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [lastSaved, setLastSaved] = useState(null);
+  const [showSaveIndicator, setShowSaveIndicator] = useState(false);
 
   useEffect(() => {
     const loadAssessment = async () => {
@@ -44,6 +82,23 @@ export default function AssessmentWizard() {
           allQuestions.push(...questionsRes.data.questions);
         }
         setQuestions(allQuestions);
+
+        // Try to restore saved session
+        const savedSession = loadSession(assessmentId);
+        const shouldResume = searchParams.get('resume') === 'true' || savedSession !== null;
+
+        if (savedSession && shouldResume) {
+          setAnswers(savedSession.answers || {});
+          setCurrentQuestionIndex(savedSession.currentQuestionIndex || 0);
+          setUploadedFiles(savedSession.uploadedFiles || []);
+          setShowUpload(savedSession.showUpload || false);
+          setLastSaved(savedSession.lastSaved);
+
+          const savedTime = new Date(savedSession.lastSaved).toLocaleTimeString();
+          toast.success(`Session restored from ${savedTime}`, {
+            description: `Recovered ${Object.keys(savedSession.answers || {}).length} saved answers`
+          });
+        }
       } catch (error) {
         console.error("Error loading assessment:", error);
         toast.error("Failed to load assessment");
@@ -54,7 +109,28 @@ export default function AssessmentWizard() {
     };
 
     loadAssessment();
-  }, [assessmentId, navigate]);
+  }, [assessmentId, navigate, searchParams]);
+
+  // Auto-save session whenever answers or progress changes
+  useEffect(() => {
+    if (questions.length > 0 && Object.keys(answers).length > 0) {
+      const sessionData = {
+        answers,
+        currentQuestionIndex,
+        uploadedFiles,
+        showUpload
+      };
+
+      saveSession(assessmentId, sessionData);
+      setLastSaved(new Date().toISOString());
+
+      // Show save indicator briefly
+      setShowSaveIndicator(true);
+      const timer = setTimeout(() => setShowSaveIndicator(false), 2000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [answers, currentQuestionIndex, uploadedFiles, showUpload, assessmentId, questions.length]);
 
   const currentQuestion = questions[currentQuestionIndex];
   const progress = questions.length > 0 
@@ -113,7 +189,10 @@ export default function AssessmentWizard() {
         assessment_id: assessmentId,
         answers: Object.values(answers)
       });
-      
+
+      // Clear saved session on successful submit
+      clearSession(assessmentId);
+
       navigate(`/results/${assessmentId}`);
     } catch (error) {
       console.error("Error submitting assessment:", error);
@@ -150,6 +229,12 @@ export default function AssessmentWizard() {
                 Jeppsonlaw<span className="text-slate-500">, LLP</span>
               </span>
             </div>
+            {showSaveIndicator && (
+              <div className="flex items-center gap-2 text-emerald-600 text-sm animate-fade-in">
+                <Save className="w-4 h-4" />
+                <span className="hidden sm:inline">Saved</span>
+              </div>
+            )}
           </div>
         </nav>
 
@@ -265,9 +350,17 @@ export default function AssessmentWizard() {
               Jeppsonlaw<span className="text-slate-500">, LLP</span>
             </span>
           </div>
-          <span className="text-slate-500 text-sm hidden md:block">
-            {currentModuleLabel}
-          </span>
+          <div className="flex items-center gap-4">
+            {showSaveIndicator && (
+              <div className="flex items-center gap-2 text-emerald-600 text-sm animate-fade-in">
+                <Save className="w-4 h-4" />
+                <span className="hidden sm:inline">Saved</span>
+              </div>
+            )}
+            <span className="text-slate-500 text-sm hidden md:block">
+              {currentModuleLabel}
+            </span>
+          </div>
         </div>
       </nav>
 
