@@ -23,5 +23,6 @@ COPY --from=build /app/build /app/build
 
 EXPOSE 3000
 
-CMD ["serve", "-s", "build", "-l", "3000"]
+# Use PORT env var for Railway compatibility, default to 3000
+CMD serve -s build -l ${PORT:-3000}
 
