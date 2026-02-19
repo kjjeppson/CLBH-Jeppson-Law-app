@@ -378,13 +378,26 @@ export default function ResultsPage() {
         </Card>
 
         {/* Disclaimer */}
-        <div className="text-center mb-8">
-          <p className="text-slate-500 text-xs leading-relaxed max-w-2xl mx-auto">
-            <strong>Disclaimer:</strong> This assessment is for educational purposes only and does not constitute legal advice.
-            No attorney-client relationship is created by using this tool. Results are based solely on your inputs
-            and may not reflect all relevant factors. For personalized legal guidance, please consult with a qualified attorney.
-          </p>
-        </div>
+        <Card className="border-slate-200 mb-8 bg-slate-50">
+          <CardContent className="p-6">
+            <p className="text-slate-600 text-sm leading-relaxed text-center mb-4">
+              <strong>DISCLAIMER:</strong> This assessment is for educational purposes only and does not constitute legal advice.
+              The results are intended to help you identify potential areas of concern in your business.
+              For specific legal guidance tailored to your situation, please consult with a licensed attorney.
+              You may take this checklist to your own attorney, or schedule a consultation with Jeppson Law.
+            </p>
+            <div className="text-center">
+              <Button
+                onClick={() => window.open('https://calendly.com/jeppsonlaw', '_blank')}
+                className="bg-orange-500 hover:bg-orange-600 text-white"
+                data-testid="disclaimer-book-consultation-btn"
+              >
+                <Calendar className="w-4 h-4 mr-2" />
+                Book a Free Consultation
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Navigation Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -407,6 +420,30 @@ export default function ResultsPage() {
           </Button>
         </div>
       </main>
+
+      {/* Footer */}
+      <footer className="py-6 bg-white border-t border-slate-200">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-3">
+            <div className="flex items-center gap-2">
+              <Shield className="w-6 h-6 text-blue-900" />
+              <span className="font-brand text-lg font-semibold text-slate-900">
+                Jeppson Law<span className="text-slate-500">, LLP</span>
+              </span>
+            </div>
+            <a href="tel:916-780-7008" className="flex items-center gap-2 text-slate-600 hover:text-blue-900 transition-colors">
+              <Phone className="w-4 h-4" />
+              <span className="text-sm font-medium">916-780-7008</span>
+            </a>
+            <p className="text-slate-500 text-sm">
+              © {new Date().getFullYear()} Jeppson Law, LLP. All rights reserved.
+            </p>
+          </div>
+          <p className="text-slate-400 text-xs text-center">
+            This tool is for educational purposes only and is not legal advice.
+          </p>
+        </div>
+      </footer>
 
       {/* Floating Book Now Button */}
       <div className="fixed bottom-6 right-6 z-40 no-print">

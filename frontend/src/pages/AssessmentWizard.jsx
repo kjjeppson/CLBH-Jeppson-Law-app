@@ -248,6 +248,26 @@ export default function AssessmentWizard() {
           ))}
         </div>
       </main>
+
+      {/* Footer */}
+      <footer className="py-6 bg-white border-t border-slate-200">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-3">
+            <div className="flex items-center gap-2">
+              <Shield className="w-6 h-6 text-blue-900" />
+              <span className="font-brand text-lg font-semibold text-slate-900">
+                Jeppson Law<span className="text-slate-500">, LLP</span>
+              </span>
+            </div>
+            <p className="text-slate-500 text-sm">
+              © {new Date().getFullYear()} Jeppson Law, LLP. All rights reserved.
+            </p>
+          </div>
+          <p className="text-slate-400 text-xs text-center">
+            This tool is for educational purposes only and is not legal advice.
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }
