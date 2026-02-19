@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Shield, FileCheck, AlertTriangle, CheckCircle2, Clock, ArrowRight, Building2, Calendar, Loader2 } from "lucide-react";
+import { Shield, FileCheck, AlertTriangle, CheckCircle2, Clock, ArrowRight, Building2, Calendar, Loader2, Phone } from "lucide-react";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -372,6 +372,10 @@ export default function LandingPage() {
               Jeppson Law<span className="text-slate-500">, LLP</span>
             </span>
           </div>
+          <a href="tel:916-780-7008" className="flex items-center gap-2 text-slate-600 hover:text-blue-900 transition-colors">
+            <Phone className="w-4 h-4" />
+            <span className="text-sm font-medium">916-780-7008</span>
+          </a>
           <p className="text-slate-500 text-sm">
             © {new Date().getFullYear()} Jeppson Law, LLP. All rights reserved.
           </p>
