@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Shield, ArrowRight, ArrowLeft, Loader2, Upload, X } from "lucide-react";
+import { Shield, ArrowRight, ArrowLeft, Loader2 } from "lucide-react";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -27,8 +27,6 @@ export default function AssessmentWizard() {
   const [answers, setAnswers] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showUpload, setShowUpload] = useState(false);
-  const [uploadedFiles, setUploadedFiles] = useState([]);
 
   useEffect(() => {
     const loadAssessment = async () => {
@@ -78,32 +76,19 @@ export default function AssessmentWizard() {
       toast.error("Please select an answer before continuing");
       return;
     }
-    
+
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
     } else {
-      // Show optional upload step
-      setShowUpload(true);
+      // Submit the assessment
+      handleSubmit();
     }
   };
 
   const handlePrevious = () => {
-    if (showUpload) {
-      setShowUpload(false);
-    } else if (currentQuestionIndex > 0) {
+    if (currentQuestionIndex > 0) {
       setCurrentQuestionIndex(prev => prev - 1);
     }
-  };
-
-  const handleFileUpload = (e) => {
-    const files = Array.from(e.target.files);
-    setUploadedFiles(prev => [...prev, ...files.map(f => f.name)]);
-    // Note: In a real implementation, you would upload files to a server
-    toast.success(`${files.length} file(s) added`);
-  };
-
-  const removeFile = (fileName) => {
-    setUploadedFiles(prev => prev.filter(f => f !== fileName));
   };
 
   const handleSubmit = async () => {
@@ -136,123 +121,6 @@ export default function AssessmentWizard() {
 
   const currentModule = currentQuestion?.module;
   const currentModuleLabel = MODULE_LABELS[currentModule] || currentModule;
-
-  // Optional Upload Step
-  if (showUpload) {
-    return (
-      <div className="min-h-screen bg-slate-50">
-        {/* Navigation */}
-        <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
-          <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <Shield className="w-8 h-8 text-slate-900" />
-              <span className="font-brand text-xl font-bold text-slate-900">
-                Jeppsonlaw<span className="text-slate-500">, LLP</span>
-              </span>
-            </div>
-          </div>
-        </nav>
-
-        <main className="max-w-2xl mx-auto px-6 py-12">
-          {/* Progress */}
-          <div className="mb-8">
-            <div className="flex justify-between text-sm text-slate-600 mb-2">
-              <span>Almost done!</span>
-              <span>Optional Step</span>
-            </div>
-            <Progress value={100} className="h-2" />
-          </div>
-
-          <Card className="border-slate-200 mb-8">
-            <CardContent className="p-8">
-              <div className="text-center mb-8">
-                <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Upload className="w-8 h-8 text-slate-600" />
-                </div>
-                <h2 className="font-heading text-2xl font-bold text-slate-900 mb-2">
-                  Upload Documents (Optional)
-                </h2>
-                <p className="text-slate-600">
-                  Have a lease, LOI, or operating agreement you'd like us to review? 
-                  Upload it here. This helps us provide more tailored recommendations.
-                </p>
-              </div>
-
-              <div className="border-2 border-dashed border-slate-200 rounded-lg p-8 text-center hover:border-slate-300 transition-colors">
-                <input
-                  type="file"
-                  id="file-upload"
-                  className="hidden"
-                  multiple
-                  accept=".pdf,.doc,.docx"
-                  onChange={handleFileUpload}
-                  data-testid="file-upload-input"
-                />
-                <label htmlFor="file-upload" className="cursor-pointer">
-                  <Upload className="w-10 h-10 text-slate-400 mx-auto mb-3" />
-                  <p className="text-slate-600 mb-2">
-                    <span className="text-slate-900 font-medium">Click to upload</span> or drag and drop
-                  </p>
-                  <p className="text-slate-500 text-sm">PDF, DOC, DOCX up to 10MB</p>
-                </label>
-              </div>
-
-              {uploadedFiles.length > 0 && (
-                <div className="mt-4 space-y-2">
-                  {uploadedFiles.map((file, index) => (
-                    <div key={index} className="flex items-center justify-between bg-slate-50 rounded-lg p-3">
-                      <span className="text-slate-700 text-sm truncate">{file}</span>
-                      <button
-                        onClick={() => removeFile(file)}
-                        className="text-slate-400 hover:text-slate-600"
-                        data-testid={`remove-file-${index}`}
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <p className="text-slate-500 text-xs mt-4 text-center">
-                Documents are kept confidential and used only to enhance your assessment results.
-              </p>
-            </CardContent>
-          </Card>
-
-          <div className="flex justify-between">
-            <Button
-              variant="outline"
-              onClick={handlePrevious}
-              className="px-6"
-              data-testid="back-btn"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back
-            </Button>
-            <Button
-              onClick={handleSubmit}
-              disabled={isSubmitting}
-              className="bg-orange-500 hover:bg-orange-600 text-white px-8"
-              data-testid="get-results-btn"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                <>
-                  Get My Results
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </>
-              )}
-            </Button>
-          </div>
-        </main>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -341,11 +209,26 @@ export default function AssessmentWizard() {
           </Button>
           <Button
             onClick={handleNext}
-            className="bg-slate-900 hover:bg-slate-800 text-white px-6"
+            disabled={isSubmitting}
+            className={`${currentQuestionIndex === questions.length - 1 ? 'bg-orange-500 hover:bg-orange-600' : 'bg-slate-900 hover:bg-slate-800'} text-white px-6`}
             data-testid="next-btn"
           >
-            {currentQuestionIndex === questions.length - 1 ? "Continue" : "Next"}
-            <ArrowRight className="w-4 h-4 ml-2" />
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Processing...
+              </>
+            ) : currentQuestionIndex === questions.length - 1 ? (
+              <>
+                Get My Results
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </>
+            ) : (
+              <>
+                Next
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </>
+            )}
           </Button>
         </div>
 
