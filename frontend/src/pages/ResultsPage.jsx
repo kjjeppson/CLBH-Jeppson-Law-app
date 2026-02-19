@@ -47,6 +47,7 @@ export default function ResultsPage() {
   const [results, setResults] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showLeadCapture, setShowLeadCapture] = useState(false);
+  const [dialogMode, setDialogMode] = useState("results"); // "results" or "schedule"
   const [isSubmittingLead, setIsSubmittingLead] = useState(false);
   const [leadSubmitted, setLeadSubmitted] = useState(false);
   const [formData, setFormData] = useState({
@@ -106,6 +107,12 @@ export default function ResultsPage() {
   };
 
   const handleEmailResults = () => {
+    setDialogMode("results");
+    setShowLeadCapture(true);
+  };
+
+  const handleScheduleCall = () => {
+    setDialogMode("schedule");
     setShowLeadCapture(true);
   };
 
@@ -359,9 +366,9 @@ export default function ResultsPage() {
                 <span className="text-slate-700">Create a clear action plan with timeline and next steps</span>
               </li>
             </ul>
-            <Button 
+            <Button
               className="w-full bg-orange-500 hover:bg-orange-600 text-white py-6 text-lg font-semibold"
-              onClick={() => setShowLeadCapture(true)}
+              onClick={handleScheduleCall}
               data-testid="book-review-call-btn"
             >
               <Calendar className="w-5 h-5 mr-2" />
@@ -404,7 +411,7 @@ export default function ResultsPage() {
       {/* Floating Book Now Button */}
       <div className="fixed bottom-6 right-6 z-40 no-print">
         <Button
-          onClick={() => setShowLeadCapture(true)}
+          onClick={handleScheduleCall}
           className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-6 text-lg font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 rounded-full group"
           data-testid="floating-book-btn"
         >
@@ -418,40 +425,75 @@ export default function ResultsPage() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="font-heading text-xl">
-              {leadSubmitted ? "Thank You!" : "Get Your Results & Schedule a Call"}
+              {leadSubmitted
+                ? "Thank You!"
+                : dialogMode === "results"
+                  ? "Get Your Results"
+                  : "Schedule a Free Consultation"
+              }
             </DialogTitle>
             {!leadSubmitted && (
               <DialogDescription>
-                Fill in your details to receive your results by email and text message.
+                {dialogMode === "results"
+                  ? "Fill in your details to receive your results by email and text message."
+                  : "Fill in your details to schedule your free 15-minute CLBH consultation."
+                }
               </DialogDescription>
             )}
           </DialogHeader>
-          
+
           {leadSubmitted ? (
             <div className="py-8 text-center">
               <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <CheckCircle2 className="w-8 h-8 text-emerald-500" />
               </div>
-              <p className="text-slate-600 mb-4">
-                We have emailed and texted you your results. If you have any questions, you can schedule a free 15-minute CLBH consultation.
-              </p>
-              <div className="flex flex-col gap-3">
-                <Button
-                  onClick={() => window.open('https://calendly.com/jeppsonlaw', '_blank')}
-                  className="bg-orange-500 hover:bg-orange-600"
-                  data-testid="schedule-consultation-btn"
-                >
-                  <Calendar className="w-4 h-4 mr-2" />
-                  Schedule Free Consultation
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => setShowLeadCapture(false)}
-                  data-testid="close-success-btn"
-                >
-                  Close
-                </Button>
-              </div>
+              {dialogMode === "results" ? (
+                <>
+                  <p className="text-slate-600 mb-4">
+                    We have emailed and texted you your results. If you have any questions, you can schedule a free 15-minute CLBH consultation.
+                  </p>
+                  <div className="flex flex-col gap-3">
+                    <Button
+                      onClick={() => window.open('https://calendly.com/jeppsonlaw', '_blank')}
+                      className="bg-orange-500 hover:bg-orange-600"
+                      data-testid="schedule-consultation-btn"
+                    >
+                      <Calendar className="w-4 h-4 mr-2" />
+                      Schedule Free Consultation
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowLeadCapture(false)}
+                      data-testid="close-success-btn"
+                    >
+                      Close
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="text-slate-600 mb-4">
+                    Click below to choose a time for your free 15-minute CLBH consultation.
+                  </p>
+                  <div className="flex flex-col gap-3">
+                    <Button
+                      onClick={() => window.open('https://calendly.com/jeppsonlaw', '_blank')}
+                      className="bg-orange-500 hover:bg-orange-600"
+                      data-testid="open-calendar-btn"
+                    >
+                      <Calendar className="w-4 h-4 mr-2" />
+                      Choose a Time
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowLeadCapture(false)}
+                      data-testid="close-success-btn"
+                    >
+                      Close
+                    </Button>
+                  </div>
+                </>
+              )}
             </div>
           ) : (
             <form onSubmit={handleLeadSubmit} className="space-y-4">
@@ -466,7 +508,7 @@ export default function ResultsPage() {
                   data-testid="lead-name-input"
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="email">Email *</Label>
                 <Input
@@ -479,9 +521,9 @@ export default function ResultsPage() {
                   data-testid="lead-email-input"
                 />
               </div>
-              
+
               <div>
-                <Label htmlFor="phone">Cell Phone (for text) *</Label>
+                <Label htmlFor="phone">Cell Phone {dialogMode === "results" ? "(for text) " : ""}*</Label>
                 <Input
                   id="phone"
                   type="tel"
@@ -492,7 +534,7 @@ export default function ResultsPage() {
                   data-testid="lead-phone-input"
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="business_name">Business Name *</Label>
                 <Input
@@ -504,7 +546,7 @@ export default function ResultsPage() {
                   data-testid="lead-business-input"
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="state">State *</Label>
                 <Select value={formData.state} onValueChange={(value) => handleInputChange("state", value)}>
@@ -524,7 +566,7 @@ export default function ResultsPage() {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div>
                 <Label htmlFor="situation">What best describes your situation? *</Label>
                 <Select value={formData.situation} onValueChange={(value) => handleInputChange("situation", value)}>
@@ -544,9 +586,9 @@ export default function ResultsPage() {
                   </SelectContent>
                 </Select>
               </div>
-              
-              <Button 
-                type="submit" 
+
+              <Button
+                type="submit"
                 className="w-full bg-orange-500 hover:bg-orange-600"
                 disabled={isSubmittingLead}
                 data-testid="submit-lead-btn"
@@ -556,10 +598,15 @@ export default function ResultsPage() {
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     Submitting...
                   </>
-                ) : (
+                ) : dialogMode === "results" ? (
                   <>
                     Send My Results
                     <ArrowRight className="w-4 h-4 ml-2" />
+                  </>
+                ) : (
+                  <>
+                    Continue to Calendar
+                    <Calendar className="w-4 h-4 ml-2" />
                   </>
                 )}
               </Button>
