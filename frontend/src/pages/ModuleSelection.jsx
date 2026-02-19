@@ -11,27 +11,27 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const modules = [
   {
     id: "lease",
-    title: "Commercial Lease Risk",
+    title: "Commercial Lease Quiz",
     description: "Assess potential risks within your commercial lease agreements—personal guarantees, assignment restrictions, default terms, and more.",
     icon: <Building2 className="w-8 h-8" />,
-    questions: 10,
-    timeEstimate: "3-5 min"
+    questions: 20,
+    timeEstimate: "5-8 min"
   },
   {
     id: "acquisition",
-    title: "Entity Purchase / Acquisition Risk",
+    title: "Entity Purchase Quiz",
     description: "Identify risks associated with buying or selling business entities—due diligence gaps, representations, indemnification issues.",
     icon: <FileCheck className="w-8 h-8" />,
-    questions: 10,
-    timeEstimate: "3-5 min"
+    questions: 20,
+    timeEstimate: "5-8 min"
   },
   {
     id: "ownership",
-    title: "Ownership / Partner Agreement Risk",
+    title: "Ownership Agreement Quiz",
     description: "Evaluate the clarity and completeness of your ownership and partnership agreements—buy-sell terms, decision authority, exit provisions.",
     icon: <Users className="w-8 h-8" />,
-    questions: 10,
-    timeEstimate: "3-5 min"
+    questions: 20,
+    timeEstimate: "5-8 min"
   }
 ];
 

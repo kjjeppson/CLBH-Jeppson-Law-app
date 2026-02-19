@@ -125,372 +125,673 @@ class Lead(BaseModel):
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 # ----- QUESTIONS DATA -----
+# Scoring: GREEN = 3 points, YELLOW = 2 points, RED = 1 point
+# Per category (20 questions): 50-60 = GREEN, 35-49 = YELLOW, 20-34 = RED
 
 QUESTIONS = {
     "lease": [
         {
             "id": "lease_1",
-            "text": "Do you have a written commercial lease agreement for your business space?",
+            "text": "Is your commercial lease signed under your business entity name (LLC, Corp, etc.) rather than your personal name?",
             "options": [
-                {"value": "yes_reviewed", "label": "Yes, and it was reviewed by an attorney", "points": 0, "trigger_flag": False},
-                {"value": "yes_not_reviewed", "label": "Yes, but it wasn't reviewed by an attorney", "points": 5, "trigger_flag": False},
-                {"value": "no", "label": "No written agreement", "points": 15, "trigger_flag": True}
+                {"value": "green", "label": "Yes, the lease is under my business entity name.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "I'm not sure which name is on the lease.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No, it's under my personal name.", "points": 1, "trigger_flag": True}
             ],
             "module": "lease"
         },
         {
             "id": "lease_2",
-            "text": "Does your lease include a personal guarantee?",
+            "text": "Does your lease include a specific legal description of the premises, including square footage and common area details?",
             "options": [
-                {"value": "no", "label": "No personal guarantee", "points": 0, "trigger_flag": False},
-                {"value": "limited", "label": "Yes, but it's limited in amount or time", "points": 5, "trigger_flag": False},
-                {"value": "unlimited", "label": "Yes, unlimited personal guarantee", "points": 15, "trigger_flag": True},
-                {"value": "unsure", "label": "I'm not sure", "points": 10, "trigger_flag": True}
+                {"value": "green", "label": "Yes, the space is clearly described with square footage and boundaries.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "It mentions the address but I'm not sure about the specifics.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "I haven't reviewed this or don't know.", "points": 1, "trigger_flag": True}
             ],
             "module": "lease"
         },
         {
             "id": "lease_3",
-            "text": "What happens if you need to close or relocate your business?",
+            "text": "Did you sign a personal guarantee as part of your lease?",
             "options": [
-                {"value": "can_assign", "label": "Lease allows assignment or subletting", "points": 0, "trigger_flag": False},
-                {"value": "requires_approval", "label": "Requires landlord approval", "points": 5, "trigger_flag": False},
-                {"value": "no_assignment", "label": "No assignment or subletting allowed", "points": 12, "trigger_flag": True},
-                {"value": "unsure", "label": "I don't know", "points": 8, "trigger_flag": False}
+                {"value": "green", "label": "No personal guarantee, or the guarantee has a cap (time or dollar limit).", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "I signed one but I'm not sure of the terms.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "Yes, I signed an unlimited personal guarantee.", "points": 1, "trigger_flag": True}
             ],
             "module": "lease"
         },
         {
             "id": "lease_4",
-            "text": "Are you responsible for property maintenance and repairs?",
+            "text": "Do you know your lease type and exactly what expenses you are responsible for beyond base rent?",
             "options": [
-                {"value": "landlord", "label": "Landlord handles most repairs", "points": 0, "trigger_flag": False},
-                {"value": "shared", "label": "Shared responsibility, clearly defined", "points": 3, "trigger_flag": False},
-                {"value": "tenant_all", "label": "I'm responsible for everything (Triple Net)", "points": 8, "trigger_flag": False},
-                {"value": "unclear", "label": "Responsibilities are unclear", "points": 10, "trigger_flag": True}
+                {"value": "green", "label": "Yes, I understand whether it's gross, modified gross, or NNN and what I pay.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "I know my monthly rent but not exactly what additional costs I'm covering.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "I have no idea what lease type I have or what my total cost exposure is.", "points": 1, "trigger_flag": True}
             ],
             "module": "lease"
         },
         {
             "id": "lease_5",
-            "text": "Does your lease clearly define rent increases?",
+            "text": "Does your lease include a cap on annual Common Area Maintenance (CAM) charge increases?",
             "options": [
-                {"value": "fixed", "label": "Fixed rent for entire term", "points": 0, "trigger_flag": False},
-                {"value": "defined_increases", "label": "Yes, increases are clearly defined", "points": 2, "trigger_flag": False},
-                {"value": "market_rate", "label": "Can increase to 'market rate'", "points": 10, "trigger_flag": True},
-                {"value": "unsure", "label": "I'm not sure how it works", "points": 8, "trigger_flag": False}
+                {"value": "green", "label": "Yes, CAM increases are capped at a fixed percentage.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "I'm not sure if there is a cap.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No, there is no cap on CAM increases.", "points": 1, "trigger_flag": True}
             ],
             "module": "lease"
         },
         {
             "id": "lease_6",
-            "text": "What are the default provisions in your lease?",
+            "text": "Does your lease clearly state the term length, renewal options, and notice deadlines?",
             "options": [
-                {"value": "clear_cure", "label": "Clear notice and cure period defined", "points": 0, "trigger_flag": False},
-                {"value": "short_cure", "label": "Very short cure period (less than 10 days)", "points": 8, "trigger_flag": False},
-                {"value": "immediate", "label": "Landlord can act immediately on default", "points": 15, "trigger_flag": True},
-                {"value": "unsure", "label": "I haven't reviewed default terms", "points": 10, "trigger_flag": True}
+                {"value": "green", "label": "Yes, I know exactly when the lease ends and how to renew.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "I know when it ends but I'm not clear on renewal procedures.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "I'm not sure of my lease term or renewal requirements.", "points": 1, "trigger_flag": True}
             ],
             "module": "lease"
         },
         {
             "id": "lease_7",
-            "text": "Is there an indemnification clause? Who does it protect?",
+            "text": "Can you assign your lease or sublease your space if you need to?",
             "options": [
-                {"value": "mutual", "label": "Mutual indemnification (protects both parties)", "points": 0, "trigger_flag": False},
-                {"value": "landlord_only", "label": "Only protects the landlord", "points": 8, "trigger_flag": False},
-                {"value": "broad_tenant", "label": "Requires tenant to indemnify for landlord's negligence", "points": 15, "trigger_flag": True},
-                {"value": "unsure", "label": "I'm not familiar with this", "points": 10, "trigger_flag": False}
+                {"value": "green", "label": "Yes, the lease allows assignment or subleasing with reasonable terms.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "I think so, but I haven't reviewed those provisions.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No, or I have no idea if it's allowed.", "points": 1, "trigger_flag": True}
             ],
             "module": "lease"
         },
         {
             "id": "lease_8",
-            "text": "How much time is left on your current lease?",
+            "text": "Does your lease include an early termination clause?",
             "options": [
-                {"value": "long_term", "label": "More than 3 years", "points": 0, "trigger_flag": False},
-                {"value": "medium", "label": "1-3 years", "points": 2, "trigger_flag": False},
-                {"value": "short", "label": "Less than 1 year", "points": 5, "trigger_flag": False},
-                {"value": "month_to_month", "label": "Month-to-month", "points": 8, "trigger_flag": False}
+                {"value": "green", "label": "Yes, and I understand the costs and conditions for early exit.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "I'm not sure if one exists in my lease.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No, there is no early termination option.", "points": 1, "trigger_flag": True}
             ],
             "module": "lease"
         },
         {
             "id": "lease_9",
-            "text": "Does your lease have renewal options?",
+            "text": "Is it clear in your lease who is responsible for maintenance, repairs, and major systems like HVAC and roofing?",
             "options": [
-                {"value": "automatic", "label": "Yes, with automatic renewal at same terms", "points": 0, "trigger_flag": False},
-                {"value": "option_defined", "label": "Yes, renewal option with defined terms", "points": 2, "trigger_flag": False},
-                {"value": "option_market", "label": "Renewal at 'market rate'", "points": 8, "trigger_flag": False},
-                {"value": "no_option", "label": "No renewal option", "points": 10, "trigger_flag": False}
+                {"value": "green", "label": "Yes, responsibilities are clearly divided between me and the landlord.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "I think the landlord handles major items but I'm not certain.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "I don't know who is responsible for what.", "points": 1, "trigger_flag": True}
             ],
             "module": "lease"
         },
         {
             "id": "lease_10",
-            "text": "Have you made significant improvements to the leased space?",
+            "text": "Does your lease address what happens if the property is damaged (fire, flood, etc.), including whether your rent is paused during repairs?",
             "options": [
-                {"value": "none", "label": "No significant improvements", "points": 0, "trigger_flag": False},
-                {"value": "yes_removable", "label": "Yes, and lease allows removal", "points": 2, "trigger_flag": False},
-                {"value": "yes_unclear", "label": "Yes, but ownership is unclear", "points": 10, "trigger_flag": True},
-                {"value": "yes_landlord", "label": "Yes, but they become landlord's property", "points": 8, "trigger_flag": False}
+                {"value": "green", "label": "Yes, the lease includes rent abatement during damage repairs.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "I'm not sure what the lease says about property damage.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No, there is no rent abatement clause.", "points": 1, "trigger_flag": True}
             ],
             "module": "lease"
-        }
-    ],
-    "acquisition": [
-        {
-            "id": "acq_1",
-            "text": "Have you conducted formal due diligence on the target business?",
-            "options": [
-                {"value": "comprehensive", "label": "Yes, comprehensive due diligence with professionals", "points": 0, "trigger_flag": False},
-                {"value": "limited", "label": "Some review, but not comprehensive", "points": 8, "trigger_flag": False},
-                {"value": "minimal", "label": "Minimal review - mostly relied on seller", "points": 15, "trigger_flag": True},
-                {"value": "none", "label": "No formal due diligence", "points": 20, "trigger_flag": True}
-            ],
-            "module": "acquisition"
         },
         {
-            "id": "acq_2",
-            "text": "Is this an asset purchase or stock/membership interest purchase?",
+            "id": "lease_11",
+            "text": "Are all verbal promises made by your landlord or broker documented in the written lease?",
             "options": [
-                {"value": "asset", "label": "Asset purchase", "points": 0, "trigger_flag": False},
-                {"value": "stock", "label": "Stock/membership interest purchase", "points": 5, "trigger_flag": False},
-                {"value": "unsure", "label": "I'm not sure of the structure", "points": 12, "trigger_flag": True}
+                {"value": "green", "label": "Yes, everything discussed is in the written agreement.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "Most things are, but some promises were verbal only.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "Several important terms were only discussed verbally.", "points": 1, "trigger_flag": True}
             ],
-            "module": "acquisition"
+            "module": "lease"
         },
         {
-            "id": "acq_3",
-            "text": "Have you reviewed the target's existing contracts and agreements?",
+            "id": "lease_12",
+            "text": "Does your lease include an exclusivity clause preventing the landlord from renting to a direct competitor in the same property?",
             "options": [
-                {"value": "all_reviewed", "label": "Yes, all material contracts reviewed by attorney", "points": 0, "trigger_flag": False},
-                {"value": "some_reviewed", "label": "Reviewed some, but not all", "points": 8, "trigger_flag": False},
-                {"value": "not_reviewed", "label": "Haven't reviewed contracts", "points": 15, "trigger_flag": True}
+                {"value": "green", "label": "Yes, I have an exclusivity clause.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "I'm not sure if one exists.", "points": 2, "trigger_flag": False},
+                {"value": "yellow2", "label": "No, there is no exclusivity protection.", "points": 2, "trigger_flag": False}
             ],
-            "module": "acquisition"
+            "module": "lease"
         },
         {
-            "id": "acq_4",
-            "text": "Are there clear representations and warranties from the seller?",
+            "id": "lease_13",
+            "text": "Does your current insurance coverage meet all the requirements specified in your lease?",
             "options": [
-                {"value": "comprehensive", "label": "Yes, comprehensive reps and warranties", "points": 0, "trigger_flag": False},
-                {"value": "basic", "label": "Basic representations only", "points": 5, "trigger_flag": False},
-                {"value": "none", "label": "No formal representations", "points": 15, "trigger_flag": True},
-                {"value": "unsure", "label": "I don't know what this means", "points": 10, "trigger_flag": True}
+                {"value": "green", "label": "Yes, I have verified my coverage meets all lease requirements.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "I have insurance but haven't compared it to the lease requirements.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "I don't know what insurance the lease requires.", "points": 1, "trigger_flag": True}
             ],
-            "module": "acquisition"
+            "module": "lease"
         },
         {
-            "id": "acq_5",
-            "text": "Is there an indemnification provision protecting you as the buyer?",
+            "id": "lease_14",
+            "text": "Does your lease address who pays for tenant improvements or buildout of the space?",
             "options": [
-                {"value": "strong", "label": "Yes, strong buyer protection with escrow/holdback", "points": 0, "trigger_flag": False},
-                {"value": "basic", "label": "Basic indemnification, no escrow", "points": 8, "trigger_flag": False},
-                {"value": "weak", "label": "Minimal or seller-friendly indemnification", "points": 12, "trigger_flag": True},
-                {"value": "none", "label": "No indemnification provision", "points": 18, "trigger_flag": True}
+                {"value": "green", "label": "Yes, tenant improvement terms are clearly documented.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "I'm not sure what the lease says about improvements.", "points": 2, "trigger_flag": False},
+                {"value": "yellow2", "label": "No, this was never discussed or documented.", "points": 2, "trigger_flag": False}
             ],
-            "module": "acquisition"
+            "module": "lease"
         },
         {
-            "id": "acq_6",
-            "text": "Have you verified the business has no outstanding legal issues or litigation?",
+            "id": "lease_15",
+            "text": "Does your lease specify how disputes with the landlord will be resolved?",
             "options": [
-                {"value": "verified", "label": "Yes, verified through searches and disclosure", "points": 0, "trigger_flag": False},
-                {"value": "relied_seller", "label": "Relied on seller's statements only", "points": 10, "trigger_flag": True},
-                {"value": "not_checked", "label": "Haven't checked", "points": 15, "trigger_flag": True}
+                {"value": "green", "label": "Yes, there is a clear dispute resolution process (mediation, arbitration, etc.).", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "I'm not sure if this is addressed.", "points": 2, "trigger_flag": False},
+                {"value": "yellow2", "label": "No, there is no dispute resolution clause.", "points": 2, "trigger_flag": False}
             ],
-            "module": "acquisition"
+            "module": "lease"
         },
         {
-            "id": "acq_7",
-            "text": "Are employees being retained? How is that being handled?",
+            "id": "lease_16",
+            "text": "Does your lease address ADA compliance, and is it clear who is responsible for the cost of any required modifications?",
             "options": [
-                {"value": "new_agreements", "label": "New employment agreements with key employees", "points": 0, "trigger_flag": False},
-                {"value": "at_will", "label": "Employees will continue at-will", "points": 5, "trigger_flag": False},
-                {"value": "assuming_contracts", "label": "Assuming existing employment contracts", "points": 8, "trigger_flag": False},
-                {"value": "unclear", "label": "Employee situation is unclear", "points": 12, "trigger_flag": True}
+                {"value": "green", "label": "Yes, ADA responsibilities and costs are clearly assigned.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "I'm not sure if the lease addresses ADA compliance.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No, ADA compliance is not addressed in the lease.", "points": 1, "trigger_flag": True}
             ],
-            "module": "acquisition"
+            "module": "lease"
         },
         {
-            "id": "acq_8",
-            "text": "Is there a non-compete agreement with the seller?",
+            "id": "lease_17",
+            "text": "Are there any restrictions in your lease on how you can use the space that could limit your current operations or future business changes?",
             "options": [
-                {"value": "strong", "label": "Yes, reasonable non-compete in place", "points": 0, "trigger_flag": False},
-                {"value": "weak", "label": "Non-compete is limited or weak", "points": 8, "trigger_flag": False},
-                {"value": "none", "label": "No non-compete agreement", "points": 15, "trigger_flag": True}
+                {"value": "green", "label": "No, my permitted use is broad enough for my business needs.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "I'm not sure what use restrictions exist.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "Yes, my use is restricted in ways that could limit me.", "points": 1, "trigger_flag": True}
             ],
-            "module": "acquisition"
+            "module": "lease"
         },
         {
-            "id": "acq_9",
-            "text": "How is the purchase being financed?",
+            "id": "lease_18",
+            "text": "Does your lease clearly outline your signage rights, including size, placement, and approval requirements?",
             "options": [
-                {"value": "cash", "label": "All cash at closing", "points": 0, "trigger_flag": False},
-                {"value": "bank_loan", "label": "Bank financing in place", "points": 2, "trigger_flag": False},
-                {"value": "seller_finance", "label": "Seller financing involved", "points": 5, "trigger_flag": False},
-                {"value": "not_secured", "label": "Financing not yet secured", "points": 12, "trigger_flag": True}
+                {"value": "green", "label": "Yes, signage terms are clearly documented.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "I'm not sure what signage rights I have.", "points": 2, "trigger_flag": False},
+                {"value": "yellow2", "label": "No, signage was never addressed.", "points": 2, "trigger_flag": False}
             ],
-            "module": "acquisition"
+            "module": "lease"
         },
         {
-            "id": "acq_10",
-            "text": "Have you reviewed tax implications with a CPA or tax attorney?",
+            "id": "lease_19",
+            "text": "If you are in a multi-tenant property or shopping center, does your lease include a co-tenancy clause?",
             "options": [
-                {"value": "yes", "label": "Yes, tax planning completed", "points": 0, "trigger_flag": False},
-                {"value": "in_progress", "label": "Currently reviewing", "points": 5, "trigger_flag": False},
-                {"value": "no", "label": "Haven't consulted tax professionals", "points": 12, "trigger_flag": True}
+                {"value": "green", "label": "Yes, I have co-tenancy protections.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "I'm not sure, or this doesn't apply to my location.", "points": 2, "trigger_flag": False},
+                {"value": "yellow2", "label": "No, there is no co-tenancy clause.", "points": 2, "trigger_flag": False}
             ],
-            "module": "acquisition"
+            "module": "lease"
+        },
+        {
+            "id": "lease_20",
+            "text": "Overall, when was the last time you or an attorney thoroughly reviewed your entire commercial lease?",
+            "options": [
+                {"value": "green", "label": "Within the past year.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "More than a year ago, or only parts of it.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "I have never had it professionally reviewed.", "points": 1, "trigger_flag": True}
+            ],
+            "module": "lease"
         }
     ],
     "ownership": [
         {
             "id": "own_1",
-            "text": "Does your business have a formal operating agreement, partnership agreement, or shareholders agreement?",
+            "text": "Does your business have a written ownership agreement (operating agreement, partnership agreement, or shareholders agreement) signed by all owners?",
             "options": [
-                {"value": "yes_current", "label": "Yes, comprehensive and recently reviewed", "points": 0, "trigger_flag": False},
-                {"value": "yes_old", "label": "Yes, but it's outdated", "points": 8, "trigger_flag": False},
-                {"value": "basic", "label": "Basic template agreement only", "points": 10, "trigger_flag": False},
-                {"value": "none", "label": "No formal agreement", "points": 20, "trigger_flag": True}
+                {"value": "green", "label": "Yes, we have a signed written agreement.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "We have a draft or template but it was never finalized or signed.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No, we have no written agreement.", "points": 1, "trigger_flag": True}
             ],
             "module": "ownership"
         },
         {
             "id": "own_2",
-            "text": "Is there a buy-sell agreement in place?",
+            "text": "Does your agreement clearly document each owner's percentage of ownership, capital contributions, and how profits and losses are divided?",
             "options": [
-                {"value": "yes_funded", "label": "Yes, funded with life insurance", "points": 0, "trigger_flag": False},
-                {"value": "yes_unfunded", "label": "Yes, but not funded", "points": 5, "trigger_flag": False},
-                {"value": "partial", "label": "Some provisions, but not comprehensive", "points": 10, "trigger_flag": False},
-                {"value": "none", "label": "No buy-sell provisions", "points": 18, "trigger_flag": True}
+                {"value": "green", "label": "Yes, all ownership percentages and financial terms are clearly documented.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "Ownership percentages are documented, but the financial details are vague.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No, or we only have a verbal understanding.", "points": 1, "trigger_flag": True}
             ],
             "module": "ownership"
         },
         {
             "id": "own_3",
-            "text": "How are major business decisions made?",
+            "text": "Are each owner's roles, responsibilities, and decision-making authority clearly defined in writing?",
             "options": [
-                {"value": "clear_process", "label": "Clear voting/approval process documented", "points": 0, "trigger_flag": False},
-                {"value": "informal", "label": "Informal consensus, not documented", "points": 8, "trigger_flag": False},
-                {"value": "one_person", "label": "One person makes all decisions", "points": 5, "trigger_flag": False},
-                {"value": "unclear", "label": "No clear decision-making process", "points": 15, "trigger_flag": True}
+                {"value": "green", "label": "Yes, roles and authority are clearly documented.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "We have general roles but nothing formal in writing.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No, we just figure it out as we go.", "points": 1, "trigger_flag": True}
             ],
             "module": "ownership"
         },
         {
             "id": "own_4",
-            "text": "What happens if an owner wants to leave or sell their interest?",
+            "text": "Does your agreement specify voting rights and what percentage of owner approval is needed for major decisions (selling the business, taking on debt, adding a partner)?",
             "options": [
-                {"value": "clear_process", "label": "Clear exit process with valuation method", "points": 0, "trigger_flag": False},
-                {"value": "some_provisions", "label": "Some provisions, but not comprehensive", "points": 8, "trigger_flag": False},
-                {"value": "nothing", "label": "No exit provisions in place", "points": 18, "trigger_flag": True}
+                {"value": "green", "label": "Yes, voting thresholds for major decisions are clearly defined.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "We have some decision-making rules, but major decisions aren't clearly addressed.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No, we have no formal voting or decision-making process.", "points": 1, "trigger_flag": True}
             ],
             "module": "ownership"
         },
         {
             "id": "own_5",
-            "text": "Is there a defined method for valuing the business or ownership interests?",
+            "text": "Does your agreement include a buy-sell (buyout) provision that explains how an owner's interest is valued and transferred if they want to leave?",
             "options": [
-                {"value": "formula", "label": "Yes, clear formula or process defined", "points": 0, "trigger_flag": False},
-                {"value": "appraiser", "label": "Agreement requires third-party appraisal", "points": 3, "trigger_flag": False},
-                {"value": "negotiate", "label": "Owners would negotiate at the time", "points": 10, "trigger_flag": False},
-                {"value": "none", "label": "No valuation method defined", "points": 15, "trigger_flag": True}
+                {"value": "green", "label": "Yes, we have a clear buyout process with a valuation method.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "We have a general buyout provision, but the details are vague.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No, we have no buyout provision.", "points": 1, "trigger_flag": True}
             ],
             "module": "ownership"
         },
         {
             "id": "own_6",
-            "text": "What happens if an owner dies or becomes disabled?",
+            "text": "Does your buy-sell provision address specific triggering events such as death, disability, divorce, voluntary departure, and termination for cause?",
             "options": [
-                {"value": "clear_succession", "label": "Clear succession plan with funding", "points": 0, "trigger_flag": False},
-                {"value": "some_plan", "label": "Some provisions, but not fully planned", "points": 8, "trigger_flag": False},
-                {"value": "family_inherits", "label": "Family would inherit, no specific plan", "points": 12, "trigger_flag": True},
-                {"value": "nothing", "label": "No plan in place", "points": 18, "trigger_flag": True}
+                {"value": "green", "label": "Yes, all major triggering events are addressed.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "Some events are addressed, but not all.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No, triggering events are not specified, or we have no buyout provision.", "points": 1, "trigger_flag": True}
             ],
             "module": "ownership"
         },
         {
             "id": "own_7",
-            "text": "Are owner responsibilities and compensation clearly defined?",
+            "text": "Does your agreement include a method for determining the value of an ownership interest (formula, appraisal process, etc.)?",
             "options": [
-                {"value": "clear", "label": "Yes, roles and compensation documented", "points": 0, "trigger_flag": False},
-                {"value": "informal", "label": "Informal understanding, not documented", "points": 8, "trigger_flag": False},
-                {"value": "disputes", "label": "Has caused disputes in the past", "points": 15, "trigger_flag": True},
-                {"value": "unclear", "label": "Not clearly defined", "points": 12, "trigger_flag": True}
+                {"value": "green", "label": "Yes, there is a clear valuation formula or process.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "The agreement mentions valuation but doesn't specify a method.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No, there is no valuation method.", "points": 1, "trigger_flag": True}
             ],
             "module": "ownership"
         },
         {
             "id": "own_8",
-            "text": "Can an owner bring in a new partner or transfer interest to family?",
+            "text": "Does your agreement include a right of first refusal that requires owners to offer their interest to existing owners before selling to an outsider?",
             "options": [
-                {"value": "restricted", "label": "Requires approval, right of first refusal", "points": 0, "trigger_flag": False},
-                {"value": "some_restrictions", "label": "Some restrictions, not comprehensive", "points": 5, "trigger_flag": False},
-                {"value": "no_restrictions", "label": "No restrictions on transfers", "points": 15, "trigger_flag": True}
+                {"value": "green", "label": "Yes, we have a right of first refusal.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "I'm not sure if this is included.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No, any owner can sell to anyone.", "points": 1, "trigger_flag": True}
             ],
             "module": "ownership"
         },
         {
             "id": "own_9",
-            "text": "Is there a dispute resolution process defined?",
+            "text": "Does your agreement include non-compete and non-solicitation provisions that apply if an owner leaves the business?",
             "options": [
-                {"value": "mediation_arb", "label": "Yes, mediation then arbitration process", "points": 0, "trigger_flag": False},
-                {"value": "some_process", "label": "Some process defined", "points": 5, "trigger_flag": False},
-                {"value": "litigation", "label": "Would go straight to litigation", "points": 10, "trigger_flag": False},
-                {"value": "none", "label": "No dispute process defined", "points": 12, "trigger_flag": True}
+                {"value": "green", "label": "Yes, departing owners are restricted from competing and soliciting clients/employees.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "We have some restrictions, but they may not be comprehensive.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No, there are no non-compete or non-solicitation protections.", "points": 1, "trigger_flag": True}
             ],
             "module": "ownership"
         },
         {
             "id": "own_10",
-            "text": "How many owners/partners does your business have?",
+            "text": "Does your agreement address what happens to an owner's interest if they pass away?",
             "options": [
-                {"value": "sole", "label": "Just me (sole owner)", "points": 0, "trigger_flag": False},
-                {"value": "two", "label": "Two owners (50/50 or similar)", "points": 5, "trigger_flag": False},
-                {"value": "three_plus", "label": "Three or more owners", "points": 3, "trigger_flag": False},
-                {"value": "complex", "label": "Complex ownership structure", "points": 8, "trigger_flag": False}
+                {"value": "green", "label": "Yes, the agreement specifies how a deceased owner's interest is handled.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "I think it's addressed, but I'm not sure of the details.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No, death is not addressed in the agreement.", "points": 1, "trigger_flag": True}
             ],
             "module": "ownership"
+        },
+        {
+            "id": "own_11",
+            "text": "Does your agreement define what constitutes disability and what happens to a disabled owner's interest and responsibilities?",
+            "options": [
+                {"value": "green", "label": "Yes, disability is defined and provisions are in place.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "I'm not sure if disability is addressed.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No, disability is not addressed.", "points": 1, "trigger_flag": True}
+            ],
+            "module": "ownership"
+        },
+        {
+            "id": "own_12",
+            "text": "Does your agreement protect the business in the event of an owner's divorce?",
+            "options": [
+                {"value": "green", "label": "Yes, there are provisions preventing a spouse from claiming business interest.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "I'm not sure if divorce scenarios are addressed.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No, there are no divorce protections.", "points": 1, "trigger_flag": True}
+            ],
+            "module": "ownership"
+        },
+        {
+            "id": "own_13",
+            "text": "Does your agreement include a process for resolving deadlocks when owners cannot agree on a decision?",
+            "options": [
+                {"value": "green", "label": "Yes, there is a formal deadlock resolution process.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "I'm not sure if this is addressed.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No, there is no deadlock resolution mechanism.", "points": 1, "trigger_flag": True}
+            ],
+            "module": "ownership"
+        },
+        {
+            "id": "own_14",
+            "text": "Does your agreement specify how and when owners can take distributions from the business?",
+            "options": [
+                {"value": "green", "label": "Yes, distribution rules are clearly documented.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "We take distributions, but the rules aren't formally documented.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No, we have no formal distribution policy.", "points": 1, "trigger_flag": True}
+            ],
+            "module": "ownership"
+        },
+        {
+            "id": "own_15",
+            "text": "Does your agreement include confidentiality provisions protecting proprietary business information?",
+            "options": [
+                {"value": "green", "label": "Yes, all owners are bound by confidentiality obligations.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "I'm not sure if confidentiality is addressed.", "points": 2, "trigger_flag": False},
+                {"value": "yellow2", "label": "No, there are no confidentiality provisions.", "points": 2, "trigger_flag": False}
+            ],
+            "module": "ownership"
+        },
+        {
+            "id": "own_16",
+            "text": "Does your agreement include indemnification provisions that protect individual owners from liability caused by another owner's actions?",
+            "options": [
+                {"value": "green", "label": "Yes, indemnification provisions are in place.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "I'm not sure if indemnification is addressed.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No, there are no indemnification provisions.", "points": 1, "trigger_flag": True}
+            ],
+            "module": "ownership"
+        },
+        {
+            "id": "own_17",
+            "text": "Does your agreement address how new owners or members can be admitted to the business?",
+            "options": [
+                {"value": "green", "label": "Yes, the admission process and approval requirements are documented.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "I'm not sure if this is addressed.", "points": 2, "trigger_flag": False},
+                {"value": "yellow2", "label": "No, there is no admission process.", "points": 2, "trigger_flag": False}
+            ],
+            "module": "ownership"
+        },
+        {
+            "id": "own_18",
+            "text": "Does your agreement include provisions for capital calls and what happens if an owner cannot contribute additional funds when needed?",
+            "options": [
+                {"value": "green", "label": "Yes, capital call procedures and consequences are clearly defined.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "I'm not sure if capital calls are addressed.", "points": 2, "trigger_flag": False},
+                {"value": "yellow2", "label": "No, there are no capital call provisions.", "points": 2, "trigger_flag": False}
+            ],
+            "module": "ownership"
+        },
+        {
+            "id": "own_19",
+            "text": "Does your agreement include a dispute resolution clause specifying how internal conflicts will be handled?",
+            "options": [
+                {"value": "green", "label": "Yes, dispute resolution (mediation, arbitration, etc.) is specified.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "I'm not sure if this is addressed.", "points": 2, "trigger_flag": False},
+                {"value": "yellow2", "label": "No, there is no dispute resolution process.", "points": 2, "trigger_flag": False}
+            ],
+            "module": "ownership"
+        },
+        {
+            "id": "own_20",
+            "text": "When was the last time your ownership agreement was reviewed and updated to reflect current operations?",
+            "options": [
+                {"value": "green", "label": "Within the past two years.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "More than two years ago.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "It has never been updated, or I don't know.", "points": 1, "trigger_flag": True}
+            ],
+            "module": "ownership"
+        }
+    ],
+    "acquisition": [
+        {
+            "id": "acq_1",
+            "text": "Do you understand whether you are making an asset purchase or a stock/membership interest purchase, and have you discussed the legal and tax implications with a professional?",
+            "options": [
+                {"value": "green", "label": "Yes, I understand the structure and have consulted a professional.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "I have a general idea but haven't received professional guidance.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No, I'm not sure what type of purchase this is.", "points": 1, "trigger_flag": True}
+            ],
+            "module": "acquisition"
+        },
+        {
+            "id": "acq_2",
+            "text": "Has comprehensive due diligence been conducted, including a review of financial records, tax returns (at least 3 years), debts, litigation, and regulatory compliance?",
+            "options": [
+                {"value": "green", "label": "Yes, thorough due diligence has been completed.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "Some due diligence has been done, but it may not be complete.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No, or I am relying on the seller's word.", "points": 1, "trigger_flag": True}
+            ],
+            "module": "acquisition"
+        },
+        {
+            "id": "acq_3",
+            "text": "Have all existing contracts, leases, and vendor agreements been reviewed, and have you confirmed they can be legally transferred to you?",
+            "options": [
+                {"value": "green", "label": "Yes, all agreements have been reviewed and confirmed as transferable.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "I've reviewed some agreements but not all.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No, I haven't reviewed existing contracts for transferability.", "points": 1, "trigger_flag": True}
+            ],
+            "module": "acquisition"
+        },
+        {
+            "id": "acq_4",
+            "text": "Has all intellectual property (trademarks, trade names, patents, domains, social media accounts) been documented and confirmed to transfer with the sale?",
+            "options": [
+                {"value": "green", "label": "Yes, all IP is documented and included in the purchase agreement.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "I've discussed IP but not everything is formally documented.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No, IP hasn't been addressed or I'm not sure what IP the business owns.", "points": 1, "trigger_flag": True}
+            ],
+            "module": "acquisition"
+        },
+        {
+            "id": "acq_5",
+            "text": "Have you checked for any existing or pending lawsuits against the business, and does the purchase agreement specify who is responsible for them?",
+            "options": [
+                {"value": "green", "label": "Yes, I've verified litigation status and responsibility is assigned in the agreement.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "I asked the seller verbally but haven't verified independently.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No, I haven't checked for pending or existing litigation.", "points": 1, "trigger_flag": True}
+            ],
+            "module": "acquisition"
+        },
+        {
+            "id": "acq_6",
+            "text": "Have all employee-related matters been addressed, including employment agreements, non-competes, benefits obligations, and potential notification requirements?",
+            "options": [
+                {"value": "green", "label": "Yes, all employee matters are documented and accounted for.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "I'm aware of the employees but haven't reviewed all the details.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No, employee matters have not been formally addressed.", "points": 1, "trigger_flag": True}
+            ],
+            "module": "acquisition"
+        },
+        {
+            "id": "acq_7",
+            "text": "Have all required government permits, licenses, and regulatory approvals been identified, and have you confirmed they are transferable?",
+            "options": [
+                {"value": "green", "label": "Yes, all permits and licenses have been verified and confirmed transferable.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "I know some permits are needed but haven't confirmed transferability.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No, I haven't reviewed permits or licensing requirements.", "points": 1, "trigger_flag": True}
+            ],
+            "module": "acquisition"
+        },
+        {
+            "id": "acq_8",
+            "text": "Does the purchase agreement include detailed representations and warranties from the seller about the condition and legal standing of the business?",
+            "options": [
+                {"value": "green", "label": "Yes, the agreement includes comprehensive representations and warranties.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "There are some reps and warranties, but they may be limited.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No, or I'm not sure what representations the seller has made.", "points": 1, "trigger_flag": True}
+            ],
+            "module": "acquisition"
+        },
+        {
+            "id": "acq_9",
+            "text": "Does the agreement include an indemnification clause that protects you if the seller's representations turn out to be false or if undisclosed liabilities surface?",
+            "options": [
+                {"value": "green", "label": "Yes, indemnification provisions are in place with clear terms.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "There is some indemnification language but I'm not sure it's adequate.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No, there is no indemnification clause.", "points": 1, "trigger_flag": True}
+            ],
+            "module": "acquisition"
+        },
+        {
+            "id": "acq_10",
+            "text": "Does the deal include an escrow or holdback provision to cover any post-closing adjustments or undisclosed liabilities?",
+            "options": [
+                {"value": "green", "label": "Yes, funds are being held in escrow for a defined period.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "We discussed escrow but it's not finalized.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No, the full purchase price is being paid at closing with no holdback.", "points": 1, "trigger_flag": True}
+            ],
+            "module": "acquisition"
+        },
+        {
+            "id": "acq_11",
+            "text": "Does the seller have a non-compete agreement preventing them from starting or joining a competing business after the sale?",
+            "options": [
+                {"value": "green", "label": "Yes, a non-compete with clear terms (duration, geography, scope) is included.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "We've discussed it verbally but it's not in the agreement yet.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No, there is no non-compete agreement with the seller.", "points": 1, "trigger_flag": True}
+            ],
+            "module": "acquisition"
+        },
+        {
+            "id": "acq_12",
+            "text": "Does the purchase agreement address the transition period, including the seller's cooperation, training, and client introductions?",
+            "options": [
+                {"value": "green", "label": "Yes, transition terms including timeline and seller obligations are documented.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "We've discussed a transition but it's informal.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No, there is no formal transition plan.", "points": 1, "trigger_flag": True}
+            ],
+            "module": "acquisition"
+        },
+        {
+            "id": "acq_13",
+            "text": "Does the agreement include clear closing conditions and a timeline for what must happen before the sale is finalized?",
+            "options": [
+                {"value": "green", "label": "Yes, closing conditions and timeline are clearly defined.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "We have a general timeline but conditions are not all documented.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No, closing conditions are not specified.", "points": 1, "trigger_flag": True}
+            ],
+            "module": "acquisition"
+        },
+        {
+            "id": "acq_14",
+            "text": "Has a qualified tax professional reviewed the deal structure and the allocation of the purchase price among assets?",
+            "options": [
+                {"value": "green", "label": "Yes, a tax professional has reviewed the structure and allocation.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "I plan to but haven't done it yet.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No, I haven't consulted a tax professional.", "points": 1, "trigger_flag": True}
+            ],
+            "module": "acquisition"
+        },
+        {
+            "id": "acq_15",
+            "text": "Have environmental liabilities been investigated, especially if the business involves real property, manufacturing, or hazardous materials?",
+            "options": [
+                {"value": "green", "label": "Yes, environmental due diligence has been completed.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "I'm not sure if environmental issues apply to this business.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No, environmental liabilities have not been investigated.", "points": 1, "trigger_flag": True}
+            ],
+            "module": "acquisition"
+        },
+        {
+            "id": "acq_16",
+            "text": "Have you checked whether key customer or vendor contracts include change-of-control provisions that could be triggered by the sale?",
+            "options": [
+                {"value": "green", "label": "Yes, all key contracts have been reviewed for change-of-control clauses.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "I've reviewed some contracts but not all.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No, I haven't checked for change-of-control provisions.", "points": 1, "trigger_flag": True}
+            ],
+            "module": "acquisition"
+        },
+        {
+            "id": "acq_17",
+            "text": "Have the business's financial statements been reviewed or audited by a qualified accountant?",
+            "options": [
+                {"value": "green", "label": "Yes, reviewed or audited financials have been provided and verified.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "I have financial statements but they are unaudited and unverified.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No, I'm relying on the seller's internal numbers.", "points": 1, "trigger_flag": True}
+            ],
+            "module": "acquisition"
+        },
+        {
+            "id": "acq_18",
+            "text": "Is your financing secured and are loan terms finalized?",
+            "options": [
+                {"value": "green", "label": "Yes, financing is fully approved and terms are locked.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "I'm in the process but financing is not yet finalized.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No, I haven't secured financing yet.", "points": 1, "trigger_flag": True}
+            ],
+            "module": "acquisition"
+        },
+        {
+            "id": "acq_19",
+            "text": "Have you reviewed any franchise agreements, licensing arrangements, or joint venture agreements that affect the business?",
+            "options": [
+                {"value": "green", "label": "Yes, all such agreements have been reviewed and transfer requirements are understood.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "I'm aware of some agreements but haven't reviewed them all.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No, or I'm not sure if such agreements exist.", "points": 1, "trigger_flag": True}
+            ],
+            "module": "acquisition"
+        },
+        {
+            "id": "acq_20",
+            "text": "Do you have a post-closing integration plan covering updated entity documents, bank accounts, insurance, and vendor notifications?",
+            "options": [
+                {"value": "green", "label": "Yes, a detailed integration plan is in place.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "I have a general idea but nothing formal.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No, I haven't planned for post-closing integration.", "points": 1, "trigger_flag": True}
+            ],
+            "module": "acquisition"
         }
     ]
 }
 
-# Risk descriptions for each module
+# Risk descriptions for each module - mapped to RED answer trigger flags
 RISK_DESCRIPTIONS = {
     "lease": {
-        "no_agreement": {"title": "No Written Lease Agreement", "description": "Operating without a written lease creates significant legal uncertainty and leaves you vulnerable to sudden changes."},
-        "personal_guarantee": {"title": "Personal Guarantee Exposure", "description": "An unlimited personal guarantee means your personal assets are at risk if the business can't pay rent."},
-        "no_assignment": {"title": "Transfer Restrictions", "description": "Without assignment rights, you may be stuck with the lease even if you need to sell or close the business."},
+        "personal_name": {"title": "Lease Under Personal Name", "description": "Signing a lease personally exposes your personal assets to business liabilities."},
+        "personal_guarantee": {"title": "Unlimited Personal Guarantee", "description": "An unlimited personal guarantee means your personal assets are at risk if the business can't pay rent."},
+        "unknown_costs": {"title": "Unknown Cost Exposure", "description": "Not understanding your total lease costs could lead to unexpected financial burdens."},
+        "no_cam_cap": {"title": "No CAM Cap", "description": "Without a cap on CAM increases, your costs could rise unpredictably each year."},
+        "unclear_terms": {"title": "Unclear Lease Terms", "description": "Not knowing your renewal deadlines or term length could result in losing your space."},
+        "no_assignment": {"title": "No Assignment Rights", "description": "Without assignment or sublease rights, you may be stuck with the lease if you need to exit."},
+        "no_early_termination": {"title": "No Early Termination Option", "description": "Without an early exit clause, you're locked in regardless of business circumstances."},
         "unclear_maintenance": {"title": "Unclear Maintenance Responsibilities", "description": "Ambiguous repair obligations can lead to disputes and unexpected costs."},
-        "market_rate_increases": {"title": "Undefined Rent Increases", "description": "'Market rate' clauses can lead to unpredictable and significant rent jumps."},
-        "weak_default_terms": {"title": "Weak Default Protections", "description": "Without adequate notice and cure periods, minor issues could trigger major consequences."},
-        "unfair_indemnification": {"title": "One-Sided Indemnification", "description": "Being required to cover the landlord's negligence exposes you to unfair liability."},
-        "improvement_ownership": {"title": "Tenant Improvement Issues", "description": "Unclear ownership of improvements means you could lose significant investments."}
+        "no_rent_abatement": {"title": "No Rent Abatement", "description": "If the property is damaged, you could be paying rent while unable to operate."},
+        "verbal_promises": {"title": "Undocumented Promises", "description": "Verbal promises not in writing are unenforceable and can lead to disputes."},
+        "insurance_unknown": {"title": "Unknown Insurance Requirements", "description": "Not meeting lease insurance requirements could result in default."},
+        "ada_unclear": {"title": "ADA Compliance Unclear", "description": "Unclear ADA responsibilities could result in costly modifications or liability."},
+        "use_restrictions": {"title": "Restrictive Use Clauses", "description": "Use restrictions could limit your ability to adapt your business."},
+        "never_reviewed": {"title": "Lease Never Reviewed", "description": "A lease that's never been professionally reviewed may contain unfavorable terms."}
     },
     "acquisition": {
-        "no_diligence": {"title": "Inadequate Due Diligence", "description": "Without proper investigation, you may inherit unknown problems, debts, or liabilities."},
         "structure_unclear": {"title": "Unclear Deal Structure", "description": "Not understanding asset vs. stock purchase affects liability exposure and tax treatment."},
-        "unreviewed_contracts": {"title": "Unreviewed Contracts", "description": "Existing contracts may contain unfavorable terms or obligations you'll inherit."},
-        "no_reps_warranties": {"title": "Missing Representations & Warranties", "description": "Without seller guarantees, you have no recourse if problems are discovered later."},
-        "weak_indemnification": {"title": "Insufficient Buyer Protection", "description": "Weak indemnification leaves you paying for seller's past problems."},
-        "litigation_risk": {"title": "Unknown Litigation Risk", "description": "Undiscovered legal issues could become your responsibility post-closing."},
-        "employee_issues": {"title": "Employee Transition Uncertainty", "description": "Unclear employee arrangements can lead to HR problems and key talent loss."},
-        "no_noncompete": {"title": "No Seller Non-Compete", "description": "The seller could start a competing business and take customers."},
-        "financing_risk": {"title": "Financing Not Secured", "description": "Deal could fall through or require unfavorable last-minute terms."},
-        "tax_exposure": {"title": "Unplanned Tax Consequences", "description": "Poor structuring could result in significant unexpected tax bills."}
+        "no_diligence": {"title": "Inadequate Due Diligence", "description": "Without proper investigation, you may inherit unknown problems, debts, or liabilities."},
+        "unreviewed_contracts": {"title": "Unreviewed Contracts", "description": "Existing contracts may contain unfavorable terms or change-of-control provisions."},
+        "ip_not_documented": {"title": "IP Not Documented", "description": "Intellectual property that doesn't transfer properly could undermine your purchase."},
+        "litigation_unchecked": {"title": "Litigation Not Verified", "description": "Undiscovered legal issues could become your responsibility post-closing."},
+        "employee_issues": {"title": "Employee Matters Unaddressed", "description": "Unclear employee arrangements can lead to HR problems and compliance issues."},
+        "permits_not_verified": {"title": "Permits Not Verified", "description": "Non-transferable permits could prevent you from operating the business."},
+        "no_reps_warranties": {"title": "Missing Representations", "description": "Without seller guarantees, you have no recourse if problems are discovered later."},
+        "no_indemnification": {"title": "No Indemnification", "description": "Without indemnification, you pay for all of the seller's past problems."},
+        "no_escrow": {"title": "No Escrow Holdback", "description": "Paying full price at closing leaves no protection for undisclosed liabilities."},
+        "no_noncompete": {"title": "No Seller Non-Compete", "description": "The seller could start a competing business and take your customers."},
+        "no_transition": {"title": "No Transition Plan", "description": "Without a formal transition, you risk losing key relationships and knowledge."},
+        "no_closing_conditions": {"title": "No Closing Conditions", "description": "Unclear closing conditions could lead to disputes or failed transactions."},
+        "no_tax_review": {"title": "No Tax Professional Review", "description": "Poor structuring could result in significant unexpected tax bills."},
+        "environmental_risk": {"title": "Environmental Liability Risk", "description": "Uninvestigated environmental issues could result in massive cleanup costs."},
+        "financials_unverified": {"title": "Unverified Financials", "description": "Relying on seller's numbers without verification is extremely risky."},
+        "financing_not_secured": {"title": "Financing Not Secured", "description": "Unsecured financing could derail the deal or force unfavorable terms."},
+        "no_integration_plan": {"title": "No Integration Plan", "description": "Without post-closing planning, the transition could be chaotic and costly."}
     },
     "ownership": {
-        "no_operating_agreement": {"title": "No Operating/Partnership Agreement", "description": "Without a formal agreement, state default rules apply - which may not match your intentions."},
-        "no_buysell": {"title": "No Buy-Sell Agreement", "description": "Without exit provisions, partner departures can become contentious and costly disputes."},
-        "unclear_decisions": {"title": "Unclear Decision Authority", "description": "Ambiguous decision-making can lead to deadlock and operational paralysis."},
-        "no_exit_plan": {"title": "No Exit Provisions", "description": "Without defined exit terms, separating from the business becomes a negotiation nightmare."},
+        "no_agreement": {"title": "No Written Agreement", "description": "Without a formal agreement, state default rules apply - which may not match your intentions."},
+        "verbal_only": {"title": "Verbal Understanding Only", "description": "Verbal agreements are difficult to enforce and lead to disputes."},
+        "roles_undefined": {"title": "Roles Not Defined", "description": "Unclear roles and responsibilities lead to conflicts and inefficiency."},
+        "no_voting_process": {"title": "No Voting Process", "description": "Without clear decision-making rules, major decisions become contentious."},
+        "no_buyout": {"title": "No Buyout Provision", "description": "Without exit provisions, partner departures become costly disputes."},
+        "no_trigger_events": {"title": "Trigger Events Not Addressed", "description": "Death, disability, or divorce without provisions can destabilize the business."},
         "no_valuation": {"title": "No Valuation Method", "description": "Disputes over business value can derail buyouts and create expensive litigation."},
-        "no_succession": {"title": "No Succession Plan", "description": "Death or disability without a plan can force liquidation or family disputes."},
-        "compensation_disputes": {"title": "Compensation Ambiguity", "description": "Unclear roles and pay lead to resentment and partnership breakdowns."},
-        "unrestricted_transfers": {"title": "No Transfer Restrictions", "description": "Partners could bring in unwanted new owners or transfer to family without consent."},
-        "no_dispute_process": {"title": "No Dispute Resolution", "description": "Going straight to litigation is expensive and damages business relationships."}
+        "no_rofr": {"title": "No Right of First Refusal", "description": "Owners could sell to outsiders without giving partners a chance to buy."},
+        "no_noncompete": {"title": "No Non-Compete Protection", "description": "Departing owners could compete directly against the business."},
+        "death_not_addressed": {"title": "Death Not Addressed", "description": "A deceased owner's interest going to heirs could disrupt business operations."},
+        "disability_not_addressed": {"title": "Disability Not Addressed", "description": "A disabled owner's situation needs clear provisions for business continuity."},
+        "divorce_not_addressed": {"title": "Divorce Not Addressed", "description": "Without protection, a divorcing spouse could claim business ownership."},
+        "no_deadlock_resolution": {"title": "No Deadlock Resolution", "description": "When owners can't agree, without a process the business can become paralyzed."},
+        "no_distribution_policy": {"title": "No Distribution Policy", "description": "Unclear distribution rules lead to disputes about taking money from the business."},
+        "no_indemnification": {"title": "No Owner Indemnification", "description": "Without protection, one owner's actions could create liability for all."},
+        "never_updated": {"title": "Agreement Never Updated", "description": "An outdated agreement may not reflect current operations or ownership."}
     }
 }
 
@@ -498,58 +799,69 @@ RISK_DESCRIPTIONS = {
 
 def calculate_score_and_risks(answers: List[AssessmentAnswer], modules: List[str]) -> Dict[str, Any]:
     total_score = sum(a.points for a in answers)
-    
-    # Calculate max possible score based on questions answered
-    max_score = 0
-    for module in modules:
-        for q in QUESTIONS.get(module, []):
-            max_points = max(opt.get("points", 0) for opt in q["options"])
-            max_score += max_points
-    
-    # Collect trigger flags
+
+    # Calculate max possible score (20 questions per module x 3 points = 60 per module)
+    max_score = len(modules) * 60  # 60 points max per category
+
+    # Collect trigger flags (RED answers on critical items)
     trigger_flags = []
     for answer in answers:
         if answer.trigger_flag:
             trigger_flags.append(answer.question_id)
-    
-    # Calculate percentage
+
+    # Calculate percentage for display
     score_percentage = (total_score / max_score * 100) if max_score > 0 else 0
-    
-    # Determine risk level
-    if score_percentage >= 60 or len(trigger_flags) >= 3:
-        risk_level = "red"
-    elif score_percentage >= 30 or len(trigger_flags) >= 1:
+
+    # Determine risk level based on new scoring:
+    # Per category (20 questions): 50-60 = GREEN, 35-49 = YELLOW, 20-34 = RED
+    # For single module: score >= 50 = GREEN, 35-49 = YELLOW, < 35 = RED
+    # For multiple modules, calculate average per module
+    avg_score_per_module = total_score / len(modules) if modules else 0
+
+    if avg_score_per_module >= 50:
+        risk_level = "green"
+    elif avg_score_per_module >= 35:
         risk_level = "yellow"
     else:
-        risk_level = "green"
+        risk_level = "red"
+
+    # Override to yellow/red if there are critical RED answers (trigger flags)
+    if len(trigger_flags) >= 3 and risk_level == "green":
+        risk_level = "yellow"
+    if len(trigger_flags) >= 5:
+        risk_level = "red"
     
-    # Identify top risks based on high-point answers
+    # Identify top risks based on low-point answers (RED = 1 point is worst)
     top_risks = []
-    sorted_answers = sorted(answers, key=lambda x: x.points, reverse=True)
-    
+    # Sort by points ascending (lowest/worst first)
+    sorted_answers = sorted(answers, key=lambda x: x.points)
+
     for answer in sorted_answers[:7]:  # Top 7 risks
-        if answer.points >= 5:  # Only include significant risks
+        if answer.points <= 2:  # Only include YELLOW (2) and RED (1) answers
             question_id = answer.question_id
             module = question_id.split("_")[0]
             if module == "acq":
                 module = "acquisition"
-            
+            elif module == "own":
+                module = "ownership"
+
             # Map question to risk description
-            risk_key = get_risk_key(question_id, answer.answer_value)
+            risk_key = get_risk_key(question_id)
             if risk_key and risk_key in RISK_DESCRIPTIONS.get(module, {}):
                 risk_info = RISK_DESCRIPTIONS[module][risk_key]
                 top_risks.append({
                     "title": risk_info["title"],
                     "description": risk_info["description"],
-                    "severity": "high" if answer.trigger_flag else "medium",
+                    "severity": "high" if answer.points == 1 else "medium",
                     "module": module
                 })
     
     # Generate action plan
     action_plan = generate_action_plan(top_risks, risk_level, modules)
-    
-    # Calculate confidence level (inverse of risk)
-    confidence = max(20, 100 - int(score_percentage) - (len(trigger_flags) * 10))
+
+    # Calculate confidence level based on score percentage
+    # Higher score = higher confidence
+    confidence = int(score_percentage) - (len(trigger_flags) * 5)
     
     return {
         "total_score": total_score,
@@ -562,41 +874,67 @@ def calculate_score_and_risks(answers: List[AssessmentAnswer], modules: List[str
         "confidence_level": min(100, max(10, confidence))
     }
 
-def get_risk_key(question_id: str, answer_value: str) -> Optional[str]:
-    """Map question answers to risk descriptions"""
+def get_risk_key(question_id: str) -> Optional[str]:
+    """Map question IDs to risk description keys"""
     mappings = {
-        "lease_1": {"no": "no_agreement"},
-        "lease_2": {"unlimited": "personal_guarantee", "unsure": "personal_guarantee"},
-        "lease_3": {"no_assignment": "no_assignment"},
-        "lease_4": {"unclear": "unclear_maintenance"},
-        "lease_5": {"market_rate": "market_rate_increases"},
-        "lease_6": {"immediate": "weak_default_terms", "unsure": "weak_default_terms"},
-        "lease_7": {"broad_tenant": "unfair_indemnification"},
-        "lease_10": {"yes_unclear": "improvement_ownership"},
-        "acq_1": {"minimal": "no_diligence", "none": "no_diligence"},
-        "acq_2": {"unsure": "structure_unclear"},
-        "acq_3": {"not_reviewed": "unreviewed_contracts"},
-        "acq_4": {"none": "no_reps_warranties", "unsure": "no_reps_warranties"},
-        "acq_5": {"weak": "weak_indemnification", "none": "weak_indemnification"},
-        "acq_6": {"relied_seller": "litigation_risk", "not_checked": "litigation_risk"},
-        "acq_7": {"unclear": "employee_issues"},
-        "acq_8": {"none": "no_noncompete"},
-        "acq_9": {"not_secured": "financing_risk"},
-        "acq_10": {"no": "tax_exposure"},
-        "own_1": {"none": "no_operating_agreement"},
-        "own_2": {"none": "no_buysell"},
-        "own_3": {"unclear": "unclear_decisions"},
-        "own_4": {"nothing": "no_exit_plan"},
-        "own_5": {"none": "no_valuation"},
-        "own_6": {"nothing": "no_succession", "family_inherits": "no_succession"},
-        "own_7": {"disputes": "compensation_disputes", "unclear": "compensation_disputes"},
-        "own_8": {"no_restrictions": "unrestricted_transfers"},
-        "own_9": {"none": "no_dispute_process"}
+        # Lease questions
+        "lease_1": "personal_name",
+        "lease_2": "unknown_costs",
+        "lease_3": "personal_guarantee",
+        "lease_4": "unknown_costs",
+        "lease_5": "no_cam_cap",
+        "lease_6": "unclear_terms",
+        "lease_7": "no_assignment",
+        "lease_8": "no_early_termination",
+        "lease_9": "unclear_maintenance",
+        "lease_10": "no_rent_abatement",
+        "lease_11": "verbal_promises",
+        "lease_13": "insurance_unknown",
+        "lease_16": "ada_unclear",
+        "lease_17": "use_restrictions",
+        "lease_20": "never_reviewed",
+        # Acquisition questions
+        "acq_1": "structure_unclear",
+        "acq_2": "no_diligence",
+        "acq_3": "unreviewed_contracts",
+        "acq_4": "ip_not_documented",
+        "acq_5": "litigation_unchecked",
+        "acq_6": "employee_issues",
+        "acq_7": "permits_not_verified",
+        "acq_8": "no_reps_warranties",
+        "acq_9": "no_indemnification",
+        "acq_10": "no_escrow",
+        "acq_11": "no_noncompete",
+        "acq_12": "no_transition",
+        "acq_13": "no_closing_conditions",
+        "acq_14": "no_tax_review",
+        "acq_15": "environmental_risk",
+        "acq_16": "unreviewed_contracts",
+        "acq_17": "financials_unverified",
+        "acq_18": "financing_not_secured",
+        "acq_19": "unreviewed_contracts",
+        "acq_20": "no_integration_plan",
+        # Ownership questions
+        "own_1": "no_agreement",
+        "own_2": "verbal_only",
+        "own_3": "roles_undefined",
+        "own_4": "no_voting_process",
+        "own_5": "no_buyout",
+        "own_6": "no_trigger_events",
+        "own_7": "no_valuation",
+        "own_8": "no_rofr",
+        "own_9": "no_noncompete",
+        "own_10": "death_not_addressed",
+        "own_11": "disability_not_addressed",
+        "own_12": "divorce_not_addressed",
+        "own_13": "no_deadlock_resolution",
+        "own_14": "no_distribution_policy",
+        "own_15": "no_agreement",
+        "own_16": "no_indemnification",
+        "own_20": "never_updated"
     }
-    
-    if question_id in mappings and answer_value in mappings[question_id]:
-        return mappings[question_id][answer_value]
-    return None
+
+    return mappings.get(question_id)
 
 def generate_action_plan(top_risks: List[Dict], risk_level: str, modules: List[str]) -> List[Dict[str, Any]]:
     """Generate prioritized action plan based on risks"""
