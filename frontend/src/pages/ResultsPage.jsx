@@ -420,12 +420,11 @@ export default function ResultsPage() {
             <DialogTitle className="font-heading text-xl">
               {leadSubmitted ? "Thank You!" : "Get Your Results & Schedule a Call"}
             </DialogTitle>
-            <DialogDescription>
-              {leadSubmitted
-                ? "We'll be in touch shortly to schedule your CLBH Review Call."
-                : "Fill in your details to receive your results by email and text message."
-              }
-            </DialogDescription>
+            {!leadSubmitted && (
+              <DialogDescription>
+                Fill in your details to receive your results by email and text message.
+              </DialogDescription>
+            )}
           </DialogHeader>
           
           {leadSubmitted ? (
@@ -434,15 +433,25 @@ export default function ResultsPage() {
                 <CheckCircle2 className="w-8 h-8 text-emerald-500" />
               </div>
               <p className="text-slate-600 mb-4">
-                Your information has been submitted. We'll reach out within 1 business day.
+                We have emailed and texted you your results. If you have any questions, you can schedule a free 15-minute CLBH consultation.
               </p>
-              <Button
-                onClick={() => setShowLeadCapture(false)}
-                className="bg-slate-900"
-                data-testid="close-success-btn"
-              >
-                Close
-              </Button>
+              <div className="flex flex-col gap-3">
+                <Button
+                  onClick={() => window.open('https://calendly.com/jeppsonlaw', '_blank')}
+                  className="bg-orange-500 hover:bg-orange-600"
+                  data-testid="schedule-consultation-btn"
+                >
+                  <Calendar className="w-4 h-4 mr-2" />
+                  Schedule Free Consultation
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowLeadCapture(false)}
+                  data-testid="close-success-btn"
+                >
+                  Close
+                </Button>
+              </div>
             </div>
           ) : (
             <form onSubmit={handleLeadSubmit} className="space-y-4">
