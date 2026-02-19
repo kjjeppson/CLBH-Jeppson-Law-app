@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { Shield, Building2, FileCheck, Users, ArrowRight, ArrowLeft, CheckCircle2 } from "lucide-react";
 
@@ -16,7 +15,7 @@ const modules = [
     description: "Assess potential risks within your commercial lease agreements—personal guarantees, assignment restrictions, default terms, and more.",
     icon: <Building2 className="w-8 h-8" />,
     questions: 10,
-    timeEstimate: "3-4 min"
+    timeEstimate: "3-5 min"
   },
   {
     id: "acquisition",
@@ -24,7 +23,7 @@ const modules = [
     description: "Identify risks associated with buying or selling business entities—due diligence gaps, representations, indemnification issues.",
     icon: <FileCheck className="w-8 h-8" />,
     questions: 10,
-    timeEstimate: "3-4 min"
+    timeEstimate: "3-5 min"
   },
   {
     id: "ownership",
@@ -32,35 +31,31 @@ const modules = [
     description: "Evaluate the clarity and completeness of your ownership and partnership agreements—buy-sell terms, decision authority, exit provisions.",
     icon: <Users className="w-8 h-8" />,
     questions: 10,
-    timeEstimate: "3-4 min"
+    timeEstimate: "3-5 min"
   }
 ];
 
 export default function ModuleSelection() {
   const navigate = useNavigate();
-  const [selectedModules, setSelectedModules] = useState([]);
+  const [selectedModule, setSelectedModule] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const toggleModule = (moduleId) => {
-    setSelectedModules(prev => 
-      prev.includes(moduleId)
-        ? prev.filter(id => id !== moduleId)
-        : [...prev, moduleId]
-    );
+  const selectModule = (moduleId) => {
+    setSelectedModule(prev => prev === moduleId ? null : moduleId);
   };
 
   const handleStartAssessment = async () => {
-    if (selectedModules.length === 0) {
-      toast.error("Please select at least one module to assess");
+    if (!selectedModule) {
+      toast.error("Please select a quiz to take");
       return;
     }
 
     setIsLoading(true);
     try {
       const response = await axios.post(`${API}/assessments`, {
-        modules: selectedModules
+        modules: [selectedModule]
       });
-      
+
       navigate(`/assessment/${response.data.id}`);
     } catch (error) {
       console.error("Error creating assessment:", error);
@@ -70,21 +65,19 @@ export default function ModuleSelection() {
     }
   };
 
-  const totalQuestions = selectedModules.reduce((acc, moduleId) => {
-    const module = modules.find(m => m.id === moduleId);
-    return acc + (module?.questions || 0);
-  }, 0);
-
-  const estimatedTime = selectedModules.length > 0 
-    ? `${selectedModules.length * 3}-${selectedModules.length * 4} minutes`
-    : "Select modules";
+  const selectedModuleData = modules.find(m => m.id === selectedModule);
+  const totalQuestions = selectedModuleData?.questions || 0;
+  const estimatedTime = selectedModuleData?.timeEstimate || "Select a quiz";
 
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Navigation */}
       <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-2">
+          <div
+            className="flex items-center gap-2 cursor-pointer"
+            onClick={() => navigate("/")}
+          >
             <Shield className="w-8 h-8 text-slate-900" />
             <span className="font-brand text-xl font-bold text-slate-900">
               Jeppsonlaw<span className="text-slate-500">, LLP</span>
@@ -106,38 +99,44 @@ export default function ModuleSelection() {
         {/* Header */}
         <div className="text-center mb-12">
           <h1 className="font-heading text-3xl md:text-4xl font-bold text-slate-900 mb-4">
-            Select Assessment Areas
+            Select a Quiz
           </h1>
           <p className="text-slate-600 text-lg max-w-2xl mx-auto">
-            Choose one or more areas of your business you'd like to assess. 
-            Each module focuses on specific agreement types and risk factors.
+            Choose an area of your business you'd like to assess.
+            After completing a quiz, you can return to take another.
           </p>
         </div>
 
         {/* Module Cards */}
         <div className="space-y-4 mb-8">
           {modules.map((module) => {
-            const isSelected = selectedModules.includes(module.id);
+            const isSelected = selectedModule === module.id;
             return (
-              <Card 
+              <Card
                 key={module.id}
                 className={`cursor-pointer transition-all duration-300 ${
-                  isSelected 
-                    ? 'border-slate-900 shadow-md ring-2 ring-slate-900/10' 
+                  isSelected
+                    ? 'border-slate-900 shadow-md ring-2 ring-slate-900/10'
                     : 'border-slate-200 hover:border-slate-300 hover:shadow-sm'
                 }`}
-                onClick={() => toggleModule(module.id)}
+                onClick={() => selectModule(module.id)}
                 data-testid={`module-card-${module.id}`}
               >
                 <CardContent className="p-6">
                   <div className="flex items-start gap-4">
                     <div className="flex items-center pt-1">
-                      <Checkbox 
-                        checked={isSelected}
-                        onCheckedChange={() => toggleModule(module.id)}
-                        className="h-5 w-5 data-[state=checked]:bg-slate-900"
-                        data-testid={`module-checkbox-${module.id}`}
-                      />
+                      <div
+                        className={`h-5 w-5 rounded-full border-2 flex items-center justify-center ${
+                          isSelected
+                            ? 'border-slate-900 bg-slate-900'
+                            : 'border-slate-300'
+                        }`}
+                        data-testid={`module-radio-${module.id}`}
+                      >
+                        {isSelected && (
+                          <div className="h-2 w-2 rounded-full bg-white" />
+                        )}
+                      </div>
                     </div>
                     <div className={`w-14 h-14 rounded-lg flex items-center justify-center flex-shrink-0 ${
                       isSelected ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700'
@@ -177,22 +176,26 @@ export default function ModuleSelection() {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <p className="text-slate-600 text-sm mb-1">
-                <span className="font-semibold text-slate-900">{selectedModules.length}</span> module{selectedModules.length !== 1 ? 's' : ''} selected
+                {selectedModule ? (
+                  <span className="font-semibold text-slate-900">{selectedModuleData?.title}</span>
+                ) : (
+                  <span className="text-slate-500">No quiz selected</span>
+                )}
               </p>
               <p className="text-slate-500 text-sm">
-                {totalQuestions > 0 
+                {selectedModule
                   ? `${totalQuestions} questions • Estimated time: ${estimatedTime}`
-                  : 'Select at least one module to continue'
+                  : 'Select a quiz to continue'
                 }
               </p>
             </div>
-            <Button 
+            <Button
               onClick={handleStartAssessment}
-              disabled={selectedModules.length === 0 || isLoading}
+              disabled={!selectedModule || isLoading}
               className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-6 text-lg font-semibold disabled:opacity-50"
               data-testid="start-assessment-btn"
             >
-              {isLoading ? "Starting..." : "Begin Assessment"}
+              {isLoading ? "Starting..." : "Begin Quiz"}
               <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
           </div>
