@@ -117,7 +117,7 @@ export default function AdminDashboard() {
               className="flex items-center gap-2 cursor-pointer"
               onClick={() => navigate("/")}
             >
-              <Shield className="w-8 h-8 text-blue-900 fill-blue-900" />
+              <Shield className="w-8 h-8 text-blue-900" />
               <span className="font-brand text-xl font-bold text-slate-900">
                 Jeppson Law<span className="text-slate-500">, LLP</span>
               </span>

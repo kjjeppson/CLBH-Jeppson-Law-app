@@ -128,7 +128,7 @@ export default function AssessmentWizard() {
       <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
           <div className="flex items-center gap-2">
-            <Shield className="w-8 h-8 text-blue-900 fill-blue-900" />
+            <Shield className="w-8 h-8 text-blue-900" />
             <span className="font-brand text-xl font-bold text-slate-900">
               Jeppson Law<span className="text-slate-500">, LLP</span>
             </span>

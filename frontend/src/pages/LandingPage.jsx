@@ -140,7 +140,7 @@ export default function LandingPage() {
             className="flex items-center gap-2 cursor-pointer"
             onClick={() => navigate("/")}
           >
-            <Shield className="w-8 h-8 text-blue-900 fill-blue-900" />
+            <Shield className="w-8 h-8 text-blue-900" />
             <span className="font-brand text-xl font-bold text-slate-900">
               Jeppson Law<span className="text-slate-500">, LLP</span>
             </span>
@@ -367,13 +367,13 @@ export default function LandingPage() {
       <footer className="py-8 bg-white border-t border-slate-200">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-2">
-            <Shield className="w-6 h-6 text-slate-900" />
+            <Shield className="w-6 h-6 text-blue-900" />
             <span className="font-brand text-lg font-semibold text-slate-900">
-              Jeppsonlaw<span className="text-slate-500">, LLP</span>
+              Jeppson Law<span className="text-slate-500">, LLP</span>
             </span>
           </div>
           <p className="text-slate-500 text-sm">
-            © {new Date().getFullYear()} Jeppsonlaw, LLP. All rights reserved.
+            © {new Date().getFullYear()} Jeppson Law, LLP. All rights reserved.
           </p>
         </div>
       </footer>
