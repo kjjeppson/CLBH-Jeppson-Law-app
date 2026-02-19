@@ -1,15 +1,104 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Shield, FileCheck, AlertTriangle, CheckCircle2, Clock, ArrowRight, Building2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { toast } from "sonner";
+import { Shield, FileCheck, AlertTriangle, CheckCircle2, Clock, ArrowRight, Building2, Calendar, Loader2 } from "lucide-react";
+
+const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+
+const US_STATES = [
+  "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut",
+  "Delaware", "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa",
+  "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland", "Massachusetts", "Michigan",
+  "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire",
+  "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio",
+  "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota",
+  "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia",
+  "Wisconsin", "Wyoming"
+];
+
+const SITUATIONS = [
+  "Reviewing a new lease",
+  "Renewing an existing lease",
+  "Planning a business acquisition",
+  "Currently in acquisition process",
+  "Starting a new partnership",
+  "Reviewing existing partnership agreement",
+  "General business health check",
+  "Addressing a specific concern",
+  "Other"
+];
 
 export default function LandingPage() {
   const navigate = useNavigate();
+  const [showLeadCapture, setShowLeadCapture] = useState(false);
+  const [isSubmittingLead, setIsSubmittingLead] = useState(false);
+  const [leadSubmitted, setLeadSubmitted] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    business_name: "",
+    state: "",
+    situation: ""
+  });
+
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleLeadSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!formData.name || !formData.email || !formData.phone || !formData.business_name || !formData.state || !formData.situation) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+
+    setIsSubmittingLead(true);
+    try {
+      await axios.post(`${API}/leads`, {
+        ...formData,
+        modules: [],
+        assessment_id: null
+      });
+
+      setLeadSubmitted(true);
+      toast.success("Information submitted successfully!");
+    } catch (error) {
+      console.error("Error submitting lead:", error);
+      toast.error("Failed to submit. Please try again.");
+    } finally {
+      setIsSubmittingLead(false);
+    }
+  };
+
+  const handleLeadDialogOpenChange = (open) => {
+    setShowLeadCapture(open);
+    if (!open) {
+      setLeadSubmitted(false);
+      setIsSubmittingLead(false);
+      setFormData({
+        name: "",
+        email: "",
+        phone: "",
+        business_name: "",
+        state: "",
+        situation: ""
+      });
+    }
+  };
 
   const benefits = [
     {
       icon: <Clock className="w-6 h-6" />,
-      title: "5-7 Minute Assessment",
+      title: "3-5 Minute Assessment",
       description: "Quick, focused questions to identify your key legal risks"
     },
     {
@@ -47,19 +136,32 @@ export default function LandingPage() {
       {/* Navigation */}
       <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <Shield className="w-8 h-8 text-slate-900" />
+          <div
+            className="flex items-center gap-2 cursor-pointer"
+            onClick={() => navigate("/")}
+          >
+            <Shield className="w-8 h-8 text-blue-900 fill-blue-900" />
             <span className="font-brand text-xl font-bold text-slate-900">
-              Jeppsonlaw<span className="text-slate-500">, LLP</span>
+              Jeppson Law<span className="text-slate-500">, LLP</span>
             </span>
           </div>
-          <Button 
-            onClick={() => navigate("/select-modules")}
-            className="bg-slate-900 hover:bg-slate-800"
-            data-testid="nav-start-checkup-btn"
-          >
-            Start Checkup
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => setShowLeadCapture(true)}
+              className="hidden sm:flex bg-orange-500 hover:bg-orange-600"
+              data-testid="nav-schedule-btn"
+            >
+              <Calendar className="w-4 h-4 mr-2" />
+              Schedule a CLBH Call
+            </Button>
+            <Button
+              onClick={() => navigate("/select-modules")}
+              className="bg-slate-900 hover:bg-slate-800"
+              data-testid="nav-start-checkup-btn"
+            >
+              Start Checkup
+            </Button>
+          </div>
         </div>
       </nav>
 
@@ -77,7 +179,7 @@ export default function LandingPage() {
             <p className="text-slate-300 text-lg md:text-xl leading-relaxed mb-8 animate-fade-in-up animate-delay-200">
               Identify preventable legal risks in your business agreements. 
               Get a clear score, understand your top risks, and receive an 
-              actionable protection plan—all in under 7 minutes.
+              actionable protection plan—all in under 5 minutes.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 animate-fade-in-up animate-delay-300">
               <Button 
@@ -147,7 +249,12 @@ export default function LandingPage() {
           
           <div className="grid md:grid-cols-3 gap-8">
             {modules.map((module, index) => (
-              <Card key={index} className="bg-white border-slate-200 hover:border-slate-300 transition-all hover:-translate-y-1" data-testid={`module-preview-${index}`}>
+              <Card
+                key={index}
+                className="bg-white border-slate-200 hover:border-slate-300 transition-all hover:-translate-y-1 cursor-pointer"
+                onClick={() => navigate("/select-modules")}
+                data-testid={`module-preview-${index}`}
+              >
                 <CardContent className="p-8">
                   <div className="w-14 h-14 bg-slate-100 rounded-lg flex items-center justify-center text-slate-700 mb-6">
                     {module.icon}
@@ -158,6 +265,16 @@ export default function LandingPage() {
                   <p className="text-slate-600 text-sm">
                     {module.description}
                   </p>
+                  <Button
+                    className="mt-4 w-full bg-orange-500 hover:bg-orange-600"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate("/select-modules");
+                    }}
+                  >
+                    Start Assessment
+                    <ArrowRight className="ml-2 w-4 h-4" />
+                  </Button>
                 </CardContent>
               </Card>
             ))}
@@ -221,7 +338,7 @@ export default function LandingPage() {
             Ready to Check Your Business Health?
           </h2>
           <p className="text-slate-300 text-lg mb-8 max-w-2xl mx-auto">
-            It takes just 5-7 minutes to identify potential risks in your business agreements. 
+            It takes just 3-5 minutes to identify potential risks in your business agreements. 
             No commitment, completely confidential.
           </p>
           <Button 
@@ -250,7 +367,7 @@ export default function LandingPage() {
       <footer className="py-8 bg-white border-t border-slate-200">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-2">
-            <Shield className="w-6 h-6 text-slate-700" />
+            <Shield className="w-6 h-6 text-slate-900" />
             <span className="font-brand text-lg font-semibold text-slate-900">
               Jeppsonlaw<span className="text-slate-500">, LLP</span>
             </span>
@@ -260,6 +377,138 @@ export default function LandingPage() {
           </p>
         </div>
       </footer>
+
+      {/* Lead Capture Dialog */}
+      <Dialog open={showLeadCapture} onOpenChange={handleLeadDialogOpenChange}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-heading text-xl">
+              {leadSubmitted ? "Thank You!" : "Schedule a CLBH Review Call"}
+            </DialogTitle>
+            <DialogDescription>
+              {leadSubmitted
+                ? "We'll be in touch shortly to schedule your CLBH Review Call."
+                : "Fill in your details and we'll reach out to schedule a review call."
+              }
+            </DialogDescription>
+          </DialogHeader>
+
+          {leadSubmitted ? (
+            <div className="py-8 text-center">
+              <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle2 className="w-8 h-8 text-emerald-500" />
+              </div>
+              <p className="text-slate-600 mb-4">
+                Your information has been submitted. We'll reach out within 1 business day.
+              </p>
+              <Button
+                onClick={() => setShowLeadCapture(false)}
+                className="bg-slate-900"
+              >
+                Close
+              </Button>
+            </div>
+          ) : (
+            <form onSubmit={handleLeadSubmit} className="space-y-4">
+              <div>
+                <Label htmlFor="name">Full Name *</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => handleInputChange("name", e.target.value)}
+                  placeholder="John Smith"
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="email">Email *</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => handleInputChange("email", e.target.value)}
+                  placeholder="john@company.com"
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="phone">Phone *</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(e) => handleInputChange("phone", e.target.value)}
+                  placeholder="(555) 123-4567"
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="business_name">Business Name *</Label>
+                <Input
+                  id="business_name"
+                  value={formData.business_name}
+                  onChange={(e) => handleInputChange("business_name", e.target.value)}
+                  placeholder="Acme Construction LLC"
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="state">State *</Label>
+                <Select value={formData.state} onValueChange={(value) => handleInputChange("state", value)}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Select your state" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {US_STATES.map((state) => (
+                      <SelectItem key={state} value={state}>
+                        {state}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="situation">What best describes your situation? *</Label>
+                <Select value={formData.situation} onValueChange={(value) => handleInputChange("situation", value)}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Select your situation" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SITUATIONS.map((situation) => (
+                      <SelectItem key={situation} value={situation}>
+                        {situation}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full bg-orange-500 hover:bg-orange-600"
+                disabled={isSubmittingLead}
+              >
+                {isSubmittingLead ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Submitting...
+                  </>
+                ) : (
+                  <>
+                    Submit & Schedule Call
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </>
+                )}
+              </Button>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
