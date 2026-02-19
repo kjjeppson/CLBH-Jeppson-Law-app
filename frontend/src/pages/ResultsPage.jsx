@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
@@ -9,10 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
-import { 
-  Shield, CheckCircle2, AlertTriangle, XCircle, 
-  Download, Mail, Calendar, ArrowRight, Loader2,
-  Phone, Building2, MapPin, FileText, Printer
+import {
+  Shield, CheckCircle2, AlertTriangle, XCircle,
+  Mail, Calendar, ArrowRight, Loader2,
+  Phone, MessageSquare
 } from "lucide-react";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -43,7 +43,6 @@ const SITUATIONS = [
 export default function ResultsPage() {
   const { assessmentId } = useParams();
   const navigate = useNavigate();
-  const printRef = useRef();
   
   const [results, setResults] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -104,10 +103,6 @@ export default function ResultsPage() {
     } finally {
       setIsSubmittingLead(false);
     }
-  };
-
-  const handlePrint = () => {
-    window.print();
   };
 
   const handleEmailResults = () => {
@@ -194,35 +189,27 @@ export default function ResultsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50" ref={printRef}>
+    <div className="min-h-screen bg-slate-50">
       {/* Navigation */}
       <nav className="bg-white border-b border-slate-200 sticky top-0 z-50 no-print">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-2">
+          <div
+            className="flex items-center gap-2 cursor-pointer"
+            onClick={() => navigate("/")}
+          >
             <Shield className="w-8 h-8 text-slate-900" />
             <span className="font-brand text-xl font-bold text-slate-900">
               Jeppsonlaw<span className="text-slate-500">, LLP</span>
             </span>
           </div>
-          <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              onClick={handlePrint}
-              className="hidden md:flex"
-              data-testid="print-btn"
-            >
-              <Printer className="w-4 h-4 mr-2" />
-              Print
-            </Button>
-            <Button 
-              variant="outline" 
-              onClick={handleEmailResults}
-              data-testid="email-results-btn"
-            >
-              <Mail className="w-4 h-4 mr-2" />
-              Email Results
-            </Button>
-          </div>
+          <Button
+            variant="outline"
+            onClick={handleEmailResults}
+            data-testid="email-results-btn"
+          >
+            <Mail className="w-4 h-4 mr-2" />
+            Email & Text Me My Results
+          </Button>
         </div>
       </nav>
 
@@ -384,12 +371,33 @@ export default function ResultsPage() {
         </Card>
 
         {/* Disclaimer */}
-        <div className="text-center">
+        <div className="text-center mb-8">
           <p className="text-slate-500 text-xs leading-relaxed max-w-2xl mx-auto">
-            <strong>Disclaimer:</strong> This assessment is for educational purposes only and does not constitute legal advice. 
-            No attorney-client relationship is created by using this tool. Results are based solely on your inputs 
+            <strong>Disclaimer:</strong> This assessment is for educational purposes only and does not constitute legal advice.
+            No attorney-client relationship is created by using this tool. Results are based solely on your inputs
             and may not reflect all relevant factors. For personalized legal guidance, please consult with a qualified attorney.
           </p>
+        </div>
+
+        {/* Navigation Buttons */}
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <Button
+            variant="outline"
+            onClick={() => navigate("/")}
+            className="flex items-center justify-center"
+            data-testid="back-to-home-btn"
+          >
+            <ArrowRight className="w-4 h-4 mr-2 rotate-180" />
+            Back to Main Menu
+          </Button>
+          <Button
+            onClick={() => navigate("/select-modules")}
+            className="bg-slate-900 hover:bg-slate-800 flex items-center justify-center"
+            data-testid="new-assessment-btn"
+          >
+            Start New Assessment
+            <ArrowRight className="w-4 h-4 ml-2" />
+          </Button>
         </div>
       </main>
 
@@ -413,9 +421,9 @@ export default function ResultsPage() {
               {leadSubmitted ? "Thank You!" : "Get Your Results & Schedule a Call"}
             </DialogTitle>
             <DialogDescription>
-              {leadSubmitted 
+              {leadSubmitted
                 ? "We'll be in touch shortly to schedule your CLBH Review Call."
-                : "Fill in your details to receive your results by email and schedule a review call."
+                : "Fill in your details to receive your results by email and text message."
               }
             </DialogDescription>
           </DialogHeader>
@@ -464,7 +472,7 @@ export default function ResultsPage() {
               </div>
               
               <div>
-                <Label htmlFor="phone">Phone *</Label>
+                <Label htmlFor="phone">Cell Phone (for text) *</Label>
                 <Input
                   id="phone"
                   type="tel"
@@ -541,7 +549,7 @@ export default function ResultsPage() {
                   </>
                 ) : (
                   <>
-                    Submit & Schedule Call
+                    Send My Results
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </>
                 )}
