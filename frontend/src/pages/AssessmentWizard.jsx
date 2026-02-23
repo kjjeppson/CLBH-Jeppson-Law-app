@@ -11,16 +11,28 @@ import { Shield, ArrowRight, ArrowLeft, Loader2 } from "lucide-react";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
-const MODULE_LABELS = {
-  lease: "Commercial Lease Risk",
-  acquisition: "Entity Purchase / Acquisition Risk",
-  ownership: "Ownership / Partner Agreement Risk"
+const AREA_LABELS = {
+  contracts: "Customer Contracts & Project Risks",
+  ownership: "Ownership & Governance",
+  subcontractor: "Subcontractor & Vendor Risk",
+  employment: "Employment & Safety Compliance",
+  insurance: "Insurance & Claims Readiness",
+  systems: "Systems, Records & Digital Risk"
+};
+
+const AREA_NUMBERS = {
+  contracts: 1,
+  ownership: 2,
+  subcontractor: 3,
+  employment: 4,
+  insurance: 5,
+  systems: 6
 };
 
 export default function AssessmentWizard() {
   const { assessmentId } = useParams();
   const navigate = useNavigate();
-  
+
   const [assessment, setAssessment] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -55,8 +67,8 @@ export default function AssessmentWizard() {
   }, [assessmentId, navigate]);
 
   const currentQuestion = questions[currentQuestionIndex];
-  const progress = questions.length > 0 
-    ? ((currentQuestionIndex + 1) / questions.length) * 100 
+  const progress = questions.length > 0
+    ? ((currentQuestionIndex + 1) / questions.length) * 100
     : 0;
 
   const handleAnswerSelect = (questionId, option) => {
@@ -98,7 +110,7 @@ export default function AssessmentWizard() {
         assessment_id: assessmentId,
         answers: Object.values(answers)
       });
-      
+
       navigate(`/results/${assessmentId}`);
     } catch (error) {
       console.error("Error submitting assessment:", error);
@@ -119,8 +131,12 @@ export default function AssessmentWizard() {
     );
   }
 
-  const currentModule = currentQuestion?.module;
-  const currentModuleLabel = MODULE_LABELS[currentModule] || currentModule;
+  const currentArea = currentQuestion?.area;
+  const currentAreaLabel = AREA_LABELS[currentArea] || currentArea;
+  const currentAreaNumber = AREA_NUMBERS[currentArea] || 1;
+
+  // Calculate which question within the current area (1-4)
+  const questionInArea = currentQuestion ? (parseInt(currentQuestion.id.replace("q", "")) - 1) % 4 + 1 : 1;
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -134,7 +150,7 @@ export default function AssessmentWizard() {
             </span>
           </div>
           <span className="text-slate-500 text-sm hidden md:block">
-            {currentModuleLabel}
+            Clean Legal Bill of Health Quiz
           </span>
         </div>
       </nav>
@@ -149,11 +165,19 @@ export default function AssessmentWizard() {
           <Progress value={progress} className="h-2" data-testid="progress-bar" />
         </div>
 
-        {/* Module Badge */}
-        <div className="mb-6">
-          <span className="inline-block bg-slate-100 text-slate-700 text-xs font-medium px-3 py-1 rounded-full">
-            {currentModuleLabel}
+        {/* Area Badge */}
+        <div className="mb-6 flex items-center gap-3">
+          <span className="inline-flex items-center justify-center w-7 h-7 bg-blue-600 text-white text-sm font-bold rounded-full">
+            {currentAreaNumber}
           </span>
+          <div>
+            <span className="text-slate-900 font-medium text-sm">
+              {currentAreaLabel}
+            </span>
+            <span className="text-slate-400 text-sm ml-2">
+              ({questionInArea} of 4)
+            </span>
+          </div>
         </div>
 
         {/* Question Card */}
@@ -171,26 +195,41 @@ export default function AssessmentWizard() {
               }}
               className="space-y-3"
             >
-              {currentQuestion?.options.map((option, index) => (
-                <div key={option.value}>
-                  <Label
-                    htmlFor={option.value}
-                    className={`flex items-start gap-4 p-4 rounded-lg border cursor-pointer transition-all ${
-                      answers[currentQuestion.id]?.answer_value === option.value
-                        ? 'border-slate-900 bg-slate-50'
-                        : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/50'
-                    }`}
-                    data-testid={`option-${index}`}
-                  >
-                    <RadioGroupItem
-                      value={option.value}
-                      id={option.value}
-                      className="mt-0.5"
-                    />
-                    <span className="text-slate-700">{option.label}</span>
-                  </Label>
-                </div>
-              ))}
+              {currentQuestion?.options.map((option, index) => {
+                const isSelected = answers[currentQuestion.id]?.answer_value === option.value;
+                // Color-code options based on their value
+                let borderColor = "border-slate-200 hover:border-slate-300";
+                let bgColor = "hover:bg-slate-50/50";
+                if (isSelected) {
+                  if (option.value === "green") {
+                    borderColor = "border-emerald-500";
+                    bgColor = "bg-emerald-50";
+                  } else if (option.value === "yellow") {
+                    borderColor = "border-amber-500";
+                    bgColor = "bg-amber-50";
+                  } else if (option.value === "red") {
+                    borderColor = "border-red-500";
+                    bgColor = "bg-red-50";
+                  }
+                }
+
+                return (
+                  <div key={option.value}>
+                    <Label
+                      htmlFor={option.value}
+                      className={`flex items-start gap-4 p-4 rounded-lg border cursor-pointer transition-all ${borderColor} ${bgColor}`}
+                      data-testid={`option-${index}`}
+                    >
+                      <RadioGroupItem
+                        value={option.value}
+                        id={option.value}
+                        className="mt-0.5"
+                      />
+                      <span className="text-slate-700">{option.label}</span>
+                    </Label>
+                  </div>
+                );
+              })}
             </RadioGroup>
           </CardContent>
         </Card>
@@ -232,20 +271,43 @@ export default function AssessmentWizard() {
           </Button>
         </div>
 
-        {/* Question Counter Dots */}
-        <div className="flex justify-center mt-8 gap-1 flex-wrap">
-          {questions.map((_, index) => (
-            <div
-              key={index}
-              className={`w-2 h-2 rounded-full transition-all ${
-                index === currentQuestionIndex
-                  ? 'bg-slate-900 w-4'
-                  : index < currentQuestionIndex && answers[questions[index]?.id]
-                  ? 'bg-emerald-500'
-                  : 'bg-slate-200'
-              }`}
-            />
-          ))}
+        {/* Area Progress Dots */}
+        <div className="flex justify-center mt-8 gap-2 flex-wrap">
+          {Object.keys(AREA_LABELS).map((areaKey, areaIndex) => {
+            const areaStartIndex = areaIndex * 4;
+            const areaQuestions = questions.slice(areaStartIndex, areaStartIndex + 4);
+            const isCurrentArea = currentArea === areaKey;
+            const answeredInArea = areaQuestions.filter(q => answers[q?.id]).length;
+            const isAreaComplete = answeredInArea === 4;
+
+            return (
+              <div key={areaKey} className="flex items-center gap-1">
+                {areaQuestions.map((q, qIndex) => {
+                  const globalIndex = areaStartIndex + qIndex;
+                  const isCurrentQuestion = globalIndex === currentQuestionIndex;
+                  const isAnswered = answers[q?.id];
+
+                  return (
+                    <div
+                      key={globalIndex}
+                      className={`w-2 h-2 rounded-full transition-all ${
+                        isCurrentQuestion
+                          ? 'bg-blue-600 w-3'
+                          : isAnswered
+                          ? answers[q?.id]?.answer_value === 'red'
+                            ? 'bg-red-500'
+                            : answers[q?.id]?.answer_value === 'yellow'
+                            ? 'bg-amber-500'
+                            : 'bg-emerald-500'
+                          : 'bg-slate-200'
+                      }`}
+                    />
+                  );
+                })}
+                {areaIndex < 5 && <div className="w-2" />}
+              </div>
+            );
+          })}
         </div>
       </main>
 
