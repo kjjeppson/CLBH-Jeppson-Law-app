@@ -227,8 +227,8 @@ export default function ResultsPage() {
             </span>
           </div>
           <Button
-            variant="outline"
             onClick={handleEmailResults}
+            className="bg-orange-500 hover:bg-orange-600 text-white"
             data-testid="email-results-btn"
           >
             <Mail className="w-4 h-4 mr-2" />

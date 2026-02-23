@@ -120,7 +120,7 @@ export default function ModuleSelection() {
               <div className="text-center">
                 <div className="flex items-center justify-center gap-2 text-slate-900 mb-1">
                   <Clock className="w-5 h-5 text-blue-600" />
-                  <span className="text-2xl font-bold">10-15</span>
+                  <span className="text-2xl font-bold">5-10</span>
                 </div>
                 <p className="text-sm text-slate-500">Minutes</p>
               </div>

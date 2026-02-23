@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Shield, FileCheck, AlertTriangle, CheckCircle2, Clock, ArrowRight, Building2, Calendar, Loader2, Phone } from "lucide-react";
+import { Shield, FileCheck, AlertTriangle, CheckCircle2, Clock, ArrowRight, Calendar, Loader2, Phone, Users, Briefcase, UserCheck, ShieldCheck, Database } from "lucide-react";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -98,37 +98,28 @@ export default function LandingPage() {
   const benefits = [
     {
       icon: <Clock className="w-6 h-6" />,
-      title: "3-5 Minute Assessment",
-      description: "Quick, focused questions to identify your key legal risks"
+      title: "5-10 Minute Assessment",
+      description: "24 focused questions across 6 critical areas of business legal health"
     },
     {
       icon: <Shield className="w-6 h-6" />,
-      title: "Clear Risk Score",
-      description: "Easy-to-understand Green/Yellow/Red rating"
+      title: "Clear Risk Scores",
+      description: "Easy-to-understand Green/Yellow/Red ratings for each area and overall"
     },
     {
       icon: <FileCheck className="w-6 h-6" />,
       title: "Action Plan",
-      description: "Prioritized steps to protect your business"
+      description: "Prioritized steps to protect your business with RED flags highlighted"
     }
   ];
 
-  const modules = [
-    {
-      icon: <Building2 className="w-8 h-8" />,
-      title: "Commercial Lease",
-      description: "Personal guarantees, assignment restrictions, default terms"
-    },
-    {
-      icon: <FileCheck className="w-8 h-8" />,
-      title: "Business Acquisition",
-      description: "Due diligence, representations, indemnification"
-    },
-    {
-      icon: <Shield className="w-8 h-8" />,
-      title: "Partnership Agreement",
-      description: "Buy-sell terms, decision authority, exit provisions"
-    }
+  const quizAreas = [
+    { icon: <FileCheck className="w-5 h-5" />, name: "Customer Contracts & Project Risks" },
+    { icon: <Users className="w-5 h-5" />, name: "Ownership & Governance" },
+    { icon: <Briefcase className="w-5 h-5" />, name: "Subcontractor & Vendor Risk" },
+    { icon: <UserCheck className="w-5 h-5" />, name: "Employment & Safety Compliance" },
+    { icon: <ShieldCheck className="w-5 h-5" />, name: "Insurance & Claims Readiness" },
+    { icon: <Database className="w-5 h-5" />, name: "Systems, Records & Digital Risk" }
   ];
 
   return (
@@ -177,9 +168,9 @@ export default function LandingPage() {
               <span className="block text-slate-400 text-3xl md:text-4xl mt-2">Quick Checkup</span>
             </h1>
             <p className="text-slate-300 text-lg md:text-xl leading-relaxed mb-8 animate-fade-in-up animate-delay-200">
-              Identify preventable legal risks in your business agreements. 
-              Get a clear score, understand your top risks, and receive an 
-              actionable protection plan—all in under 5 minutes.
+              Identify preventable legal risks across 6 critical areas of your business.
+              Get clear scores for each area, see exactly where you're at risk, and receive
+              an actionable protection plan—in just 5-10 minutes.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 animate-fade-in-up animate-delay-300">
               <Button 
@@ -235,50 +226,43 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Assessment Modules Section */}
-      <section className="py-20 bg-slate-50 grid-pattern">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="font-heading text-3xl md:text-4xl font-bold text-slate-900 mb-4">
-              Assessment Areas
-            </h2>
-            <p className="text-slate-600 text-lg max-w-2xl mx-auto">
-              Choose one or more areas to assess. Each takes just 3-5 minutes.
-            </p>
-          </div>
-          
-          <div className="grid md:grid-cols-3 gap-8">
-            {modules.map((module, index) => (
-              <Card
+      {/* Quiz Overview Section */}
+      <section className="hero-section py-20">
+        <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
+          <h2 className="font-heading text-3xl md:text-4xl font-bold text-white mb-4">
+            Clean Legal Bill of Health Quiz
+          </h2>
+          <p className="text-slate-300 text-lg mb-10">
+            24 Questions Across 6 Critical Areas of Business Legal Health
+          </p>
+
+          {/* 6 Areas Preview */}
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-10 max-w-3xl mx-auto">
+            {quizAreas.map((area, index) => (
+              <div
                 key={index}
-                className="bg-white border-slate-200 hover:border-slate-300 transition-all hover:-translate-y-1 cursor-pointer"
-                onClick={() => navigate("/select-modules")}
-                data-testid={`module-preview-${index}`}
+                className="flex items-center gap-3 p-3 bg-slate-800/50 rounded-lg text-left border border-slate-700"
               >
-                <CardContent className="p-8">
-                  <div className="w-14 h-14 bg-slate-100 rounded-lg flex items-center justify-center text-slate-700 mb-6">
-                    {module.icon}
-                  </div>
-                  <h3 className="font-heading text-xl font-semibold text-slate-900 mb-3">
-                    {module.title}
-                  </h3>
-                  <p className="text-slate-600 text-sm">
-                    {module.description}
-                  </p>
-                  <Button
-                    className="mt-4 w-full bg-orange-500 hover:bg-orange-600"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate("/select-modules");
-                    }}
-                  >
-                    Start Assessment
-                    <ArrowRight className="ml-2 w-4 h-4" />
-                  </Button>
-                </CardContent>
-              </Card>
+                <div className="w-9 h-9 bg-slate-700 rounded-lg flex items-center justify-center text-slate-300 flex-shrink-0">
+                  {area.icon}
+                </div>
+                <span className="text-sm font-medium text-slate-300">{area.name}</span>
+              </div>
             ))}
           </div>
+
+          <Button
+            onClick={() => navigate("/select-modules")}
+            className="bg-orange-500 hover:bg-orange-600 text-white px-10 py-6 text-lg font-semibold"
+            data-testid="quiz-begin-btn"
+          >
+            Begin Quiz
+            <ArrowRight className="ml-2 w-5 h-5" />
+          </Button>
+
+          <p className="text-slate-400 text-sm mt-6">
+            Takes 5-10 minutes • Confidential • Instant results
+          </p>
         </div>
       </section>
 
@@ -338,7 +322,7 @@ export default function LandingPage() {
             Ready to Check Your Business Health?
           </h2>
           <p className="text-slate-300 text-lg mb-8 max-w-2xl mx-auto">
-            It takes just 3-5 minutes to identify potential risks in your business agreements. 
+            Our comprehensive 24-question quiz covers 6 critical areas of business legal health.
             No commitment, completely confidential.
           </p>
           <Button 
@@ -356,10 +340,7 @@ export default function LandingPage() {
       <section className="py-8 bg-slate-100 border-t border-slate-200">
         <div className="max-w-4xl mx-auto px-6">
           <p className="text-slate-600 text-sm text-center leading-relaxed mb-6">
-            <strong>DISCLAIMER:</strong> This assessment is for educational purposes only and does not constitute legal advice.
-            The results are intended to help you identify potential areas of concern in your business.
-            For specific legal guidance tailored to your situation, please consult with a licensed attorney.
-            You may take this checklist to your own attorney, or schedule a consultation with Jeppson Law.
+            <strong>DISCLAIMER:</strong> This assessment is for educational purposes only and does not constitute legal advice, and no attorney-client relationship is formed by using this tool or receiving its output. The results are intended to help you identify potential areas of concern in your business — they are not a legal assessment of your specific contracts, obligations, or exposure. For specific legal guidance tailored to your situation, please consult with a licensed attorney. You may take this checklist to your own attorney or schedule a consultation with Jeppson Law.
           </p>
           <div className="text-center">
             <Button
