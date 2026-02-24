@@ -14,9 +14,9 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const AREA_LABELS = {
   contracts: "Customer Contracts & Project Risks",
   ownership: "Ownership & Governance",
-  subcontractor: "Subcontractor & Vendor Risk",
+  subcontractor: "Vendors",
   employment: "Employment & Safety Compliance",
-  insurance: "Insurance & Claims Readiness",
+  insurance: "Insurance and Risk Management",
   systems: "Systems, Records & Digital Risk"
 };
 

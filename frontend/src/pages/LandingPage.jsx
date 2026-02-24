@@ -116,9 +116,9 @@ export default function LandingPage() {
   const quizAreas = [
     { icon: <FileCheck className="w-5 h-5" />, name: "Customer Contracts & Project Risks" },
     { icon: <Users className="w-5 h-5" />, name: "Ownership & Governance" },
-    { icon: <Briefcase className="w-5 h-5" />, name: "Subcontractor & Vendor Risk" },
+    { icon: <Briefcase className="w-5 h-5" />, name: "Vendors" },
     { icon: <UserCheck className="w-5 h-5" />, name: "Employment & Safety Compliance" },
-    { icon: <ShieldCheck className="w-5 h-5" />, name: "Insurance & Claims Readiness" },
+    { icon: <ShieldCheck className="w-5 h-5" />, name: "Insurance and Risk Management" },
     { icon: <Database className="w-5 h-5" />, name: "Systems, Records & Digital Risk" }
   ];
 

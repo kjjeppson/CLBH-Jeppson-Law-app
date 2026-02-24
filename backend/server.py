@@ -153,7 +153,7 @@ AREAS = {
     },
     "subcontractor": {
         "id": "subcontractor",
-        "name": "Subcontractor & Vendor Risk",
+        "name": "Vendors",
         "description": "4 questions that expose whether your supply chain and contractor relationships are a liability",
         "questions": [9, 10, 11, 12]
     },
@@ -165,7 +165,7 @@ AREAS = {
     },
     "insurance": {
         "id": "insurance",
-        "name": "Insurance & Claims Readiness",
+        "name": "Insurance and Risk Management",
         "description": "4 questions that determine whether your insurance will protect you when it matters",
         "questions": [17, 18, 19, 20]
     },
@@ -276,7 +276,7 @@ QUESTIONS = {
             "area": "ownership"
         },
 
-        # AREA 3: Subcontractor & Vendor Risk (Q9-Q12)
+        # AREA 3: Vendors (Q9-Q12)
         {
             "id": "q9",
             "text": "Are signed subcontractor agreements in place with every subcontractor before they begin any work on your projects?",
@@ -368,7 +368,7 @@ QUESTIONS = {
             "area": "employment"
         },
 
-        # AREA 5: Insurance & Claims Readiness (Q17-Q20)
+        # AREA 5: Insurance and Risk Management (Q17-Q20)
         {
             "id": "q17",
             "text": "Has your business insurance coverage been reviewed in the past 12 months to verify it matches your current operations, revenue level, and actual risk exposure?",
@@ -505,9 +505,9 @@ RISK_DESCRIPTIONS = {
 AREA_NAMES = {
     "contracts": "Customer Contracts & Project Risks",
     "ownership": "Ownership & Governance",
-    "subcontractor": "Subcontractor & Vendor Risk",
+    "subcontractor": "Vendors",
     "employment": "Employment & Safety Compliance",
-    "insurance": "Insurance & Claims Readiness",
+    "insurance": "Insurance and Risk Management",
     "systems": "Systems, Records & Digital Risk"
 }
 

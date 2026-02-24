@@ -23,7 +23,7 @@ const areas = [
   },
   {
     id: "subcontractor",
-    name: "Subcontractor & Vendor Risk",
+    name: "Vendors",
     icon: <Briefcase className="w-5 h-5" />,
     questions: 4
   },
@@ -35,7 +35,7 @@ const areas = [
   },
   {
     id: "insurance",
-    name: "Insurance & Claims",
+    name: "Insurance and Risk Management",
     icon: <ShieldCheck className="w-5 h-5" />,
     questions: 4
   },
