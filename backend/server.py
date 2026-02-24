@@ -279,18 +279,18 @@ QUESTIONS = {
         # AREA 3: Vendors (Q9-Q12)
         {
             "id": "q9",
-            "text": "Are signed subcontractor agreements in place with every subcontractor before they begin any work on your projects?",
-            "why_it_matters": "A subcontractor working without a signed agreement exposes you to disputes over scope, payment, quality, and timeline with zero documentation to protect your position. If that subcontractor injures someone, damages property, or fails to perform, you may be liable for everything. In construction and professional services, this is one of the fastest ways to face a six-figure claim.",
+            "text": "Do you have a signed written agreement in place with every vendor or service provider before they begin delivering products or services to your business?",
+            "why_it_matters": "A vendor or service provider working without a signed agreement exposes you to disputes over scope, payment, quality, and timeline with zero documentation to protect your position. If that vendor fails to perform or causes harm, you may have no contractual recourse. This is one of the fastest ways to face unexpected liability.",
             "options": [
-                {"value": "green", "label": "Yes. Every subcontractor signs a written agreement before any work starts, no exceptions.", "points": 3, "trigger_flag": False},
+                {"value": "green", "label": "Yes. Every vendor and service provider signs a written agreement before any work starts, no exceptions.", "points": 3, "trigger_flag": False},
                 {"value": "yellow", "label": "Most do, but we occasionally start work based on a verbal agreement or email and formalize it later.", "points": 2, "trigger_flag": False},
-                {"value": "red", "label": "No. We regularly use subcontractors without signed agreements.", "points": 1, "trigger_flag": True}
+                {"value": "red", "label": "No. We regularly use vendors or service providers without signed agreements.", "points": 1, "trigger_flag": True}
             ],
             "area": "subcontractor"
         },
         {
             "id": "q10",
-            "text": "Have you verified that your independent contractors are properly classified and would survive an IRS or state audit of their classification?",
+            "text": "Have you reviewed how your business engages independent contractors versus employees, and are you confident those classifications would withstand scrutiny from the IRS or your state labor agency?",
             "why_it_matters": "Misclassifying an employee as an independent contractor is one of the most aggressively enforced compliance areas by the IRS and state agencies. If you are found to have misclassified workers, you face back taxes, penalties, unpaid benefits, and potential class action exposure. A single misclassification audit can result in six-figure liability across all similarly classified workers.",
             "options": [
                 {"value": "green", "label": "Yes. We have reviewed our classifications with a legal or tax professional and they meet IRS and state tests.", "points": 3, "trigger_flag": False},
@@ -301,23 +301,23 @@ QUESTIONS = {
         },
         {
             "id": "q11",
-            "text": "Do your subcontractor and vendor agreements include indemnification provisions that protect your business if their work causes injury, property damage, or a third-party claim?",
-            "why_it_matters": "Without indemnification, you absorb the financial consequences of someone else's mistakes. If a subcontractor's work causes a client injury or property damage, the client sues you. Without indemnification, you pay the judgment and have no contractual right to recover from the subcontractor who actually caused the problem.",
+            "text": "Do your vendor and service provider agreements include indemnification and limitation-of-liability provisions that protect your business if their product, service, or conduct causes you loss or exposes you to a third-party claim?",
+            "why_it_matters": "Without indemnification and liability limits, you absorb the financial consequences of someone else's mistakes. If a vendor's product or service causes you loss or exposes you to a third-party claim, you may have no contractual right to recover from the vendor who actually caused the problem.",
             "options": [
-                {"value": "green", "label": "Yes. All subcontractor and key vendor agreements include indemnification provisions requiring them to defend and hold us harmless.", "points": 3, "trigger_flag": False},
-                {"value": "yellow", "label": "Some agreements have indemnification language, but it is not consistent across all subcontractors and vendors.", "points": 2, "trigger_flag": False},
-                {"value": "red", "label": "No. Our agreements do not include indemnification, or I do not know if they do.", "points": 1, "trigger_flag": True}
+                {"value": "green", "label": "Yes. All vendor and service provider agreements include indemnification and limitation-of-liability provisions.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "Some agreements have these provisions, but it is not consistent across all vendors and service providers.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No. Our agreements do not include these provisions, or I do not know if they do.", "points": 1, "trigger_flag": True}
             ],
             "area": "subcontractor"
         },
         {
             "id": "q12",
-            "text": "Do you collect and verify current certificates of insurance from every subcontractor before they begin work, and do you monitor expiration dates?",
-            "why_it_matters": "A certificate of insurance that expired three months ago is worthless. If an uninsured subcontractor causes damage or injury on your project, their lack of coverage becomes your financial responsibility. Many businesses collect certificates once and never check again, only to discover at the worst possible moment that coverage lapsed.",
+            "text": "Do you require current certificates of insurance from vendors and service providers whose work creates meaningful risk to your business, and do you have a process to track and renew those certificates before they expire?",
+            "why_it_matters": "A certificate of insurance that expired is worthless. If an uninsured vendor causes damage or exposes your business to liability, their lack of coverage becomes your financial responsibility. Many businesses collect certificates once and never check again, only to discover at the worst possible moment that coverage lapsed.",
             "options": [
-                {"value": "green", "label": "Yes. We collect current COIs before work begins, verify coverage meets our requirements, and track expiration dates.", "points": 3, "trigger_flag": False},
+                {"value": "green", "label": "Yes. We collect current COIs from high-risk vendors, verify coverage meets our requirements, and track expiration dates.", "points": 3, "trigger_flag": False},
                 {"value": "yellow", "label": "We collect COIs at the start but do not consistently track renewals or verify coverage amounts.", "points": 2, "trigger_flag": False},
-                {"value": "red", "label": "No. We do not regularly collect or verify subcontractor insurance certificates.", "points": 1, "trigger_flag": True}
+                {"value": "red", "label": "No. We do not regularly collect or verify vendor insurance certificates.", "points": 1, "trigger_flag": True}
             ],
             "area": "subcontractor"
         },
