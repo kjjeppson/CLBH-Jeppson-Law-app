@@ -68,7 +68,7 @@ export default function ModuleSelection() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-white grid-pattern-light">
       {/* Navigation */}
       <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
@@ -93,7 +93,7 @@ export default function ModuleSelection() {
         </div>
       </nav>
 
-      <main className="max-w-4xl mx-auto px-6 py-12">
+      <main className="max-w-4xl mx-auto px-6 py-12 relative z-10">
         {/* Header */}
         <div className="text-center mb-10">
           <h1 className="font-heading text-3xl md:text-4xl font-bold text-slate-900 mb-4">
@@ -106,8 +106,8 @@ export default function ModuleSelection() {
         </div>
 
         {/* Quiz Overview Card */}
-        <Card className="border-slate-200 shadow-sm mb-8">
-          <CardContent className="p-8">
+        <div className="bg-white border border-slate-200 rounded-xl shadow-sm mb-8">
+          <div className="p-8">
             {/* Stats Row */}
             <div className="flex flex-wrap justify-center gap-8 mb-8 pb-8 border-b border-slate-100">
               <div className="text-center">
@@ -141,14 +141,14 @@ export default function ModuleSelection() {
               {areas.map((area) => (
                 <div
                   key={area.id}
-                  className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg"
+                  className="flex items-center gap-3 p-3 bg-slate-800 rounded-lg"
                 >
-                  <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-slate-600 shadow-sm">
+                  <div className="w-10 h-10 bg-slate-700 rounded-lg flex items-center justify-center text-slate-300">
                     {area.icon}
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-slate-900">{area.name}</p>
-                    <p className="text-xs text-slate-500">{area.questions} questions</p>
+                    <p className="text-sm font-medium text-white">{area.name}</p>
+                    <p className="text-xs text-slate-400">{area.questions} questions</p>
                   </div>
                 </div>
               ))}
@@ -169,18 +169,18 @@ export default function ModuleSelection() {
                 Your answers are confidential. Results will help identify potential risks and next steps.
               </p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* What You'll Get Section */}
-        <div className="bg-white border border-slate-200 rounded-lg p-6 mb-8">
+        <div className="bg-white border border-slate-200 rounded-xl p-6 mb-8">
           <h3 className="font-heading text-lg font-semibold text-slate-900 mb-4">
             What You'll Receive
           </h3>
           <div className="grid md:grid-cols-3 gap-4">
             <div className="flex items-start gap-3">
-              <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <span className="text-emerald-600 font-bold text-sm">1</span>
+              <div className="w-8 h-8 bg-blue-900 rounded-full flex items-center justify-center flex-shrink-0">
+                <span className="text-white font-bold text-sm">1</span>
               </div>
               <div>
                 <p className="font-medium text-slate-900">Overall Score</p>
@@ -188,8 +188,8 @@ export default function ModuleSelection() {
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <span className="text-emerald-600 font-bold text-sm">2</span>
+              <div className="w-8 h-8 bg-blue-900 rounded-full flex items-center justify-center flex-shrink-0">
+                <span className="text-white font-bold text-sm">2</span>
               </div>
               <div>
                 <p className="font-medium text-slate-900">6 Area Scores</p>
@@ -197,8 +197,8 @@ export default function ModuleSelection() {
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <span className="text-emerald-600 font-bold text-sm">3</span>
+              <div className="w-8 h-8 bg-blue-900 rounded-full flex items-center justify-center flex-shrink-0">
+                <span className="text-white font-bold text-sm">3</span>
               </div>
               <div>
                 <p className="font-medium text-slate-900">Action Plan</p>
@@ -226,7 +226,7 @@ export default function ModuleSelection() {
       </main>
 
       {/* Footer */}
-      <footer className="py-6 bg-white border-t border-slate-200">
+      <footer className="py-6 bg-white border-t border-slate-200 relative z-10">
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-3">
             <div className="flex items-center gap-2">

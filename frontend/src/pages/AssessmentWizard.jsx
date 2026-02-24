@@ -100,6 +100,9 @@ export default function AssessmentWizard() {
   const handlePrevious = () => {
     if (currentQuestionIndex > 0) {
       setCurrentQuestionIndex(prev => prev - 1);
+    } else {
+      // On question 1, go back to module selection
+      navigate("/select-modules");
     }
   };
 
@@ -239,12 +242,11 @@ export default function AssessmentWizard() {
           <Button
             variant="outline"
             onClick={handlePrevious}
-            disabled={currentQuestionIndex === 0}
             className="px-6"
             data-testid="previous-btn"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Previous
+            {currentQuestionIndex === 0 ? "Back" : "Previous"}
           </Button>
           <Button
             onClick={handleNext}

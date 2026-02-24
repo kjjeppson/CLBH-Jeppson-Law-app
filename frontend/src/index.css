@@ -202,10 +202,27 @@ code {
 
 /* Grid pattern background */
 .grid-pattern {
-    background-image: 
+    background-image:
         linear-gradient(hsl(var(--border)) 1px, transparent 1px),
         linear-gradient(90deg, hsl(var(--border)) 1px, transparent 1px);
     background-size: 40px 40px;
+}
+
+/* Light blue grid pattern for white backgrounds */
+.grid-pattern-light {
+    position: relative;
+}
+
+.grid-pattern-light::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+        linear-gradient(rgba(59, 130, 246, 0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(59, 130, 246, 0.06) 1px, transparent 1px);
+    background-size: 50px 50px;
+    pointer-events: none;
+    z-index: 0;
 }
 
 @layer base {
