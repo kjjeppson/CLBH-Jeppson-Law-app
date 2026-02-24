@@ -209,8 +209,8 @@ QUESTIONS = {
         },
         {
             "id": "q3",
-            "text": "Do your contracts include a limitation-of-liability clause that caps your maximum financial exposure if something goes wrong on a project?",
-            "why_it_matters": "Without a liability cap, a single bad project could result in a judgment that exceeds your total revenue. A limitation-of-liability clause is the difference between a manageable business setback and a company-ending lawsuit. Courts generally enforce these when they are properly drafted.",
+            "text": "Do your contracts include a limitation of liability clause that caps your maximum financial exposure if something goes wrong on a project?",
+            "why_it_matters": "Without a liability cap, a single bad project could result in a judgment that exceeds your total revenue. A limitation of liability clause is the difference between a manageable business setback and a company-ending lawsuit. Courts generally enforce these when they are properly drafted.",
             "options": [
                 {"value": "green", "label": "Yes. My contracts cap liability, typically to the amount paid under the contract or a defined dollar amount.", "points": 3, "trigger_flag": False},
                 {"value": "yellow", "label": "I think there is something about liability in my contract, but I have not reviewed it closely.", "points": 2, "trigger_flag": False},
