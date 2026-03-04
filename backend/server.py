@@ -78,6 +78,7 @@ class AssessmentAnswer(BaseModel):
 
 class AssessmentCreate(BaseModel):
     modules: List[str]  # Will just be ["clbh"] for the unified quiz
+    selected_areas: Optional[List[str]] = None  # If None, defaults to all 6 areas
 
 class AssessmentSubmit(BaseModel):
     assessment_id: str
@@ -95,6 +96,7 @@ class AssessmentResult(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     modules: List[str]
+    selected_areas: List[str] = []  # Which areas were selected for this assessment
     answers: List[Dict[str, Any]] = []
     total_score: int = 0
     max_possible_score: int = 72
@@ -538,29 +540,50 @@ def calculate_area_risk_level(score: int) -> str:
     else:
         return "red"
 
-def calculate_overall_risk_level(total_score: int) -> str:
-    """Calculate overall risk level (24 questions, max 72 points)"""
-    if total_score >= 58:
+def calculate_overall_risk_level(total_score: int, max_score: int = 72) -> str:
+    """Calculate overall risk level using percentage-based thresholds.
+    GREEN: 81%+ of max possible
+    YELLOW: 56-80%
+    RED: below 56%
+    """
+    if max_score == 0:
         return "green"
-    elif total_score >= 40:
+    percentage = (total_score / max_score) * 100
+    if percentage >= 81:
+        return "green"
+    elif percentage >= 56:
         return "yellow"
     else:
         return "red"
 
-def calculate_score_and_risks(answers: List[AssessmentAnswer], modules: List[str]) -> Dict[str, Any]:
-    """Calculate scores by area and overall, flag RED answers"""
+def calculate_score_and_risks(answers: List[AssessmentAnswer], modules: List[str], selected_areas: Optional[List[str]] = None) -> Dict[str, Any]:
+    """Calculate scores by area and overall, flag RED answers.
+    If selected_areas is provided, only include those areas in scoring.
+    """
+    # Default to all areas if none specified
+    if not selected_areas:
+        selected_areas = list(AREA_NAMES.keys())
 
-    # Initialize area tracking
-    area_points = {area: 0 for area in AREA_NAMES.keys()}
-    area_red_flags = {area: [] for area in AREA_NAMES.keys()}
+    # Initialize area tracking (only for selected areas)
+    area_points = {area: 0 for area in selected_areas}
+    area_red_flags = {area: [] for area in selected_areas}
 
     # Process each answer
     trigger_flags = []
     red_flag_details = []
+    yellow_flag_details = []
+    green_flag_details = []
 
     for answer in answers:
         area = get_area_for_question(answer.question_id)
+        # Only process if this area is in selected_areas
+        if area not in selected_areas:
+            continue
+
         area_points[area] += answer.points
+
+        # Get risk info for this question
+        risk_info = RISK_DESCRIPTIONS.get(area, {}).get(answer.question_id)
 
         # Track RED answers (trigger flags)
         if answer.trigger_flag or answer.points == 1:
@@ -568,8 +591,7 @@ def calculate_score_and_risks(answers: List[AssessmentAnswer], modules: List[str
             area_red_flags[area].append(answer.question_id)
 
             # Add detailed RED flag info
-            if answer.question_id in RISK_DESCRIPTIONS.get(area, {}):
-                risk_info = RISK_DESCRIPTIONS[area][answer.question_id]
+            if risk_info:
                 red_flag_details.append({
                     "question_id": answer.question_id,
                     "area": area,
@@ -579,9 +601,36 @@ def calculate_score_and_risks(answers: List[AssessmentAnswer], modules: List[str
                     "severity": "high"
                 })
 
-    # Calculate area scores
+        # Track YELLOW answers
+        elif answer.points == 2:
+            if risk_info:
+                yellow_flag_details.append({
+                    "question_id": answer.question_id,
+                    "area": area,
+                    "area_name": AREA_NAMES[area],
+                    "title": risk_info["title"],
+                    "description": risk_info["description"],
+                    "severity": "medium"
+                })
+
+        # Track GREEN answers
+        elif answer.points == 3:
+            if risk_info:
+                green_flag_details.append({
+                    "question_id": answer.question_id,
+                    "area": area,
+                    "area_name": AREA_NAMES[area],
+                    "title": risk_info["title"],
+                    "description": "This area is well-protected.",
+                    "severity": "low"
+                })
+
+    # Calculate area scores (only for selected areas, in order)
     area_scores = []
-    for area_id, area_name in AREA_NAMES.items():
+    for area_id in AREA_NAMES.keys():
+        if area_id not in selected_areas:
+            continue
+        area_name = AREA_NAMES[area_id]
         score = area_points[area_id]
         risk_level = calculate_area_risk_level(score)
         area_scores.append({
@@ -593,13 +642,13 @@ def calculate_score_and_risks(answers: List[AssessmentAnswer], modules: List[str
             "red_flags": area_red_flags[area_id]
         })
 
-    # Calculate totals
-    total_score = sum(a.points for a in answers)
-    max_score = 72  # 24 questions x 3 points
+    # Calculate totals (scaled to selected areas)
+    total_score = sum(a.points for a in answers if get_area_for_question(a.question_id) in selected_areas)
+    max_score = len(selected_areas) * 12  # 4 questions x 3 points per area
     score_percentage = (total_score / max_score * 100) if max_score > 0 else 0
 
-    # Determine overall risk level
-    risk_level = calculate_overall_risk_level(total_score)
+    # Determine overall risk level using percentage-based thresholds
+    risk_level = calculate_overall_risk_level(total_score, max_score)
 
     # Build top risks from RED flags
     top_risks = []
@@ -641,6 +690,8 @@ def calculate_score_and_risks(answers: List[AssessmentAnswer], modules: List[str
         "area_scores": area_scores,
         "trigger_flags": trigger_flags,
         "red_flag_details": red_flag_details,
+        "yellow_flag_details": yellow_flag_details,
+        "green_flag_details": green_flag_details,
         "top_risks": top_risks,
         "action_plan": action_plan,
         "confidence_level": min(100, max(10, confidence))
@@ -703,11 +754,19 @@ async def root():
     return {"message": "CLBH Quick Checkup API"}
 
 @api_router.get("/questions/{module}")
-async def get_questions(module: str):
-    """Get questions for a specific module"""
+async def get_questions(module: str, areas: Optional[str] = None):
+    """Get questions for a specific module, optionally filtered by areas"""
     if module not in QUESTIONS:
         raise HTTPException(status_code=404, detail=f"Module '{module}' not found")
-    return {"module": module, "questions": QUESTIONS[module], "areas": AREAS}
+
+    questions = QUESTIONS[module]
+
+    # Filter by areas if provided (comma-separated list)
+    if areas:
+        selected_areas = [a.strip() for a in areas.split(",")]
+        questions = [q for q in questions if q.get("area") in selected_areas]
+
+    return {"module": module, "questions": questions, "areas": AREAS}
 
 @api_router.get("/questions")
 async def get_all_questions():
@@ -718,11 +777,13 @@ async def get_all_questions():
 async def create_assessment(data: AssessmentCreate):
     """Create a new assessment session"""
     db = require_db()
-    assessment = AssessmentResult(modules=data.modules)
+    # Default to all 6 areas if none specified
+    selected_areas = data.selected_areas if data.selected_areas else list(AREA_NAMES.keys())
+    assessment = AssessmentResult(modules=data.modules, selected_areas=selected_areas)
     doc = assessment.model_dump()
     doc['timestamp'] = doc['timestamp'].isoformat()
     await db.assessments.insert_one(doc)
-    return {"id": assessment.id, "modules": assessment.modules}
+    return {"id": assessment.id, "modules": assessment.modules, "selected_areas": assessment.selected_areas}
 
 @api_router.post("/assessments/submit")
 async def submit_assessment(data: AssessmentSubmit):
@@ -733,8 +794,11 @@ async def submit_assessment(data: AssessmentSubmit):
     if not assessment:
         raise HTTPException(status_code=404, detail="Assessment not found")
 
-    # Calculate results
-    results = calculate_score_and_risks(data.answers, assessment["modules"])
+    # Get selected_areas from assessment (default to all if not set)
+    selected_areas = assessment.get("selected_areas") or list(AREA_NAMES.keys())
+
+    # Calculate results with selected areas
+    results = calculate_score_and_risks(data.answers, assessment["modules"], selected_areas)
 
     # Update assessment with results
     update_data = {
@@ -746,6 +810,8 @@ async def submit_assessment(data: AssessmentSubmit):
         "area_scores": results["area_scores"],
         "trigger_flags": results["trigger_flags"],
         "red_flag_details": results["red_flag_details"],
+        "yellow_flag_details": results["yellow_flag_details"],
+        "green_flag_details": results["green_flag_details"],
         "top_risks": results["top_risks"],
         "action_plan": results["action_plan"],
         "confidence_level": results["confidence_level"],
@@ -764,6 +830,8 @@ async def submit_assessment(data: AssessmentSubmit):
         "confidence_level": results["confidence_level"],
         "area_scores": results["area_scores"],
         "red_flag_details": results["red_flag_details"],
+        "yellow_flag_details": results["yellow_flag_details"],
+        "green_flag_details": results["green_flag_details"],
         "top_risks": results["top_risks"],
         "action_plan": results["action_plan"],
         "trigger_flags": results["trigger_flags"]

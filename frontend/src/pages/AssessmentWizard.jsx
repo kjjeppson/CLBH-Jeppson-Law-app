@@ -20,14 +20,8 @@ const AREA_LABELS = {
   systems: "Systems, Records & Digital Risk"
 };
 
-const AREA_NUMBERS = {
-  contracts: 1,
-  ownership: 2,
-  subcontractor: 3,
-  employment: 4,
-  insurance: 5,
-  systems: 6
-};
+// Canonical order of areas (matches question order q1-q24)
+const AREA_ORDER = ["contracts", "ownership", "subcontractor", "employment", "insurance", "systems"];
 
 export default function AssessmentWizard() {
   const { assessmentId } = useParams();
@@ -47,17 +41,21 @@ export default function AssessmentWizard() {
         const assessmentRes = await axios.get(`${API}/assessments/${assessmentId}`);
         setAssessment(assessmentRes.data);
 
-        // Get questions for all selected modules
+        // Get selected areas (default to all if not specified)
+        const selectedAreas = assessmentRes.data.selected_areas || Object.keys(AREA_LABELS);
+        const areasParam = selectedAreas.join(",");
+
+        // Get questions for all selected modules, filtered by selected areas
         const allQuestions = [];
         for (const module of assessmentRes.data.modules) {
-          const questionsRes = await axios.get(`${API}/questions/${module}`);
+          const questionsRes = await axios.get(`${API}/questions/${module}?areas=${areasParam}`);
           allQuestions.push(...questionsRes.data.questions);
         }
         setQuestions(allQuestions);
       } catch (error) {
         console.error("Error loading assessment:", error);
         toast.error("Failed to load assessment");
-        navigate("/select-modules");
+        navigate("/");
       } finally {
         setIsLoading(false);
       }
@@ -101,8 +99,8 @@ export default function AssessmentWizard() {
     if (currentQuestionIndex > 0) {
       setCurrentQuestionIndex(prev => prev - 1);
     } else {
-      // On question 1, go back to module selection
-      navigate("/select-modules");
+      // On question 1, go back to landing page
+      navigate("/");
     }
   };
 
@@ -136,10 +134,18 @@ export default function AssessmentWizard() {
 
   const currentArea = currentQuestion?.area;
   const currentAreaLabel = AREA_LABELS[currentArea] || currentArea;
-  const currentAreaNumber = AREA_NUMBERS[currentArea] || 1;
+
+  // Get selected areas from assessment, sorted in canonical order
+  const rawSelectedAreas = assessment?.selected_areas || AREA_ORDER;
+  const selectedAreas = AREA_ORDER.filter(area => rawSelectedAreas.includes(area));
+
+  // Calculate area number as position within selected areas (1-based)
+  const currentAreaNumber = selectedAreas.indexOf(currentArea) + 1;
 
   // Calculate which question within the current area (1-4)
-  const questionInArea = currentQuestion ? (parseInt(currentQuestion.id.replace("q", "")) - 1) % 4 + 1 : 1;
+  // Find questions in the current area and get position
+  const questionsInCurrentArea = questions.filter(q => q.area === currentArea);
+  const questionInArea = questionsInCurrentArea.findIndex(q => q.id === currentQuestion?.id) + 1;
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -178,8 +184,13 @@ export default function AssessmentWizard() {
               {currentAreaLabel}
             </span>
             <span className="text-slate-400 text-sm ml-2">
-              ({questionInArea} of 4)
+              (Q{questionInArea} of 4)
             </span>
+            {selectedAreas.length < 6 && (
+              <span className="text-slate-400 text-xs ml-2">
+                • Area {currentAreaNumber} of {selectedAreas.length}
+              </span>
+            )}
           </div>
         </div>
 
@@ -275,23 +286,27 @@ export default function AssessmentWizard() {
 
         {/* Area Progress Dots */}
         <div className="flex justify-center mt-8 gap-2 flex-wrap">
-          {Object.keys(AREA_LABELS).map((areaKey, areaIndex) => {
-            const areaStartIndex = areaIndex * 4;
-            const areaQuestions = questions.slice(areaStartIndex, areaStartIndex + 4);
+          {selectedAreas.map((areaKey, areaIndex) => {
+            // Get questions for this area from the filtered questions list
+            const areaQuestions = questions.filter(q => q.area === areaKey);
             const isCurrentArea = currentArea === areaKey;
-            const answeredInArea = areaQuestions.filter(q => answers[q?.id]).length;
-            const isAreaComplete = answeredInArea === 4;
+
+            // Calculate global start index for this area
+            let globalStartIndex = 0;
+            for (let i = 0; i < areaIndex; i++) {
+              globalStartIndex += questions.filter(q => q.area === selectedAreas[i]).length;
+            }
 
             return (
               <div key={areaKey} className="flex items-center gap-1">
                 {areaQuestions.map((q, qIndex) => {
-                  const globalIndex = areaStartIndex + qIndex;
+                  const globalIndex = globalStartIndex + qIndex;
                   const isCurrentQuestion = globalIndex === currentQuestionIndex;
                   const isAnswered = answers[q?.id];
 
                   return (
                     <div
-                      key={globalIndex}
+                      key={q.id}
                       className={`w-2 h-2 rounded-full transition-all ${
                         isCurrentQuestion
                           ? 'bg-blue-600 w-3'
@@ -306,7 +321,7 @@ export default function AssessmentWizard() {
                     />
                   );
                 })}
-                {areaIndex < 5 && <div className="w-2" />}
+                {areaIndex < selectedAreas.length - 1 && <div className="w-2" />}
               </div>
             );
           })}

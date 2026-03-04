@@ -257,44 +257,19 @@ export default function ResultsPage() {
             <span className="text-slate-400 mx-2">|</span>
             <span className="font-bold text-slate-900">{Math.round(results?.score_percentage || 0)}%</span>
           </div>
+          {/* Show note for partial assessments */}
+          {results?.selected_areas && results.selected_areas.length < 6 && (
+            <p className="text-slate-500 text-sm mt-3">
+              Assessed {results.selected_areas.length} of 6 areas
+            </p>
+          )}
         </div>
 
-        {/* CRITICAL: Red Flag Alert - Always show if any RED answers exist */}
-        {hasRedFlags && (
-          <Card className="border-red-300 bg-red-50 mb-8 shadow-md">
-            <CardHeader className="pb-2">
-              <CardTitle className="font-heading text-xl font-semibold text-red-900 flex items-center gap-2">
-                <XCircle className="w-6 h-6 text-red-500" />
-                Immediate Attention Required
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-2">
-              <p className="text-red-800 text-sm mb-4">
-                The following items require immediate attention. A single unprotected area can create catastrophic risk regardless of your overall score.
-              </p>
-              <div className="space-y-3">
-                {(results?.red_flag_details || []).map((flag, index) => (
-                  <div key={index} className="flex items-start gap-3 p-3 bg-white rounded-lg border border-red-200">
-                    <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0">
-                      <AlertTriangle className="w-4 h-4 text-white" />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-red-900">{flag.title}</h4>
-                      <p className="text-sm text-red-700">{flag.description}</p>
-                      <span className="text-xs text-red-500 mt-1 inline-block">{flag.area_name}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* 6-Area Dashboard */}
+        {/* Area Dashboard - Moved to top */}
         <Card className="border-slate-200 mb-8">
           <CardHeader>
             <CardTitle className="font-heading text-xl font-semibold text-slate-900">
-              Your 6-Area Dashboard
+              Your {results?.area_scores?.length || 6}-Area Dashboard
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
@@ -359,32 +334,91 @@ export default function ResultsPage() {
           </CardContent>
         </Card>
 
-        {/* Action Plan */}
-        {results?.action_plan?.length > 0 && (
-          <Card className="border-slate-200 mb-8">
-            <CardHeader>
-              <CardTitle className="font-heading text-xl font-semibold text-slate-900">
-                Your Action Plan
+        {/* Immediate Attention Required (RED) */}
+        {results?.red_flag_details?.length > 0 && (
+          <Card className="border-red-300 bg-red-50 mb-8 shadow-md">
+            <CardHeader className="pb-2">
+              <CardTitle className="font-heading text-xl font-semibold text-red-900 flex items-center gap-2">
+                <XCircle className="w-6 h-6 text-red-500" />
+                Immediate Attention Required
               </CardTitle>
             </CardHeader>
-            <CardContent className="pt-0">
+            <CardContent className="pt-2">
+              <p className="text-red-800 text-sm mb-4">
+                The following items require immediate attention. A single unprotected area can create catastrophic risk regardless of your overall score.
+              </p>
               <div className="space-y-3">
-                {results.action_plan.map((action, index) => (
-                  <div
-                    key={index}
-                    className="flex items-start gap-4 p-4 bg-slate-50 rounded-lg"
-                    data-testid={`action-item-${index}`}
-                  >
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 font-semibold text-sm ${
-                      action.urgency === "high"
-                        ? 'bg-orange-500 text-white'
-                        : 'bg-slate-200 text-slate-700'
-                    }`}>
-                      {action.priority}
+                {results.red_flag_details.map((flag, index) => (
+                  <div key={index} className="flex items-start gap-3 p-3 bg-white rounded-lg border border-red-200">
+                    <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0">
+                      <AlertTriangle className="w-4 h-4 text-white" />
                     </div>
                     <div>
-                      <h4 className="font-semibold text-slate-900">{action.action}</h4>
-                      <p className="text-sm text-slate-600 mt-1">{action.description}</p>
+                      <h4 className="font-semibold text-red-900">{flag.title}</h4>
+                      <p className="text-sm text-red-700">{flag.description}</p>
+                      <span className="text-xs text-red-500 mt-1 inline-block">{flag.area_name}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* At Risk (YELLOW) */}
+        {results?.yellow_flag_details?.length > 0 && (
+          <Card className="border-amber-300 bg-amber-50 mb-8 shadow-md">
+            <CardHeader className="pb-2">
+              <CardTitle className="font-heading text-xl font-semibold text-amber-900 flex items-center gap-2">
+                <AlertTriangle className="w-6 h-6 text-amber-500" />
+                At Risk
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-2">
+              <p className="text-amber-800 text-sm mb-4">
+                These areas have common gaps that should be addressed soon to reduce your exposure.
+              </p>
+              <div className="space-y-3">
+                {results.yellow_flag_details.map((flag, index) => (
+                  <div key={index} className="flex items-start gap-3 p-3 bg-white rounded-lg border border-amber-200">
+                    <div className="w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center flex-shrink-0">
+                      <AlertTriangle className="w-4 h-4 text-white" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-amber-900">{flag.title}</h4>
+                      <p className="text-sm text-amber-700">{flag.description}</p>
+                      <span className="text-xs text-amber-500 mt-1 inline-block">{flag.area_name}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Healthy (GREEN) */}
+        {results?.green_flag_details?.length > 0 && (
+          <Card className="border-emerald-300 bg-emerald-50 mb-8 shadow-md">
+            <CardHeader className="pb-2">
+              <CardTitle className="font-heading text-xl font-semibold text-emerald-900 flex items-center gap-2">
+                <CheckCircle2 className="w-6 h-6 text-emerald-500" />
+                Healthy
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-2">
+              <p className="text-emerald-800 text-sm mb-4">
+                These areas are well-protected. Continue to maintain these practices.
+              </p>
+              <div className="space-y-3">
+                {results.green_flag_details.map((flag, index) => (
+                  <div key={index} className="flex items-start gap-3 p-3 bg-white rounded-lg border border-emerald-200">
+                    <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center flex-shrink-0">
+                      <CheckCircle2 className="w-4 h-4 text-white" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-emerald-900">{flag.title}</h4>
+                      <p className="text-sm text-emerald-700">{flag.description}</p>
+                      <span className="text-xs text-emerald-500 mt-1 inline-block">{flag.area_name}</span>
                     </div>
                   </div>
                 ))}
@@ -458,7 +492,7 @@ export default function ResultsPage() {
             Back to Main Menu
           </Button>
           <Button
-            onClick={() => navigate("/select-modules")}
+            onClick={() => navigate("/")}
             className="bg-slate-900 hover:bg-slate-800 flex items-center justify-center"
             data-testid="new-assessment-btn"
           >

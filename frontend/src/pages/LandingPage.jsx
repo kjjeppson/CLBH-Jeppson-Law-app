@@ -7,8 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Shield, FileCheck, AlertTriangle, CheckCircle2, Clock, ArrowRight, Calendar, Loader2, Phone, Users, Briefcase, UserCheck, ShieldCheck, Database } from "lucide-react";
+import { Shield, FileCheck, AlertTriangle, CheckCircle2, Clock, ArrowRight, Calendar, Loader2, Phone, Users, Briefcase, UserCheck, ShieldCheck, Database, Check } from "lucide-react";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -114,13 +115,54 @@ export default function LandingPage() {
   ];
 
   const quizAreas = [
-    { icon: <FileCheck className="w-5 h-5" />, name: "Customer Contracts & Project Risks" },
-    { icon: <Users className="w-5 h-5" />, name: "Ownership & Governance" },
-    { icon: <Briefcase className="w-5 h-5" />, name: "Vendors" },
-    { icon: <UserCheck className="w-5 h-5" />, name: "Employment & Safety Compliance" },
-    { icon: <ShieldCheck className="w-5 h-5" />, name: "Insurance and Risk Management" },
-    { icon: <Database className="w-5 h-5" />, name: "Systems, Records & Digital Risk" }
+    { id: "contracts", icon: <FileCheck className="w-5 h-5" />, name: "Customer Contracts & Project Risks" },
+    { id: "ownership", icon: <Users className="w-5 h-5" />, name: "Ownership & Governance" },
+    { id: "subcontractor", icon: <Briefcase className="w-5 h-5" />, name: "Vendors" },
+    { id: "employment", icon: <UserCheck className="w-5 h-5" />, name: "Employment & Safety Compliance" },
+    { id: "insurance", icon: <ShieldCheck className="w-5 h-5" />, name: "Insurance and Risk Management" },
+    { id: "systems", icon: <Database className="w-5 h-5" />, name: "Systems, Records & Digital Risk" }
   ];
+
+  // No areas selected by default
+  const [selectedAreas, setSelectedAreas] = useState([]);
+  const [isStartingQuiz, setIsStartingQuiz] = useState(false);
+
+  const toggleArea = (areaId) => {
+    setSelectedAreas(prev =>
+      prev.includes(areaId)
+        ? prev.filter(id => id !== areaId)
+        : [...prev, areaId]
+    );
+  };
+
+  const toggleAllAreas = () => {
+    if (selectedAreas.length === quizAreas.length) {
+      setSelectedAreas([]);
+    } else {
+      setSelectedAreas(quizAreas.map(a => a.id));
+    }
+  };
+
+  const handleBeginQuiz = async () => {
+    if (selectedAreas.length === 0) {
+      toast.error("Please select at least one area to assess");
+      return;
+    }
+
+    setIsStartingQuiz(true);
+    try {
+      const response = await axios.post(`${API}/assessments`, {
+        modules: ["clbh"],
+        selected_areas: selectedAreas
+      });
+      navigate(`/assessment/${response.data.id}`);
+    } catch (error) {
+      console.error("Error creating assessment:", error);
+      toast.error("Failed to start quiz. Please try again.");
+    } finally {
+      setIsStartingQuiz(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -146,7 +188,7 @@ export default function LandingPage() {
               Schedule a CLBH Call
             </Button>
             <Button
-              onClick={() => navigate("/select-modules")}
+              onClick={() => document.getElementById('quiz-section').scrollIntoView({ behavior: 'smooth' })}
               className="bg-slate-900 hover:bg-slate-800"
               data-testid="nav-start-checkup-btn"
             >
@@ -173,8 +215,8 @@ export default function LandingPage() {
               an actionable protection plan—in just 5-10 minutes.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 animate-fade-in-up animate-delay-300">
-              <Button 
-                onClick={() => navigate("/select-modules")}
+              <Button
+                onClick={() => document.getElementById('quiz-section').scrollIntoView({ behavior: 'smooth' })}
                 className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-6 text-lg font-semibold"
                 data-testid="hero-start-checkup-btn"
               >
@@ -227,41 +269,81 @@ export default function LandingPage() {
       </section>
 
       {/* Quiz Overview Section */}
-      <section className="hero-section py-20">
+      <section className="hero-section py-20" id="quiz-section">
         <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
           <h2 className="font-heading text-4xl md:text-5xl font-bold text-white mb-4">
             Clean Legal Bill of Health Quiz
           </h2>
-          <p className="text-slate-300 text-lg mb-10">
-            24 Questions Across 6 Critical Areas of Business Legal Health
+          <p className="text-slate-300 text-lg mb-6">
+            Select the areas you want to assess (4 questions each)
           </p>
 
-          {/* 6 Areas Preview */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-10 max-w-3xl mx-auto">
-            {quizAreas.map((area, index) => (
-              <div
-                key={index}
-                className="flex items-center gap-3 p-3 bg-slate-800/50 rounded-lg text-left border border-slate-700"
-              >
-                <div className="w-9 h-9 bg-slate-700 rounded-lg flex items-center justify-center text-slate-300 flex-shrink-0">
-                  {area.icon}
-                </div>
-                <span className="text-sm font-medium text-slate-300">{area.name}</span>
-              </div>
-            ))}
+          {/* Select All / Deselect All Button */}
+          <div className="flex justify-center mb-4">
+            <Button
+              variant="outline"
+              onClick={toggleAllAreas}
+              className="border-orange-500 text-orange-400 hover:bg-orange-500/10 text-sm"
+              data-testid="toggle-all-areas-btn"
+            >
+              {selectedAreas.length === quizAreas.length ? "Deselect All" : "Select All"}
+            </Button>
           </div>
 
+          {/* 6 Selectable Areas */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mb-10 max-w-3xl mx-auto">
+            {quizAreas.map((area) => {
+              const isSelected = selectedAreas.includes(area.id);
+              return (
+                <div
+                  key={area.id}
+                  onClick={() => toggleArea(area.id)}
+                  className={`flex items-center gap-3 p-3 sm:p-4 rounded-lg text-left border-2 cursor-pointer transition-all duration-200 bg-slate-800 ${
+                    isSelected
+                      ? "border-orange-500 shadow-lg shadow-orange-500/30"
+                      : "border-orange-500/50 hover:border-orange-500"
+                  }`}
+                  data-testid={`area-card-${area.id}`}
+                >
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors ${
+                    isSelected ? "bg-orange-500 text-white" : "bg-slate-700 text-slate-400"
+                  }`}>
+                    {isSelected ? <Check className="w-5 h-5" /> : area.icon}
+                  </div>
+                  <span className="text-sm font-medium text-slate-200">
+                    {area.name}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Selected count indicator */}
+          <p className="text-slate-400 text-sm mb-6">
+            {selectedAreas.length} of 6 areas selected • {selectedAreas.length * 4} questions
+          </p>
+
           <Button
-            onClick={() => navigate("/select-modules")}
-            className="bg-orange-500 hover:bg-orange-600 text-white px-10 py-6 text-lg font-semibold"
+            onClick={handleBeginQuiz}
+            disabled={isStartingQuiz || selectedAreas.length === 0}
+            className="bg-orange-500 hover:bg-orange-600 text-white px-10 py-6 text-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
             data-testid="quiz-begin-btn"
           >
-            Begin Quiz
-            <ArrowRight className="ml-2 w-5 h-5" />
+            {isStartingQuiz ? (
+              <>
+                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                Starting...
+              </>
+            ) : (
+              <>
+                Begin Quiz
+                <ArrowRight className="ml-2 w-5 h-5" />
+              </>
+            )}
           </Button>
 
           <p className="text-slate-400 text-sm mt-6">
-            Takes 5-10 minutes • Confidential • Instant results
+            Confidential • Instant results
           </p>
         </div>
       </section>
@@ -325,8 +407,8 @@ export default function LandingPage() {
             Our comprehensive 24-question quiz covers 6 critical areas of business legal health.
             No commitment, completely confidential.
           </p>
-          <Button 
-            onClick={() => navigate("/select-modules")}
+          <Button
+            onClick={() => document.getElementById('quiz-section').scrollIntoView({ behavior: 'smooth' })}
             className="bg-orange-500 hover:bg-orange-600 text-white px-10 py-6 text-lg font-semibold"
             data-testid="cta-start-checkup-btn"
           >
