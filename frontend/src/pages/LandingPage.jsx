@@ -358,8 +358,8 @@ export default function LandingPage() {
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-4">
             <a href="https://www.jeppsonlaw.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
               <Shield className="w-6 h-6 text-blue-900" />
-              <span className="font-brand text-lg font-semibold text-slate-900">
-                Jeppson Law<span className="text-slate-500">, LLP</span>
+              <span className="font-brand text-lg font-semibold text-blue-900">
+                JeppsonLaw.com
               </span>
             </a>
             <a href="tel:916-780-7008" className="flex items-center gap-2 text-slate-600 hover:text-blue-900 transition-colors">
