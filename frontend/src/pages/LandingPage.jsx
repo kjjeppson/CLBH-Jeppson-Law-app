@@ -3,98 +3,13 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { Shield, FileCheck, AlertTriangle, CheckCircle2, Clock, ArrowRight, Calendar, Loader2, Phone, Users, Briefcase, UserCheck, ShieldCheck, Database, Check } from "lucide-react";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
-const US_STATES = [
-  "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut",
-  "Delaware", "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa",
-  "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland", "Massachusetts", "Michigan",
-  "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire",
-  "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio",
-  "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota",
-  "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia",
-  "Wisconsin", "Wyoming"
-];
-
-const SITUATIONS = [
-  "Reviewing a new lease",
-  "Renewing an existing lease",
-  "Planning a business acquisition",
-  "Currently in acquisition process",
-  "Starting a new partnership",
-  "Reviewing existing partnership agreement",
-  "General business health check",
-  "Addressing a specific concern",
-  "Other"
-];
-
 export default function LandingPage() {
   const navigate = useNavigate();
-  const [showLeadCapture, setShowLeadCapture] = useState(false);
-  const [isSubmittingLead, setIsSubmittingLead] = useState(false);
-  const [leadSubmitted, setLeadSubmitted] = useState(false);
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    business_name: "",
-    state: "",
-    situation: ""
-  });
-
-  const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleLeadSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!formData.name || !formData.email || !formData.phone || !formData.business_name || !formData.state || !formData.situation) {
-      toast.error("Please fill in all fields");
-      return;
-    }
-
-    setIsSubmittingLead(true);
-    try {
-      await axios.post(`${API}/leads`, {
-        ...formData,
-        modules: [],
-        assessment_id: null
-      });
-
-      setLeadSubmitted(true);
-      toast.success("Information submitted successfully!");
-    } catch (error) {
-      console.error("Error submitting lead:", error);
-      toast.error("Failed to submit. Please try again.");
-    } finally {
-      setIsSubmittingLead(false);
-    }
-  };
-
-  const handleLeadDialogOpenChange = (open) => {
-    setShowLeadCapture(open);
-    if (!open) {
-      setLeadSubmitted(false);
-      setIsSubmittingLead(false);
-      setFormData({
-        name: "",
-        email: "",
-        phone: "",
-        business_name: "",
-        state: "",
-        situation: ""
-      });
-    }
-  };
 
   const benefits = [
     {
@@ -180,12 +95,12 @@ export default function LandingPage() {
           </div>
           <div className="flex gap-2">
             <Button
-              onClick={() => setShowLeadCapture(true)}
+              onClick={() => window.open('https://jeppsonlaw.cliogrow.com/book/5d7625ad3292b0e84db81965f80ee5f4', '_blank')}
               className="hidden sm:flex bg-orange-500 hover:bg-orange-600"
               data-testid="nav-schedule-btn"
             >
               <Calendar className="w-4 h-4 mr-2" />
-              Schedule a CLBH Call
+              Schedule a Free CLBH Call
             </Button>
             <Button
               onClick={() => document.getElementById('quiz-section').scrollIntoView({ behavior: 'smooth' })}
@@ -460,138 +375,6 @@ export default function LandingPage() {
           </p>
         </div>
       </footer>
-
-      {/* Lead Capture Dialog */}
-      <Dialog open={showLeadCapture} onOpenChange={handleLeadDialogOpenChange}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="font-heading text-xl">
-              {leadSubmitted ? "Thank You!" : "Schedule a CLBH Review Call"}
-            </DialogTitle>
-            <DialogDescription>
-              {leadSubmitted
-                ? "We'll be in touch shortly to schedule your CLBH Review Call."
-                : "Fill in your details and we'll reach out to schedule a review call."
-              }
-            </DialogDescription>
-          </DialogHeader>
-
-          {leadSubmitted ? (
-            <div className="py-8 text-center">
-              <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle2 className="w-8 h-8 text-emerald-500" />
-              </div>
-              <p className="text-slate-600 mb-4">
-                Your information has been submitted. We'll reach out within 1 business day.
-              </p>
-              <Button
-                onClick={() => setShowLeadCapture(false)}
-                className="bg-slate-900"
-              >
-                Close
-              </Button>
-            </div>
-          ) : (
-            <form onSubmit={handleLeadSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="name">Full Name *</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => handleInputChange("name", e.target.value)}
-                  placeholder="John Smith"
-                  className="mt-1"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="email">Email *</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange("email", e.target.value)}
-                  placeholder="john@company.com"
-                  className="mt-1"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="phone">Phone *</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => handleInputChange("phone", e.target.value)}
-                  placeholder="(555) 123-4567"
-                  className="mt-1"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="business_name">Business Name *</Label>
-                <Input
-                  id="business_name"
-                  value={formData.business_name}
-                  onChange={(e) => handleInputChange("business_name", e.target.value)}
-                  placeholder="Acme Construction LLC"
-                  className="mt-1"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="state">State *</Label>
-                <Select value={formData.state} onValueChange={(value) => handleInputChange("state", value)}>
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Select your state" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {US_STATES.map((state) => (
-                      <SelectItem key={state} value={state}>
-                        {state}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="situation">What best describes your situation? *</Label>
-                <Select value={formData.situation} onValueChange={(value) => handleInputChange("situation", value)}>
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Select your situation" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SITUATIONS.map((situation) => (
-                      <SelectItem key={situation} value={situation}>
-                        {situation}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <Button
-                type="submit"
-                className="w-full bg-orange-500 hover:bg-orange-600"
-                disabled={isSubmittingLead}
-              >
-                {isSubmittingLead ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Submitting...
-                  </>
-                ) : (
-                  <>
-                    Submit & Schedule Call
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </>
-                )}
-              </Button>
-            </form>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
