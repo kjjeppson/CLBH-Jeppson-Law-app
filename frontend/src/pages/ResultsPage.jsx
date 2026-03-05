@@ -469,7 +469,7 @@ export default function ResultsPage() {
             </p>
             <div className="text-center">
               <Button
-                onClick={() => window.open('https://calendly.com/jeppsonlaw', '_blank')}
+                onClick={() => window.open('https://jeppsonlaw.cliogrow.com/book/5d7625ad3292b0e84db81965f80ee5f4', '_blank')}
                 className="bg-orange-500 hover:bg-orange-600 text-white"
                 data-testid="disclaimer-book-consultation-btn"
               >
@@ -572,7 +572,7 @@ export default function ResultsPage() {
                   </p>
                   <div className="flex flex-col gap-3">
                     <Button
-                      onClick={() => window.open('https://calendly.com/jeppsonlaw', '_blank')}
+                      onClick={() => window.open('https://jeppsonlaw.cliogrow.com/book/5d7625ad3292b0e84db81965f80ee5f4', '_blank')}
                       className="bg-orange-500 hover:bg-orange-600"
                       data-testid="schedule-consultation-btn"
                     >
@@ -595,7 +595,7 @@ export default function ResultsPage() {
                   </p>
                   <div className="flex flex-col gap-3">
                     <Button
-                      onClick={() => window.open('https://calendly.com/jeppsonlaw', '_blank')}
+                      onClick={() => window.open('https://jeppsonlaw.cliogrow.com/book/5d7625ad3292b0e84db81965f80ee5f4', '_blank')}
                       className="bg-orange-500 hover:bg-orange-600"
                       data-testid="open-calendar-btn"
                     >
