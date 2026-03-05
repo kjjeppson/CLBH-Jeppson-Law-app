@@ -53,7 +53,6 @@ export default function ResultsPage() {
   const [results, setResults] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showLeadCapture, setShowLeadCapture] = useState(false);
-  const [dialogMode, setDialogMode] = useState("results");
   const [isSubmittingLead, setIsSubmittingLead] = useState(false);
   const [leadSubmitted, setLeadSubmitted] = useState(false);
   const [formData, setFormData] = useState({
@@ -113,13 +112,11 @@ export default function ResultsPage() {
   };
 
   const handleEmailResults = () => {
-    setDialogMode("results");
     setShowLeadCapture(true);
   };
 
   const handleScheduleCall = () => {
-    setDialogMode("schedule");
-    setShowLeadCapture(true);
+    window.open('https://jeppsonlaw.cliogrow.com/book/5d7625ad3292b0e84db81965f80ee5f4', '_blank');
   };
 
   const handleLeadDialogOpenChange = (open) => {
@@ -543,19 +540,11 @@ export default function ResultsPage() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="font-heading text-xl">
-              {leadSubmitted
-                ? "Thank You!"
-                : dialogMode === "results"
-                  ? "Get Your Results"
-                  : "Schedule a Free Consultation"
-              }
+              {leadSubmitted ? "Thank You!" : "Get Your Results"}
             </DialogTitle>
             {!leadSubmitted && (
               <DialogDescription>
-                {dialogMode === "results"
-                  ? "Fill in your details to receive your results by email and text message."
-                  : "Fill in your details to schedule your free 15-minute CLBH consultation."
-                }
+                Fill in your details to receive your results by email and text message.
               </DialogDescription>
             )}
           </DialogHeader>
@@ -565,53 +554,26 @@ export default function ResultsPage() {
               <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <CheckCircle2 className="w-8 h-8 text-emerald-500" />
               </div>
-              {dialogMode === "results" ? (
-                <>
-                  <p className="text-slate-600 mb-4">
-                    We have emailed and texted you your results. If you have any questions, you can schedule a free 15-minute CLBH consultation.
-                  </p>
-                  <div className="flex flex-col gap-3">
-                    <Button
-                      onClick={() => window.open('https://jeppsonlaw.cliogrow.com/book/5d7625ad3292b0e84db81965f80ee5f4', '_blank')}
-                      className="bg-orange-500 hover:bg-orange-600"
-                      data-testid="schedule-consultation-btn"
-                    >
-                      <Calendar className="w-4 h-4 mr-2" />
-                      Schedule Free Consultation
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => setShowLeadCapture(false)}
-                      data-testid="close-success-btn"
-                    >
-                      Close
-                    </Button>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <p className="text-slate-600 mb-4">
-                    Click below to choose a time for your free 15-minute CLBH consultation.
-                  </p>
-                  <div className="flex flex-col gap-3">
-                    <Button
-                      onClick={() => window.open('https://jeppsonlaw.cliogrow.com/book/5d7625ad3292b0e84db81965f80ee5f4', '_blank')}
-                      className="bg-orange-500 hover:bg-orange-600"
-                      data-testid="open-calendar-btn"
-                    >
-                      <Calendar className="w-4 h-4 mr-2" />
-                      Choose a Time
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => setShowLeadCapture(false)}
-                      data-testid="close-success-btn"
-                    >
-                      Close
-                    </Button>
-                  </div>
-                </>
-              )}
+              <p className="text-slate-600 mb-4">
+                We have emailed and texted you your results. If you have any questions, you can schedule a free 15-minute CLBH consultation.
+              </p>
+              <div className="flex flex-col gap-3">
+                <Button
+                  onClick={() => window.open('https://jeppsonlaw.cliogrow.com/book/5d7625ad3292b0e84db81965f80ee5f4', '_blank')}
+                  className="bg-orange-500 hover:bg-orange-600"
+                  data-testid="schedule-consultation-btn"
+                >
+                  <Calendar className="w-4 h-4 mr-2" />
+                  Schedule Free Consultation
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowLeadCapture(false)}
+                  data-testid="close-success-btn"
+                >
+                  Close
+                </Button>
+              </div>
             </div>
           ) : (
             <form onSubmit={handleLeadSubmit} className="space-y-4">
@@ -641,7 +603,7 @@ export default function ResultsPage() {
               </div>
 
               <div>
-                <Label htmlFor="phone">Cell Phone {dialogMode === "results" ? "(for text) " : ""}*</Label>
+                <Label htmlFor="phone">Cell Phone (for text) *</Label>
                 <Input
                   id="phone"
                   type="tel"
@@ -716,15 +678,10 @@ export default function ResultsPage() {
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     Submitting...
                   </>
-                ) : dialogMode === "results" ? (
+                ) : (
                   <>
                     Send My Results
                     <ArrowRight className="w-4 h-4 ml-2" />
-                  </>
-                ) : (
-                  <>
-                    Continue to Calendar
-                    <Calendar className="w-4 h-4 ml-2" />
                   </>
                 )}
               </Button>
