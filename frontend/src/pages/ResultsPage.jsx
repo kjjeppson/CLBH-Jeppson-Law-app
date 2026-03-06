@@ -458,22 +458,12 @@ export default function ResultsPage() {
         {/* Disclaimer */}
         <Card className="border-slate-200 mb-8 bg-slate-50">
           <CardContent className="p-6">
-            <p className="text-slate-600 text-sm leading-relaxed text-center mb-4">
+            <p className="text-slate-600 text-base leading-relaxed text-center">
               <strong>DISCLAIMER:</strong> This assessment is for educational purposes only and does not constitute legal advice.
               The results are intended to help you identify potential areas of concern in your business.
               For specific legal guidance tailored to your situation, please consult with a licensed attorney.
               You may take this checklist to your own attorney, or schedule a consultation with Jeppson Law.
             </p>
-            <div className="text-center">
-              <Button
-                onClick={() => window.open('https://jeppsonlaw.cliogrow.com/book/5d7625ad3292b0e84db81965f80ee5f4', '_blank')}
-                className="bg-orange-500 hover:bg-orange-600 text-white"
-                data-testid="disclaimer-book-consultation-btn"
-              >
-                <Calendar className="w-4 h-4 mr-2" />
-                Book a Free Consultation
-              </Button>
-            </div>
           </CardContent>
         </Card>
 
