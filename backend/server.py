@@ -58,6 +58,17 @@ def require_admin(request: Request) -> None:
 # Create the main app
 app = FastAPI()
 
+# Configure CORS - must be added before routes
+cors_origins = [origin.strip() for origin in os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=cors_origins,
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allow_headers=["*"],
+    expose_headers=["*"],
+)
+
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
@@ -920,16 +931,6 @@ async def export_leads(request: Request):
 
 # Include the router in the app
 app.include_router(api_router)
-
-# Configure CORS
-origins = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 @app.on_event("startup")
 async def startup_db_client():
