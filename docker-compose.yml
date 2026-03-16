@@ -16,6 +16,9 @@ services:
       CORS_ORIGINS: http://localhost:3000
       # Protects /api/admin/* endpoints (loaded from .env)
       ADMIN_KEY: ${ADMIN_KEY}
+      # Kit (ConvertKit) integration
+      KIT_API_KEY: ${KIT_API_KEY}
+      KIT_FORM_ID: ${KIT_FORM_ID}
     ports:
       - "8000:8000"
     depends_on:

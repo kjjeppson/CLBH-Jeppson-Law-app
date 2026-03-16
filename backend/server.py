@@ -13,6 +13,7 @@ import uuid
 from datetime import datetime, timezone
 import io
 import csv
+import httpx
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -29,6 +30,35 @@ mongo_url = os.getenv("MONGO_URL")
 db_name = os.getenv("DB_NAME")
 client: Optional[AsyncIOMotorClient] = None
 db = None
+
+# Kit (ConvertKit) integration
+kit_api_key = os.getenv("KIT_API_KEY")
+kit_form_id = os.getenv("KIT_FORM_ID")
+
+
+async def subscribe_to_kit(email: str, first_name: str, custom_fields: Dict[str, str]) -> None:
+    """Subscribe a lead to Kit (ConvertKit) form with custom fields."""
+    if not kit_api_key or not kit_form_id:
+        logger.warning("KIT_API_KEY/KIT_FORM_ID not set; skipping Kit subscription.")
+        return
+    try:
+        async with httpx.AsyncClient(timeout=10) as http:
+            resp = await http.post(
+                f"https://api.convertkit.com/v3/forms/{kit_form_id}/subscribe",
+                json={
+                    "api_key": kit_api_key,
+                    "email": email,
+                    "first_name": first_name,
+                    "fields": custom_fields,
+                },
+            )
+            if resp.status_code in (200, 201):
+                logger.info(f"Subscribed {email} to Kit form {kit_form_id}")
+            else:
+                logger.error(f"Kit API error {resp.status_code}: {resp.text}")
+    except Exception as exc:
+        logger.error(f"Failed to subscribe {email} to Kit: {exc}")
+
 
 def require_db():
     """Return the configured Mongo DB handle or raise a clear error."""
@@ -863,6 +893,20 @@ async def create_lead(data: LeadCreate):
     doc = lead.model_dump()
     doc['timestamp'] = doc['timestamp'].isoformat()
     await db.leads.insert_one(doc)
+
+    # Subscribe to Kit (ConvertKit) for results email + newsletter
+    await subscribe_to_kit(
+        email=data.email,
+        first_name=data.name.split()[0] if data.name else "",
+        custom_fields={
+            "business_name": data.business_name,
+            "state": data.state,
+            "phone": data.phone,
+            "risk_level": lead.risk_level or "",
+            "score": lead.score or "",
+            "top_risks": ", ".join(lead.top_risks) if lead.top_risks else "",
+        },
+    )
 
     return {"success": True, "lead_id": lead.id}
 
