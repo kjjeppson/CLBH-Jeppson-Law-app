@@ -31,10 +31,14 @@ db_name = os.getenv("DB_NAME")
 client: Optional[AsyncIOMotorClient] = None
 db = None
 
-# Kit (ConvertKit) API configuration
+# Kit (ConvertKit) API configuration (kept for subscriber management)
 KIT_API_KEY = os.getenv("KIT_API_KEY")
 KIT_FORM_ID = os.getenv("KIT_FORM_ID")
 KIT_API_URL = "https://api.convertkit.com/v3"
+
+# Resend API configuration (for transactional emails)
+RESEND_API_KEY = os.getenv("RESEND_API_KEY")
+RESEND_API_URL = "https://api.resend.com"
 
 async def subscribe_to_kit(
     email: str,
@@ -142,6 +146,303 @@ async def subscribe_to_kit(
         logger.error(f"Kit API Unexpected Error: {str(e)}")
         logger.exception("Full traceback:")
         return {"success": False, "error": f"Unexpected error: {str(e)}"}
+
+
+def build_results_email_html(
+    first_name: str,
+    business_name: str,
+    state: str,
+    risk_level: str,
+    score: str,
+    top_risks: list
+) -> str:
+    """
+    Build a complete HTML email with all assessment results pre-filled.
+    No merge tags needed - all data is baked in.
+    """
+    # Determine risk level styling
+    if risk_level == "red":
+        risk_color = "#ef4444"
+        risk_bg = "#fef2f2"
+        risk_label = "Urgent"
+        risk_icon = "🔴"
+    elif risk_level == "yellow":
+        risk_color = "#f59e0b"
+        risk_bg = "#fffbeb"
+        risk_label = "At Risk"
+        risk_icon = "🟡"
+    else:
+        risk_color = "#10b981"
+        risk_bg = "#ecfdf5"
+        risk_label = "Healthy"
+        risk_icon = "🟢"
+
+    # Build top risks HTML
+    if top_risks:
+        risks_html = "".join([
+            f'<li style="margin: 8px 0; color: #1e293b;">{risk}</li>'
+            for risk in top_risks
+        ])
+    else:
+        risks_html = '<li style="margin: 8px 0; color: #64748b;">No critical risks identified</li>'
+
+    html = f'''<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your CLBH Assessment Results</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f8fafc;">
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f8fafc;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+
+          <!-- Header -->
+          <tr>
+            <td style="background-color: #1B2B4B; padding: 30px 40px; border-radius: 12px 12px 0 0;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                  <td>
+                    <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 700;">
+                      🛡️ Jeppson Law, LLP
+                    </h1>
+                    <p style="margin: 8px 0 0 0; color: #94a3b8; font-size: 14px;">
+                      Clean Legal Bill of Health Assessment
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Greeting -->
+          <tr>
+            <td style="padding: 40px 40px 20px 40px;">
+              <h2 style="margin: 0 0 16px 0; color: #1B2B4B; font-size: 22px; font-weight: 600;">
+                Hello {first_name or "there"},
+              </h2>
+              <p style="margin: 0; color: #64748b; font-size: 16px; line-height: 1.6;">
+                Thank you for completing your Clean Legal Bill of Health assessment. Here are your results:
+              </p>
+            </td>
+          </tr>
+
+          <!-- Results Card -->
+          <tr>
+            <td style="padding: 0 40px 30px 40px;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background: linear-gradient(135deg, #1B2B4B 0%, #2d3e5f 100%); border-radius: 12px; overflow: hidden;">
+                <tr>
+                  <td style="padding: 30px;">
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                      <tr>
+                        <td width="50%" style="vertical-align: top;">
+                          <p style="margin: 0 0 8px 0; color: #94a3b8; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">
+                            Risk Level
+                          </p>
+                          <p style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 700;">
+                            {risk_icon} {risk_label}
+                          </p>
+                        </td>
+                        <td width="50%" style="vertical-align: top; text-align: right;">
+                          <p style="margin: 0 0 8px 0; color: #94a3b8; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">
+                            Score
+                          </p>
+                          <p style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 700;">
+                            {score}
+                          </p>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Top Risks Section -->
+          <tr>
+            <td style="padding: 0 40px 30px 40px;">
+              <h3 style="margin: 0 0 16px 0; color: #1B2B4B; font-size: 18px; font-weight: 600;">
+                📋 Areas Requiring Attention
+              </h3>
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: {risk_bg}; border-left: 4px solid {risk_color}; border-radius: 0 8px 8px 0;">
+                <tr>
+                  <td style="padding: 20px;">
+                    <ul style="margin: 0; padding-left: 20px; color: #1e293b; font-size: 14px; line-height: 1.8;">
+                      {risks_html}
+                    </ul>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Business Info -->
+          <tr>
+            <td style="padding: 0 40px 30px 40px;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f1f5f9; border-radius: 8px;">
+                <tr>
+                  <td style="padding: 20px;">
+                    <p style="margin: 0 0 8px 0; color: #64748b; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">
+                      Assessment For
+                    </p>
+                    <p style="margin: 0; color: #1B2B4B; font-size: 16px; font-weight: 600;">
+                      {business_name or "Your Business"}
+                    </p>
+                    <p style="margin: 4px 0 0 0; color: #64748b; font-size: 14px;">
+                      {state or ""}
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- CTA Button -->
+          <tr>
+            <td style="padding: 0 40px 40px 40px;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                  <td style="text-align: center;">
+                    <p style="margin: 0 0 20px 0; color: #64748b; font-size: 16px; line-height: 1.6;">
+                      Ready to address these risks? Schedule a free 15-minute consultation to review your results and create an action plan.
+                    </p>
+                    <a href="https://jeppsonlaw.cliogrow.com/book/5d7625ad3292b0e84db81965f80ee5f4"
+                       style="display: inline-block; background-color: #F97316; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; padding: 16px 32px; border-radius: 8px; box-shadow: 0 4px 6px rgba(249, 115, 22, 0.3);">
+                      📅 Book Free Consultation
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Divider -->
+          <tr>
+            <td style="padding: 0 40px;">
+              <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 0;">
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 30px 40px;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                  <td style="text-align: center;">
+                    <p style="margin: 0 0 8px 0; color: #1B2B4B; font-size: 16px; font-weight: 600;">
+                      Jeppson Law, LLP
+                    </p>
+                    <p style="margin: 0 0 4px 0; color: #64748b; font-size: 14px;">
+                      <a href="https://www.jeppsonlaw.com" style="color: #F97316; text-decoration: none;">JeppsonLaw.com</a>
+                      &nbsp;|&nbsp;
+                      <a href="tel:916-780-7008" style="color: #64748b; text-decoration: none;">916-780-7008</a>
+                    </p>
+                    <p style="margin: 16px 0 0 0; color: #94a3b8; font-size: 12px;">
+                      This assessment is for educational purposes only and does not constitute legal advice.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>'''
+    return html
+
+
+async def send_results_email(
+    to_email: str,
+    first_name: str,
+    business_name: str,
+    state: str,
+    risk_level: str,
+    score: str,
+    top_risks: list
+) -> Dict[str, Any]:
+    """
+    Send the results email directly via Resend API.
+    All data is pre-filled in the HTML - no merge tags.
+    """
+    logger.info("=" * 50)
+    logger.info("SENDING RESULTS EMAIL VIA RESEND")
+    logger.info("=" * 50)
+    logger.info(f"To: {to_email}")
+    logger.info(f"First Name: {first_name}")
+    logger.info(f"Business Name: {business_name}")
+    logger.info(f"Risk Level: {risk_level}")
+    logger.info(f"Score: {score}")
+    logger.info(f"Top Risks: {top_risks}")
+
+    if not RESEND_API_KEY:
+        logger.error("RESEND_API_KEY environment variable is not set!")
+        return {"success": False, "error": "RESEND_API_KEY not configured"}
+
+    # Build the complete HTML email
+    html_content = build_results_email_html(
+        first_name=first_name,
+        business_name=business_name,
+        state=state,
+        risk_level=risk_level,
+        score=score,
+        top_risks=top_risks
+    )
+
+    # Prepare the email payload for Resend
+    payload = {
+        "from": "Eric Jeppson | Jeppson Law <ejeppson@jeppsonlaw.com>",
+        "to": [to_email],
+        "subject": f"Your CLBH Assessment Results - {risk_level.capitalize() if risk_level else 'Complete'}",
+        "html": html_content
+    }
+
+    try:
+        async with httpx.AsyncClient() as client:
+            logger.info("Sending email via Resend API...")
+            response = await client.post(
+                f"{RESEND_API_URL}/emails",
+                json=payload,
+                headers={
+                    "Authorization": f"Bearer {RESEND_API_KEY}",
+                    "Content-Type": "application/json"
+                },
+                timeout=30.0
+            )
+
+            logger.info(f"Resend API Response Status: {response.status_code}")
+
+            try:
+                response_data = response.json()
+                logger.info(f"Resend API Response: {response_data}")
+            except Exception:
+                response_data = {"raw_response": response.text}
+
+            if response.status_code in [200, 201]:
+                logger.info("SUCCESS: Email sent via Resend!")
+                return {"success": True, "data": response_data}
+            else:
+                logger.error(f"FAILED: Resend API returned status {response.status_code}")
+                logger.error(f"Error Response: {response_data}")
+                return {"success": False, "status_code": response.status_code, "error": response_data}
+
+    except httpx.TimeoutException as e:
+        logger.error(f"Resend API Timeout Error: {str(e)}")
+        return {"success": False, "error": f"Timeout: {str(e)}"}
+    except httpx.RequestError as e:
+        logger.error(f"Resend API Request Error: {str(e)}")
+        return {"success": False, "error": f"Request error: {str(e)}"}
+    except Exception as e:
+        logger.error(f"Resend API Unexpected Error: {str(e)}")
+        logger.exception("Full traceback:")
+        return {"success": False, "error": f"Unexpected error: {str(e)}"}
+
 
 def require_db():
     """Return the configured Mongo DB handle or raise a clear error."""
@@ -1032,19 +1333,27 @@ async def create_lead(data: LeadCreate):
     await db.leads.insert_one(doc)
     logger.info(f"Lead saved to database with ID: {lead.id}")
 
-    # Subscribe to Kit (ConvertKit) - MUST happen AFTER assessment data is ready
-    logger.info("=" * 50)
-    logger.info("STEP 4: CALLING KIT API (after all data is ready)")
-    logger.info("=" * 50)
-    logger.info(f"FINAL VALUES BEING SENT TO KIT:")
-    logger.info(f"  email: {data.email}")
-    logger.info(f"  business_name: {data.business_name}")
-    logger.info(f"  state: {data.state}")
-    logger.info(f"  risk_level: '{risk_level_str}' (empty={risk_level_str == ''})")
-    logger.info(f"  score: '{score_str}' (empty={score_str == ''})")
-    logger.info(f"  top_risks: '{top_risks_str}' (empty={top_risks_str == ''})")
-
     first_name = data.name.split()[0] if data.name else ""
+
+    # STEP 1: Send results email directly via Resend (with all data pre-filled)
+    logger.info("=" * 50)
+    logger.info("STEP 4a: SENDING RESULTS EMAIL VIA RESEND")
+    logger.info("=" * 50)
+    email_result = await send_results_email(
+        to_email=data.email,
+        first_name=first_name,
+        business_name=data.business_name,
+        state=data.state,
+        risk_level=risk_level_str,
+        score=score_str,
+        top_risks=lead.top_risks  # Pass as list for bullet points
+    )
+    logger.info(f"Email send result: {email_result}")
+
+    # STEP 2: Also subscribe to Kit for list building (sequence is disabled)
+    logger.info("=" * 50)
+    logger.info("STEP 4b: SUBSCRIBING TO KIT (for list building only)")
+    logger.info("=" * 50)
     kit_result = await subscribe_to_kit(
         email=data.email,
         first_name=first_name,
@@ -1056,7 +1365,12 @@ async def create_lead(data: LeadCreate):
     )
     logger.info(f"Kit subscription result: {kit_result}")
 
-    return {"success": True, "lead_id": lead.id, "kit_result": kit_result}
+    return {
+        "success": True,
+        "lead_id": lead.id,
+        "email_result": email_result,
+        "kit_result": kit_result
+    }
 
 @api_router.get("/admin/leads")
 async def get_leads(request: Request):
