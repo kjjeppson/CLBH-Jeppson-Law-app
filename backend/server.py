@@ -125,7 +125,7 @@ class AssessmentResult(BaseModel):
 class LeadCreate(BaseModel):
     name: str
     email: EmailStr
-    phone: str
+    phone: Optional[str] = None
     business_name: str
     state: str
     modules: List[str]
@@ -137,7 +137,7 @@ class Lead(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str
     email: str
-    phone: str
+    phone: Optional[str] = None
     business_name: str
     state: str
     modules: List[str]
