@@ -35,6 +35,7 @@ db = None
 # Kit (ConvertKit) API configuration
 KIT_API_KEY = os.getenv("KIT_API_KEY")
 KIT_FORM_ID = os.getenv("KIT_FORM_ID")
+KIT_TAG_ID = os.getenv("KIT_TAG_ID")  # Staging tag for creating subscribers with fields
 KIT_API_URL = "https://api.convertkit.com/v3"
 
 async def subscribe_to_kit(
@@ -49,14 +50,16 @@ async def subscribe_to_kit(
     """
     Subscribe a user to Kit (ConvertKit) using a TWO-STEP process:
 
-    STEP 1: Create/update subscriber with all custom fields FIRST
+    STEP 1: Subscribe to a staging TAG with all custom fields (creates subscriber)
     STEP 2: Wait 2 seconds for Kit to save the fields
-    STEP 3: Subscribe to form to trigger automation (fields are now saved)
+    STEP 3: Subscribe to the FORM to trigger automation (fields are now saved)
 
     This ensures custom fields are populated BEFORE the automation email fires.
+    The staging tag is used because Kit v3 API requires subscribing to something
+    (form, tag, or sequence) to create a subscriber.
     """
     logger.info("=" * 50)
-    logger.info("KIT API - TWO-STEP SUBSCRIPTION PROCESS")
+    logger.info("KIT API - TWO-STEP TAG-THEN-FORM SUBSCRIPTION")
     logger.info("=" * 50)
 
     # Check if Kit is configured
@@ -67,6 +70,10 @@ async def subscribe_to_kit(
     if not KIT_FORM_ID:
         logger.error("KIT_FORM_ID environment variable is not set!")
         return {"success": False, "error": "KIT_FORM_ID not configured"}
+
+    if not KIT_TAG_ID:
+        logger.error("KIT_TAG_ID environment variable is not set!")
+        return {"success": False, "error": "KIT_TAG_ID not configured - create a staging tag in Kit"}
 
     # Log all fields being sent
     logger.info(f"  email: '{email}'")
@@ -88,15 +95,16 @@ async def subscribe_to_kit(
     try:
         async with httpx.AsyncClient() as client:
             # ============================================
-            # STEP 1: Create/update subscriber with all custom fields FIRST
+            # STEP 1: Subscribe to TAG with all custom fields
+            # This creates the subscriber with fields but doesn't trigger form automation
             # ============================================
             logger.info("=" * 50)
-            logger.info("STEP 1: Creating subscriber with custom fields")
+            logger.info("STEP 1: Subscribing to staging tag with custom fields")
             logger.info("=" * 50)
 
-            subscriber_payload = {
+            tag_payload = {
                 "api_secret": KIT_API_KEY,
-                "email_address": email,
+                "email": email,
                 "first_name": first_name,
                 "fields": {
                     "business_name": business_name,
@@ -107,29 +115,29 @@ async def subscribe_to_kit(
                 }
             }
 
-            subscriber_url = f"{KIT_API_URL}/subscribers"
-            logger.info(f"POST {subscriber_url}")
+            tag_url = f"{KIT_API_URL}/tags/{KIT_TAG_ID}/subscribe"
+            logger.info(f"POST {tag_url}")
 
-            subscriber_response = await client.post(
-                subscriber_url,
-                json=subscriber_payload,
+            tag_response = await client.post(
+                tag_url,
+                json=tag_payload,
                 headers={"Content-Type": "application/json"},
                 timeout=30.0
             )
 
-            logger.info(f"Subscriber Response Status: {subscriber_response.status_code}")
+            logger.info(f"Tag Response Status: {tag_response.status_code}")
 
             try:
-                subscriber_data = subscriber_response.json()
-                logger.info(f"Subscriber Response: {subscriber_data}")
+                tag_data = tag_response.json()
+                logger.info(f"Tag Response: {tag_data}")
             except Exception:
-                subscriber_data = {"raw_response": subscriber_response.text}
+                tag_data = {"raw_response": tag_response.text}
 
-            if subscriber_response.status_code not in [200, 201]:
-                logger.error(f"STEP 1 FAILED: Could not create subscriber")
-                return {"success": False, "step": "create_subscriber", "error": subscriber_data}
+            if tag_response.status_code not in [200, 201]:
+                logger.error(f"STEP 1 FAILED: Could not subscribe to tag")
+                return {"success": False, "step": "subscribe_tag", "error": tag_data}
 
-            logger.info("STEP 1 SUCCESS: Subscriber created with custom fields")
+            logger.info("STEP 1 SUCCESS: Subscriber created via tag with custom fields")
 
             # ============================================
             # STEP 2: Wait 2 seconds for Kit to save fields
@@ -141,7 +149,7 @@ async def subscribe_to_kit(
             logger.info("Wait complete")
 
             # ============================================
-            # STEP 3: Subscribe to form to trigger automation
+            # STEP 3: Subscribe to FORM to trigger automation
             # ============================================
             logger.info("=" * 50)
             logger.info("STEP 3: Subscribing to form (triggers automation)")
