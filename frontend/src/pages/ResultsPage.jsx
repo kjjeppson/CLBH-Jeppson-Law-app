@@ -58,7 +58,6 @@ export default function ResultsPage() {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    phone: "",
     business_name: "",
     state: "",
     situation: ""
@@ -88,7 +87,7 @@ export default function ResultsPage() {
   const handleLeadSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.name || !formData.email || !formData.phone || !formData.business_name || !formData.state || !formData.situation) {
+    if (!formData.name || !formData.email || !formData.business_name || !formData.state || !formData.situation) {
       toast.error("Please fill in all fields");
       return;
     }
@@ -127,7 +126,6 @@ export default function ResultsPage() {
       setFormData({
         name: "",
         email: "",
-        phone: "",
         business_name: "",
         state: "",
         situation: ""
@@ -229,7 +227,7 @@ export default function ResultsPage() {
             data-testid="email-results-btn"
           >
             <Mail className="w-4 h-4 mr-2" />
-            Email & Text Me My Results
+            Email Me My Results
           </Button>
         </div>
       </nav>
@@ -534,7 +532,7 @@ export default function ResultsPage() {
             </DialogTitle>
             {!leadSubmitted && (
               <DialogDescription>
-                Fill in your details to receive your results by email and text message.
+                Fill in your details to receive your results by email.
               </DialogDescription>
             )}
           </DialogHeader>
@@ -545,7 +543,7 @@ export default function ResultsPage() {
                 <CheckCircle2 className="w-8 h-8 text-emerald-500" />
               </div>
               <p className="text-slate-600 mb-4">
-                We have emailed and texted you your results. If you have any questions, you can schedule a free 15-minute CLBH consultation.
+                We have emailed you your results. If you have any questions, you can schedule a free 15-minute CLBH consultation.
               </p>
               <div className="flex flex-col gap-3">
                 <Button
@@ -589,19 +587,6 @@ export default function ResultsPage() {
                   placeholder="john@company.com"
                   className="mt-1"
                   data-testid="lead-email-input"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="phone">Cell Phone (for text) *</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => handleInputChange("phone", e.target.value)}
-                  placeholder="(555) 123-4567"
-                  className="mt-1"
-                  data-testid="lead-phone-input"
                 />
               </div>
 
