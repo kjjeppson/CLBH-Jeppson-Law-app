@@ -1032,8 +1032,18 @@ async def create_lead(data: LeadCreate):
     await db.leads.insert_one(doc)
     logger.info(f"Lead saved to database with ID: {lead.id}")
 
-    # Subscribe to Kit (ConvertKit)
-    logger.info("Attempting to subscribe to Kit...")
+    # Subscribe to Kit (ConvertKit) - MUST happen AFTER assessment data is ready
+    logger.info("=" * 50)
+    logger.info("STEP 4: CALLING KIT API (after all data is ready)")
+    logger.info("=" * 50)
+    logger.info(f"FINAL VALUES BEING SENT TO KIT:")
+    logger.info(f"  email: {data.email}")
+    logger.info(f"  business_name: {data.business_name}")
+    logger.info(f"  state: {data.state}")
+    logger.info(f"  risk_level: '{risk_level_str}' (empty={risk_level_str == ''})")
+    logger.info(f"  score: '{score_str}' (empty={score_str == ''})")
+    logger.info(f"  top_risks: '{top_risks_str}' (empty={top_risks_str == ''})")
+
     first_name = data.name.split()[0] if data.name else ""
     kit_result = await subscribe_to_kit(
         email=data.email,
