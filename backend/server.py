@@ -51,10 +51,16 @@ async def subscribe_to_kit(
 ) -> Dict[str, Any]:
     """
     Subscribe a user to Kit (ConvertKit) with custom fields.
-    Returns the API response or error details.
+
+    IMPORTANT: We must set custom fields BEFORE subscribing to the form,
+    otherwise the automation email fires before fields are populated.
+
+    Order of operations:
+    1. Create/update subscriber with all custom fields
+    2. Then subscribe to form (which triggers automation)
     """
     logger.info("=" * 50)
-    logger.info("KIT API SUBSCRIPTION ATTEMPT")
+    logger.info("KIT API SUBSCRIPTION - TWO-STEP PROCESS")
     logger.info("=" * 50)
     logger.info(f"Email: {email}")
     logger.info(f"First Name: {first_name}")
@@ -76,65 +82,100 @@ async def subscribe_to_kit(
     logger.info(f"KIT_API_KEY is set (length: {len(KIT_API_KEY)})")
     logger.info(f"KIT_FORM_ID: {KIT_FORM_ID}")
 
-    # Build the request payload - Kit v3 API requires "api_secret" in the body
-    payload = {
-        "api_secret": KIT_API_KEY,
-        "email": email,
-        "first_name": first_name,
-        "fields": {
-            "business_name": business_name,
-            "state": state,
-            "risk_level": risk_level,
-            "score": score,
-            "top_risks": top_risks
-        }
-    }
-
-    url = f"{KIT_API_URL}/forms/{KIT_FORM_ID}/subscribe"
-    logger.info(f"Kit API URL: {url}")
-    # Log payload without exposing the secret
-    safe_payload = {
-        "api_secret": "[REDACTED]",
-        "email": payload["email"],
-        "first_name": payload["first_name"],
-        "fields": payload["fields"]
-    }
-    logger.info(f"Kit API Payload (safe): {safe_payload}")
-    logger.info(f"Fields being sent to Kit:")
-    logger.info(f"  - business_name: '{payload['fields']['business_name']}'")
-    logger.info(f"  - state: '{payload['fields']['state']}'")
-    logger.info(f"  - risk_level: '{payload['fields']['risk_level']}'")
-    logger.info(f"  - score: '{payload['fields']['score']}'")
-    logger.info(f"  - top_risks: '{payload['fields']['top_risks']}'")
-
     try:
         async with httpx.AsyncClient() as client:
-            logger.info("Sending request to Kit API...")
-            response = await client.post(
-                url,
-                json=payload,
+            # ============================================
+            # STEP 1: Create/update subscriber with fields FIRST
+            # ============================================
+            logger.info("=" * 50)
+            logger.info("STEP 1: Creating/updating subscriber with custom fields")
+            logger.info("=" * 50)
+
+            subscriber_payload = {
+                "api_secret": KIT_API_KEY,
+                "email_address": email,
+                "first_name": first_name,
+                "fields": {
+                    "business_name": business_name,
+                    "state": state,
+                    "risk_level": risk_level,
+                    "score": score,
+                    "top_risks": top_risks
+                }
+            }
+
+            subscriber_url = f"{KIT_API_URL}/subscribers"
+            logger.info(f"Subscriber URL: {subscriber_url}")
+            logger.info(f"Fields being set:")
+            logger.info(f"  - business_name: '{business_name}'")
+            logger.info(f"  - state: '{state}'")
+            logger.info(f"  - risk_level: '{risk_level}'")
+            logger.info(f"  - score: '{score}'")
+            logger.info(f"  - top_risks: '{top_risks}'")
+
+            # Create subscriber with fields
+            subscriber_response = await client.post(
+                subscriber_url,
+                json=subscriber_payload,
                 headers={"Content-Type": "application/json"},
                 timeout=30.0
             )
 
-            logger.info(f"Kit API Response Status: {response.status_code}")
-            logger.info(f"Kit API Response Headers: {dict(response.headers)}")
+            logger.info(f"Subscriber Response Status: {subscriber_response.status_code}")
 
             try:
-                response_data = response.json()
-                logger.info(f"Kit API Response Body: {response_data}")
-            except Exception as json_err:
-                logger.error(f"Failed to parse Kit API response as JSON: {json_err}")
-                logger.info(f"Kit API Response Text: {response.text}")
-                response_data = {"raw_response": response.text}
+                subscriber_data = subscriber_response.json()
+                logger.info(f"Subscriber Response: {subscriber_data}")
+            except Exception:
+                subscriber_data = {"raw_response": subscriber_response.text}
+                logger.info(f"Subscriber Response Text: {subscriber_response.text}")
 
-            if response.status_code == 200:
-                logger.info("SUCCESS: Subscriber added to Kit!")
-                return {"success": True, "data": response_data}
+            if subscriber_response.status_code not in [200, 201]:
+                logger.error(f"Failed to create/update subscriber: {subscriber_data}")
+                return {"success": False, "step": "create_subscriber", "error": subscriber_data}
+
+            logger.info("SUCCESS: Subscriber created/updated with custom fields!")
+
+            # ============================================
+            # STEP 2: Subscribe to form AFTER fields are set
+            # ============================================
+            logger.info("=" * 50)
+            logger.info("STEP 2: Subscribing to form (triggers automation)")
+            logger.info("=" * 50)
+
+            form_payload = {
+                "api_secret": KIT_API_KEY,
+                "email": email
+            }
+
+            form_url = f"{KIT_API_URL}/forms/{KIT_FORM_ID}/subscribe"
+            logger.info(f"Form URL: {form_url}")
+
+            form_response = await client.post(
+                form_url,
+                json=form_payload,
+                headers={"Content-Type": "application/json"},
+                timeout=30.0
+            )
+
+            logger.info(f"Form Response Status: {form_response.status_code}")
+
+            try:
+                form_data = form_response.json()
+                logger.info(f"Form Response: {form_data}")
+            except Exception:
+                form_data = {"raw_response": form_response.text}
+
+            if form_response.status_code == 200:
+                logger.info("SUCCESS: Subscriber added to form! Automation should fire with populated fields.")
+                return {
+                    "success": True,
+                    "subscriber_data": subscriber_data,
+                    "form_data": form_data
+                }
             else:
-                logger.error(f"FAILED: Kit API returned status {response.status_code}")
-                logger.error(f"Error Response: {response_data}")
-                return {"success": False, "status_code": response.status_code, "error": response_data}
+                logger.error(f"Failed to subscribe to form: {form_data}")
+                return {"success": False, "step": "subscribe_form", "error": form_data}
 
     except httpx.TimeoutException as e:
         logger.error(f"Kit API Timeout Error: {str(e)}")
