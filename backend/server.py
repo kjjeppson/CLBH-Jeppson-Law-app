@@ -13,9 +13,14 @@ import uuid
 from datetime import datetime, timezone
 import io
 import csv
+import requests
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
+
+# Kit (ConvertKit) configuration
+KIT_API_KEY = os.getenv("KIT_API_KEY")
+KIT_FORM_ID = os.getenv("KIT_FORM_ID")
 
 # Configure logging early (so startup/config warnings are visible)
 logging.basicConfig(
@@ -857,6 +862,34 @@ async def get_assessment(assessment_id: str):
         raise HTTPException(status_code=404, detail="Assessment not found")
     return assessment
 
+def subscribe_to_kit(email: str, first_name: str, custom_fields: dict) -> bool:
+    """Subscribe a user to the Kit (ConvertKit) form with custom fields.
+
+    Returns True on success, False on failure. Failures are logged but do not
+    interrupt the caller so that assessment results still display normally.
+    """
+    if not KIT_API_KEY or not KIT_FORM_ID:
+        logger.warning("Kit integration skipped: KIT_API_KEY or KIT_FORM_ID not configured.")
+        return False
+
+    url = f"https://api.convertkit.com/v3/forms/{KIT_FORM_ID}/subscribe"
+    payload = {
+        "api_key": KIT_API_KEY,
+        "email": email,
+        "first_name": first_name,
+        "fields": custom_fields,
+    }
+
+    try:
+        resp = requests.post(url, json=payload, timeout=10)
+        resp.raise_for_status()
+        logger.info(f"Kit subscription successful for {email}")
+        return True
+    except requests.RequestException as exc:
+        logger.error(f"Kit subscription failed for {email}: {exc}")
+        return False
+
+
 @api_router.post("/leads")
 async def create_lead(data: LeadCreate):
     """Submit lead capture form"""
@@ -874,6 +907,18 @@ async def create_lead(data: LeadCreate):
     doc = lead.model_dump()
     doc['timestamp'] = doc['timestamp'].isoformat()
     await db.leads.insert_one(doc)
+
+    # Subscribe to Kit (ConvertKit) in the background — errors won't block the response
+    first_name = data.name.split()[0] if data.name else ""
+    kit_fields = {
+        "business_name": data.business_name,
+        "state": data.state,
+        "phone": data.phone,
+        "risk_level": lead.risk_level or "",
+        "score": lead.score or "",
+        "top_risks": ", ".join(lead.top_risks) if lead.top_risks else "",
+    }
+    subscribe_to_kit(email=data.email, first_name=first_name, custom_fields=kit_fields)
 
     return {"success": True, "lead_id": lead.id}
 
