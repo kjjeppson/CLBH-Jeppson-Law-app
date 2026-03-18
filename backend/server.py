@@ -13,6 +13,7 @@ import uuid
 from datetime import datetime, timezone
 import io
 import csv
+import httpx
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -29,6 +30,105 @@ mongo_url = os.getenv("MONGO_URL")
 db_name = os.getenv("DB_NAME")
 client: Optional[AsyncIOMotorClient] = None
 db = None
+
+# Kit (ConvertKit) API configuration
+KIT_API_KEY = os.getenv("KIT_API_KEY")
+KIT_FORM_ID = os.getenv("KIT_FORM_ID")
+KIT_API_URL = "https://api.convertkit.com/v3"
+
+async def subscribe_to_kit(
+    email: str,
+    first_name: str = "",
+    business_name: str = "",
+    state: str = "",
+    risk_level: str = "",
+    score: str = "",
+    top_risks: str = ""
+) -> Dict[str, Any]:
+    """
+    Subscribe a user to Kit (ConvertKit) with custom fields.
+    Returns the API response or error details.
+    """
+    logger.info("=" * 50)
+    logger.info("KIT API SUBSCRIPTION ATTEMPT")
+    logger.info("=" * 50)
+    logger.info(f"Email: {email}")
+    logger.info(f"First Name: {first_name}")
+    logger.info(f"Business Name: {business_name}")
+    logger.info(f"State: {state}")
+    logger.info(f"Risk Level: {risk_level}")
+    logger.info(f"Score: {score}")
+    logger.info(f"Top Risks: {top_risks}")
+
+    # Check if Kit is configured
+    if not KIT_API_KEY:
+        logger.error("KIT_API_KEY environment variable is not set!")
+        return {"success": False, "error": "KIT_API_KEY not configured"}
+
+    if not KIT_FORM_ID:
+        logger.error("KIT_FORM_ID environment variable is not set!")
+        return {"success": False, "error": "KIT_FORM_ID not configured"}
+
+    logger.info(f"KIT_API_KEY is set (length: {len(KIT_API_KEY)})")
+    logger.info(f"KIT_FORM_ID: {KIT_FORM_ID}")
+
+    # Build the request payload
+    payload = {
+        "api_key": KIT_API_KEY,
+        "email": email,
+        "first_name": first_name,
+        "fields": {
+            "business_name": business_name,
+            "state": state,
+            "risk_level": risk_level,
+            "score": score,
+            "top_risks": top_risks
+        }
+    }
+
+    url = f"{KIT_API_URL}/forms/{KIT_FORM_ID}/subscribe"
+    logger.info(f"Kit API URL: {url}")
+    logger.info(f"Kit API Payload: {payload}")
+
+    try:
+        async with httpx.AsyncClient() as client:
+            logger.info("Sending request to Kit API...")
+            response = await client.post(
+                url,
+                json=payload,
+                headers={"Content-Type": "application/json"},
+                timeout=30.0
+            )
+
+            logger.info(f"Kit API Response Status: {response.status_code}")
+            logger.info(f"Kit API Response Headers: {dict(response.headers)}")
+
+            try:
+                response_data = response.json()
+                logger.info(f"Kit API Response Body: {response_data}")
+            except Exception as json_err:
+                logger.error(f"Failed to parse Kit API response as JSON: {json_err}")
+                logger.info(f"Kit API Response Text: {response.text}")
+                response_data = {"raw_response": response.text}
+
+            if response.status_code == 200:
+                logger.info("SUCCESS: Subscriber added to Kit!")
+                return {"success": True, "data": response_data}
+            else:
+                logger.error(f"FAILED: Kit API returned status {response.status_code}")
+                logger.error(f"Error Response: {response_data}")
+                return {"success": False, "status_code": response.status_code, "error": response_data}
+
+    except httpx.TimeoutException as e:
+        logger.error(f"Kit API Timeout Error: {str(e)}")
+        return {"success": False, "error": f"Timeout: {str(e)}"}
+    except httpx.RequestError as e:
+        logger.error(f"Kit API Request Error: {str(e)}")
+        return {"success": False, "error": f"Request error: {str(e)}"}
+    except Exception as e:
+        logger.error(f"Kit API Unexpected Error: {str(e)}")
+        logger.exception("Full traceback:")
+        return {"success": False, "error": f"Unexpected error: {str(e)}"}
 
 def require_db():
     """Return the configured Mongo DB handle or raise a clear error."""
@@ -860,22 +960,63 @@ async def get_assessment(assessment_id: str):
 @api_router.post("/leads")
 async def create_lead(data: LeadCreate):
     """Submit lead capture form"""
+    logger.info("=" * 50)
+    logger.info("LEAD CAPTURE FORM SUBMITTED")
+    logger.info("=" * 50)
+    logger.info(f"Name: {data.name}")
+    logger.info(f"Email: {data.email}")
+    logger.info(f"Business Name: {data.business_name}")
+    logger.info(f"State: {data.state}")
+    logger.info(f"Assessment ID: {data.assessment_id}")
+
     db = require_db()
     lead = Lead(**data.model_dump())
 
+    # Variables for Kit API
+    score_str = ""
+    risk_level_str = ""
+    top_risks_str = ""
+
     # If assessment_id provided, get score info
     if data.assessment_id:
+        logger.info(f"Looking up assessment: {data.assessment_id}")
         assessment = await db.assessments.find_one({"id": data.assessment_id}, {"_id": 0})
         if assessment:
+            logger.info(f"Assessment found! Score: {assessment.get('score_percentage')}%, Risk Level: {assessment.get('risk_level')}")
             lead.score = f"{assessment.get('score_percentage', 0)}%"
             lead.risk_level = assessment.get('risk_level', 'unknown')
             lead.top_risks = [r.get('title', '') for r in assessment.get('top_risks', [])]
 
+            # Prepare data for Kit API
+            score_str = lead.score
+            risk_level_str = lead.risk_level
+            top_risks_str = ", ".join(lead.top_risks)
+            logger.info(f"Top Risks for Kit: {top_risks_str}")
+        else:
+            logger.warning(f"Assessment not found: {data.assessment_id}")
+    else:
+        logger.info("No assessment_id provided")
+
     doc = lead.model_dump()
     doc['timestamp'] = doc['timestamp'].isoformat()
     await db.leads.insert_one(doc)
+    logger.info(f"Lead saved to database with ID: {lead.id}")
 
-    return {"success": True, "lead_id": lead.id}
+    # Subscribe to Kit (ConvertKit)
+    logger.info("Attempting to subscribe to Kit...")
+    first_name = data.name.split()[0] if data.name else ""
+    kit_result = await subscribe_to_kit(
+        email=data.email,
+        first_name=first_name,
+        business_name=data.business_name,
+        state=data.state,
+        risk_level=risk_level_str,
+        score=score_str,
+        top_risks=top_risks_str
+    )
+    logger.info(f"Kit subscription result: {kit_result}")
+
+    return {"success": True, "lead_id": lead.id, "kit_result": kit_result}
 
 @api_router.get("/admin/leads")
 async def get_leads(request: Request):
