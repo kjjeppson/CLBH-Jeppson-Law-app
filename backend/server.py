@@ -88,7 +88,20 @@ async def subscribe_to_kit(
 
     url = f"{KIT_API_URL}/forms/{KIT_FORM_ID}/subscribe"
     logger.info(f"Kit API URL: {url}")
-    logger.info(f"Kit API Payload: {payload}")
+    # Log payload without exposing the secret
+    safe_payload = {
+        "api_secret": "[REDACTED]",
+        "email": payload["email"],
+        "first_name": payload["first_name"],
+        "fields": payload["fields"]
+    }
+    logger.info(f"Kit API Payload (safe): {safe_payload}")
+    logger.info(f"Fields being sent to Kit:")
+    logger.info(f"  - business_name: '{payload['fields']['business_name']}'")
+    logger.info(f"  - state: '{payload['fields']['state']}'")
+    logger.info(f"  - risk_level: '{payload['fields']['risk_level']}'")
+    logger.info(f"  - score: '{payload['fields']['score']}'")
+    logger.info(f"  - top_risks: '{payload['fields']['top_risks']}'")
 
     try:
         async with httpx.AsyncClient() as client:
@@ -982,7 +995,18 @@ async def create_lead(data: LeadCreate):
         logger.info(f"Looking up assessment: {data.assessment_id}")
         assessment = await db.assessments.find_one({"id": data.assessment_id}, {"_id": 0})
         if assessment:
-            logger.info(f"Assessment found! Score: {assessment.get('score_percentage')}%, Risk Level: {assessment.get('risk_level')}")
+            logger.info("=" * 50)
+            logger.info("ASSESSMENT DATA FOUND")
+            logger.info("=" * 50)
+            logger.info(f"Assessment ID: {assessment.get('id')}")
+            logger.info(f"Completed: {assessment.get('completed')}")
+            logger.info(f"Score Percentage: {assessment.get('score_percentage')}")
+            logger.info(f"Risk Level: {assessment.get('risk_level')}")
+            logger.info(f"Total Score: {assessment.get('total_score')}")
+            logger.info(f"Max Possible Score: {assessment.get('max_possible_score')}")
+            logger.info(f"Top Risks Raw: {assessment.get('top_risks')}")
+            logger.info(f"Red Flag Details: {assessment.get('red_flag_details')}")
+
             lead.score = f"{assessment.get('score_percentage', 0)}%"
             lead.risk_level = assessment.get('risk_level', 'unknown')
             lead.top_risks = [r.get('title', '') for r in assessment.get('top_risks', [])]
@@ -991,11 +1015,17 @@ async def create_lead(data: LeadCreate):
             score_str = lead.score
             risk_level_str = lead.risk_level
             top_risks_str = ", ".join(lead.top_risks)
-            logger.info(f"Top Risks for Kit: {top_risks_str}")
+
+            logger.info("=" * 50)
+            logger.info("DATA PREPARED FOR KIT")
+            logger.info("=" * 50)
+            logger.info(f"score_str: '{score_str}'")
+            logger.info(f"risk_level_str: '{risk_level_str}'")
+            logger.info(f"top_risks_str: '{top_risks_str}'")
         else:
-            logger.warning(f"Assessment not found: {data.assessment_id}")
+            logger.warning(f"Assessment NOT FOUND in database: {data.assessment_id}")
     else:
-        logger.info("No assessment_id provided")
+        logger.warning("NO assessment_id provided in request!")
 
     doc = lead.model_dump()
     doc['timestamp'] = doc['timestamp'].isoformat()
