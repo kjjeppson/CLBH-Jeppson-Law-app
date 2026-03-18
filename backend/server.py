@@ -72,9 +72,9 @@ async def subscribe_to_kit(
     logger.info(f"KIT_API_KEY is set (length: {len(KIT_API_KEY)})")
     logger.info(f"KIT_FORM_ID: {KIT_FORM_ID}")
 
-    # Build the request payload
+    # Build the request payload - Kit v3 API requires "api_secret" in the body
     payload = {
-        "api_key": KIT_API_KEY,
+        "api_secret": KIT_API_KEY,
         "email": email,
         "first_name": first_name,
         "fields": {
