@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 import io
 import csv
 import httpx
+import asyncio
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -46,11 +47,16 @@ async def subscribe_to_kit(
     top_risks: str = ""
 ) -> Dict[str, Any]:
     """
-    Subscribe a user to Kit (ConvertKit) form with all custom fields in ONE call.
-    All fields must be calculated and ready BEFORE this function is called.
+    Subscribe a user to Kit (ConvertKit) using a TWO-STEP process:
+
+    STEP 1: Create/update subscriber with all custom fields FIRST
+    STEP 2: Wait 2 seconds for Kit to save the fields
+    STEP 3: Subscribe to form to trigger automation (fields are now saved)
+
+    This ensures custom fields are populated BEFORE the automation email fires.
     """
     logger.info("=" * 50)
-    logger.info("KIT API - SINGLE FORM SUBSCRIPTION WITH ALL FIELDS")
+    logger.info("KIT API - TWO-STEP SUBSCRIPTION PROCESS")
     logger.info("=" * 50)
 
     # Check if Kit is configured
@@ -62,23 +68,7 @@ async def subscribe_to_kit(
         logger.error("KIT_FORM_ID environment variable is not set!")
         return {"success": False, "error": "KIT_FORM_ID not configured"}
 
-    # Build the request payload with ALL fields included
-    payload = {
-        "api_secret": KIT_API_KEY,
-        "email": email,
-        "first_name": first_name,
-        "fields": {
-            "business_name": business_name,
-            "state": state,
-            "risk_level": risk_level,
-            "score": score,
-            "top_risks": top_risks
-        }
-    }
-
-    # Log the FULL request body for debugging
-    logger.info("FULL REQUEST BODY (api_secret redacted):")
-    logger.info(f"  URL: {KIT_API_URL}/forms/{KIT_FORM_ID}/subscribe")
+    # Log all fields being sent
     logger.info(f"  email: '{email}'")
     logger.info(f"  first_name: '{first_name}'")
     logger.info(f"  fields.business_name: '{business_name}'")
@@ -97,31 +87,99 @@ async def subscribe_to_kit(
 
     try:
         async with httpx.AsyncClient() as client:
-            url = f"{KIT_API_URL}/forms/{KIT_FORM_ID}/subscribe"
-            logger.info(f"Sending POST to: {url}")
+            # ============================================
+            # STEP 1: Create/update subscriber with all custom fields FIRST
+            # ============================================
+            logger.info("=" * 50)
+            logger.info("STEP 1: Creating subscriber with custom fields")
+            logger.info("=" * 50)
 
-            response = await client.post(
-                url,
-                json=payload,
+            subscriber_payload = {
+                "api_secret": KIT_API_KEY,
+                "email_address": email,
+                "first_name": first_name,
+                "fields": {
+                    "business_name": business_name,
+                    "state": state,
+                    "risk_level": risk_level,
+                    "score": score,
+                    "top_risks": top_risks
+                }
+            }
+
+            subscriber_url = f"{KIT_API_URL}/subscribers"
+            logger.info(f"POST {subscriber_url}")
+
+            subscriber_response = await client.post(
+                subscriber_url,
+                json=subscriber_payload,
                 headers={"Content-Type": "application/json"},
                 timeout=30.0
             )
 
-            logger.info(f"Response Status: {response.status_code}")
+            logger.info(f"Subscriber Response Status: {subscriber_response.status_code}")
 
             try:
-                response_data = response.json()
-                logger.info(f"Response Body: {response_data}")
-            except Exception as json_err:
-                logger.error(f"Failed to parse response as JSON: {json_err}")
-                response_data = {"raw_response": response.text}
+                subscriber_data = subscriber_response.json()
+                logger.info(f"Subscriber Response: {subscriber_data}")
+            except Exception:
+                subscriber_data = {"raw_response": subscriber_response.text}
 
-            if response.status_code == 200:
-                logger.info("SUCCESS: Subscriber added to Kit form with all fields!")
-                return {"success": True, "data": response_data}
+            if subscriber_response.status_code not in [200, 201]:
+                logger.error(f"STEP 1 FAILED: Could not create subscriber")
+                return {"success": False, "step": "create_subscriber", "error": subscriber_data}
+
+            logger.info("STEP 1 SUCCESS: Subscriber created with custom fields")
+
+            # ============================================
+            # STEP 2: Wait 2 seconds for Kit to save fields
+            # ============================================
+            logger.info("=" * 50)
+            logger.info("STEP 2: Waiting 2 seconds for Kit to save fields...")
+            logger.info("=" * 50)
+            await asyncio.sleep(2)
+            logger.info("Wait complete")
+
+            # ============================================
+            # STEP 3: Subscribe to form to trigger automation
+            # ============================================
+            logger.info("=" * 50)
+            logger.info("STEP 3: Subscribing to form (triggers automation)")
+            logger.info("=" * 50)
+
+            form_payload = {
+                "api_secret": KIT_API_KEY,
+                "email": email
+            }
+
+            form_url = f"{KIT_API_URL}/forms/{KIT_FORM_ID}/subscribe"
+            logger.info(f"POST {form_url}")
+
+            form_response = await client.post(
+                form_url,
+                json=form_payload,
+                headers={"Content-Type": "application/json"},
+                timeout=30.0
+            )
+
+            logger.info(f"Form Response Status: {form_response.status_code}")
+
+            try:
+                form_data = form_response.json()
+                logger.info(f"Form Response: {form_data}")
+            except Exception:
+                form_data = {"raw_response": form_response.text}
+
+            if form_response.status_code == 200:
+                logger.info("STEP 3 SUCCESS: Subscriber added to form, automation triggered!")
+                return {
+                    "success": True,
+                    "subscriber_data": subscriber_data,
+                    "form_data": form_data
+                }
             else:
-                logger.error(f"FAILED: Kit API returned status {response.status_code}")
-                return {"success": False, "status_code": response.status_code, "error": response_data}
+                logger.error(f"STEP 3 FAILED: Could not subscribe to form")
+                return {"success": False, "step": "subscribe_form", "error": form_data}
 
     except httpx.TimeoutException as e:
         logger.error(f"Kit API Timeout: {str(e)}")
