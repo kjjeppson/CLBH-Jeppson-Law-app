@@ -1180,23 +1180,38 @@ async def create_lead(data: LeadCreate):
 
     first_name = data.name.split()[0] if data.name else ""
 
-    # STEP 1: Send results email via SMTP
-    email_result = {"success": False, "error": "SMTP not configured"}
+    # STEP 1: Send results email via SMTP (background thread - non-blocking)
+    email_result = {"success": True, "status": "sending"}
     if ERIC_EMAIL and ERIC_EMAIL_PASSWORD:
-        logger.info(f"Sending email via {SMTP_SERVER}...")
-        try:
-            email_result = send_results_email(
-                to_email=data.email,
-                first_name=first_name,
-                business_name=data.business_name,
-                risk_level=risk_level_str,
-                score=score_str,
-                top_risks=lead.top_risks
-            )
-            logger.info(f"Email result: {email_result}")
-        except Exception as e:
-            logger.error(f"Email error: {e}")
-            email_result = {"success": False, "error": str(e)}
+        import threading
+        # Capture variables for closure
+        email_to = data.email
+        email_first_name = first_name
+        email_business = data.business_name
+        email_risk = risk_level_str
+        email_score = score_str
+        email_risks = list(lead.top_risks) if lead.top_risks else []
+
+        def send_email_thread():
+            logger.info(f"Background: Sending email via {SMTP_SERVER} to {email_to}")
+            try:
+                result = send_results_email(
+                    to_email=email_to,
+                    first_name=email_first_name,
+                    business_name=email_business,
+                    risk_level=email_risk,
+                    score=email_score,
+                    top_risks=email_risks
+                )
+                logger.info(f"Background: Email result: {result}")
+            except Exception as e:
+                logger.error(f"Background: Email failed: {e}")
+
+        thread = threading.Thread(target=send_email_thread, daemon=True)
+        thread.start()
+        logger.info(f"Email queued for {data.email}")
+    else:
+        email_result = {"success": False, "error": "SMTP not configured"}
 
     # STEP 2: Subscribe to Kit (disabled for now - enable when needed)
     kit_result = {"success": False, "error": "Disabled"}
