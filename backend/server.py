@@ -71,9 +71,9 @@ def send_results_email(
     logger.info(f"Score: {score}")
     logger.info(f"Top Risks: {top_risks}")
 
-    # Check if SMTP is configured
-    if not ERIC_EMAIL or not ERIC_EMAIL_PASSWORD:
-        logger.error("SMTP credentials not configured (ERIC_EMAIL or ERIC_EMAIL_PASSWORD missing)")
+    # Check if SMTP is configured (must have non-empty values)
+    if not ERIC_EMAIL or not ERIC_EMAIL_PASSWORD or len(ERIC_EMAIL.strip()) == 0 or len(ERIC_EMAIL_PASSWORD.strip()) == 0:
+        logger.warning("SMTP credentials not configured - skipping email send")
         return {"success": False, "error": "SMTP credentials not configured"}
 
     # Determine risk level colors and display text
@@ -173,9 +173,9 @@ def send_results_email(
         # Attach HTML body
         msg.attach(MIMEText(html_body, "html"))
 
-        # Connect to SMTP server and send (with 30 second timeout)
+        # Connect to SMTP server and send (with 10 second timeout)
         logger.info(f"Connecting to {SMTP_SERVER}:{SMTP_PORT}...")
-        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=30) as server:
+        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=10) as server:
             server.starttls()
             logger.info("STARTTLS enabled, logging in...")
             server.login(ERIC_EMAIL, ERIC_EMAIL_PASSWORD)
