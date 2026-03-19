@@ -1180,11 +1180,60 @@ async def create_lead(data: LeadCreate):
 
     first_name = data.name.split()[0] if data.name else ""
 
-    # Email and Kit integration - REQUIRES CONFIGURATION
-    # Add ERIC_EMAIL and ERIC_EMAIL_PASSWORD in Railway to enable email
-    email_result = {"success": False, "error": "Add ERIC_EMAIL and ERIC_EMAIL_PASSWORD in Railway"}
-    kit_result = {"success": False, "error": "Kit subscription disabled"}
-    logger.info("Lead saved. Email/Kit integrations require SMTP credentials in Railway.")
+    # STEP 1: Send results email via Microsoft 365 SMTP
+    email_result = {"success": False, "error": "SMTP not configured"}
+    if ERIC_EMAIL and ERIC_EMAIL_PASSWORD:
+        logger.info("Sending results email via SMTP...")
+        try:
+            # Run in thread pool with strict timeout
+            loop = asyncio.get_event_loop()
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                email_result = await asyncio.wait_for(
+                    loop.run_in_executor(
+                        pool,
+                        lambda: send_results_email(
+                            to_email=data.email,
+                            first_name=first_name,
+                            business_name=data.business_name,
+                            risk_level=risk_level_str,
+                            score=score_str,
+                            top_risks=lead.top_risks
+                        )
+                    ),
+                    timeout=12.0
+                )
+            logger.info(f"Email result: {email_result}")
+        except asyncio.TimeoutError:
+            logger.error("Email sending timed out")
+            email_result = {"success": False, "error": "Timeout"}
+        except Exception as e:
+            logger.error(f"Email error: {e}")
+            email_result = {"success": False, "error": str(e)}
+
+    # STEP 2: Subscribe to Kit for marketing list
+    kit_result = {"success": False, "error": "Kit not configured"}
+    if KIT_API_KEY and KIT_FORM_ID:
+        logger.info("Subscribing to Kit...")
+        try:
+            kit_result = await asyncio.wait_for(
+                subscribe_to_kit(
+                    email=data.email,
+                    first_name=first_name,
+                    business_name=data.business_name,
+                    state=data.state,
+                    risk_level=risk_level_str,
+                    score=score_str,
+                    top_risks=top_risks_str
+                ),
+                timeout=12.0
+            )
+            logger.info(f"Kit result: {kit_result}")
+        except asyncio.TimeoutError:
+            logger.error("Kit subscription timed out")
+            kit_result = {"success": False, "error": "Timeout"}
+        except Exception as e:
+            logger.error(f"Kit error: {e}")
+            kit_result = {"success": False, "error": str(e)}
 
     return {
         "success": True,
