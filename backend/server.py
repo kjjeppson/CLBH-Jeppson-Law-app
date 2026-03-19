@@ -1180,29 +1180,23 @@ async def create_lead(data: LeadCreate):
 
     first_name = data.name.split()[0] if data.name else ""
 
-    # STEP 1: Send results email via Microsoft 365 SMTP (fire-and-forget in background thread)
-    email_result = {"success": True, "status": "queued"}
+    # STEP 1: Send results email via Microsoft 365 SMTP
+    email_result = {"success": False, "error": "SMTP not configured"}
     if ERIC_EMAIL and ERIC_EMAIL_PASSWORD:
-        import threading
-        def send_email_background():
-            try:
-                result = send_results_email(
-                    to_email=data.email,
-                    first_name=first_name,
-                    business_name=data.business_name,
-                    risk_level=risk_level_str,
-                    score=score_str,
-                    top_risks=lead.top_risks
-                )
-                logger.info(f"Background email result: {result}")
-            except Exception as e:
-                logger.error(f"Background email error: {e}")
-
-        thread = threading.Thread(target=send_email_background, daemon=True)
-        thread.start()
-        logger.info("Email queued for background sending")
-    else:
-        email_result = {"success": False, "error": "SMTP not configured"}
+        logger.info(f"SMTP configured with email: {ERIC_EMAIL[:3]}***")
+        try:
+            email_result = send_results_email(
+                to_email=data.email,
+                first_name=first_name,
+                business_name=data.business_name,
+                risk_level=risk_level_str,
+                score=score_str,
+                top_risks=lead.top_risks
+            )
+            logger.info(f"Email result: {email_result}")
+        except Exception as e:
+            logger.error(f"Email error: {e}")
+            email_result = {"success": False, "error": str(e)}
 
     # STEP 2: Subscribe to Kit (disabled for now - enable when needed)
     kit_result = {"success": False, "error": "Disabled"}
