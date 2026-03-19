@@ -1180,57 +1180,11 @@ async def create_lead(data: LeadCreate):
 
     first_name = data.name.split()[0] if data.name else ""
 
-    # STEP 1: Send results email via Microsoft 365 SMTP
-    email_result = {"success": False, "error": "Skipped - credentials not configured"}
-    if ERIC_EMAIL and ERIC_EMAIL_PASSWORD:
-        logger.info("=" * 50)
-        logger.info("STEP 1: SENDING RESULTS EMAIL VIA SMTP")
-        logger.info("=" * 50)
-        try:
-            loop = asyncio.get_event_loop()
-            with concurrent.futures.ThreadPoolExecutor() as pool:
-                email_result = await asyncio.wait_for(
-                    loop.run_in_executor(
-                        pool,
-                        lambda: send_results_email(
-                            to_email=data.email,
-                            first_name=first_name,
-                            business_name=data.business_name,
-                            risk_level=risk_level_str,
-                            score=score_str,
-                            top_risks=lead.top_risks
-                        )
-                    ),
-                    timeout=15.0
-                )
-        except asyncio.TimeoutError:
-            logger.error("Email sending timed out after 15 seconds")
-            email_result = {"success": False, "error": "Timeout"}
-        except Exception as e:
-            logger.error(f"Email sending failed: {str(e)}")
-            email_result = {"success": False, "error": str(e)}
-        logger.info(f"Email result: {email_result}")
-    else:
-        logger.warning("SMTP credentials not configured - skipping email")
-
-    # STEP 2: Subscribe to Kit for marketing list
-    kit_result = {"success": False, "error": "Skipped - credentials not configured"}
-    if KIT_API_KEY and KIT_FORM_ID:
-        logger.info("=" * 50)
-        logger.info("STEP 2: SUBSCRIBING TO KIT FOR MARKETING LIST")
-        logger.info("=" * 50)
-        kit_result = await subscribe_to_kit(
-            email=data.email,
-            first_name=first_name,
-            business_name=data.business_name,
-            state=data.state,
-            risk_level=risk_level_str,
-            score=score_str,
-            top_risks=top_risks_str
-        )
-        logger.info(f"Kit subscription result: {kit_result}")
-    else:
-        logger.warning("Kit credentials not configured - skipping subscription")
+    # TEMPORARILY DISABLED: Email and Kit integration
+    # Re-enable once SMTP credentials (ERIC_EMAIL, ERIC_EMAIL_PASSWORD) are configured
+    email_result = {"success": False, "error": "Temporarily disabled"}
+    kit_result = {"success": False, "error": "Temporarily disabled"}
+    logger.info("Email and Kit integration temporarily disabled")
 
     return {
         "success": True,
