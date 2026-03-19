@@ -1178,18 +1178,35 @@ async def create_lead(data: LeadCreate):
 
     first_name = data.name.split()[0] if data.name else ""
 
-    # STEP 1: Send results email via Microsoft 365 SMTP
+    # STEP 1: Send results email via Microsoft 365 SMTP (non-blocking)
     logger.info("=" * 50)
     logger.info("STEP 1: SENDING RESULTS EMAIL VIA SMTP")
     logger.info("=" * 50)
-    email_result = send_results_email(
-        to_email=data.email,
-        first_name=first_name,
-        business_name=data.business_name,
-        risk_level=risk_level_str,
-        score=score_str,
-        top_risks=lead.top_risks  # Pass as list for bullet formatting
-    )
+    try:
+        # Run synchronous SMTP in thread pool to avoid blocking event loop
+        import concurrent.futures
+        loop = asyncio.get_event_loop()
+        with concurrent.futures.ThreadPoolExecutor() as pool:
+            email_result = await asyncio.wait_for(
+                loop.run_in_executor(
+                    pool,
+                    lambda: send_results_email(
+                        to_email=data.email,
+                        first_name=first_name,
+                        business_name=data.business_name,
+                        risk_level=risk_level_str,
+                        score=score_str,
+                        top_risks=lead.top_risks
+                    )
+                ),
+                timeout=15.0  # 15 second overall timeout
+            )
+    except asyncio.TimeoutError:
+        logger.error("Email sending timed out after 15 seconds")
+        email_result = {"success": False, "error": "Timeout"}
+    except Exception as e:
+        logger.error(f"Email sending failed: {str(e)}")
+        email_result = {"success": False, "error": str(e)}
     logger.info(f"Email result: {email_result}")
 
     # STEP 2: Subscribe to Kit for marketing list (keeps subscriber in Kit)
