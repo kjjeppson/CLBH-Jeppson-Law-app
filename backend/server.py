@@ -16,6 +16,7 @@ import csv
 import httpx
 import asyncio
 import smtplib
+import socket
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
@@ -172,9 +173,9 @@ def send_results_email(
         # Attach HTML body
         msg.attach(MIMEText(html_body, "html"))
 
-        # Connect to SMTP server and send
+        # Connect to SMTP server and send (with 30 second timeout)
         logger.info(f"Connecting to {SMTP_SERVER}:{SMTP_PORT}...")
-        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=30) as server:
             server.starttls()
             logger.info("STARTTLS enabled, logging in...")
             server.login(ERIC_EMAIL, ERIC_EMAIL_PASSWORD)
@@ -183,6 +184,9 @@ def send_results_email(
             logger.info("EMAIL SENT SUCCESSFULLY!")
             return {"success": True}
 
+    except socket.timeout as e:
+        logger.error(f"SMTP Timeout: {str(e)}")
+        return {"success": False, "error": "Connection timed out"}
     except smtplib.SMTPAuthenticationError as e:
         logger.error(f"SMTP Authentication Error: {str(e)}")
         return {"success": False, "error": f"Authentication failed: {str(e)}"}
