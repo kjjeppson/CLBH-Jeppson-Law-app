@@ -175,9 +175,9 @@ def send_results_email(
         # Attach HTML body
         msg.attach(MIMEText(html_body, "html"))
 
-        # Connect to SMTP server and send (with 10 second timeout)
+        # Connect to SMTP server and send (with 5 second timeout)
         logger.info(f"Connecting to {SMTP_SERVER}:{SMTP_PORT}...")
-        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=10) as server:
+        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=5) as server:
             server.starttls()
             logger.info("STARTTLS enabled, logging in...")
             server.login(ERIC_EMAIL, ERIC_EMAIL_PASSWORD)
@@ -312,7 +312,7 @@ def test_smtp_connection() -> Dict[str, Any]:
 
     try:
         logger.info("Connecting to SMTP server...")
-        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=15) as server:
+        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=5) as server:
             logger.info("Connected, enabling STARTTLS...")
             server.starttls()
             logger.info("STARTTLS enabled, attempting login...")
