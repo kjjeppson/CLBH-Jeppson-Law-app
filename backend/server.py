@@ -15,6 +15,9 @@ import io
 import csv
 import httpx
 import asyncio
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -37,6 +40,159 @@ KIT_API_KEY = os.getenv("KIT_API_KEY")
 KIT_FORM_ID = os.getenv("KIT_FORM_ID")
 KIT_TAG_ID = os.getenv("KIT_TAG_ID")  # Staging tag for creating subscribers with fields
 KIT_API_URL = "https://api.convertkit.com/v3"
+
+# Microsoft 365 SMTP configuration for sending results emails
+ERIC_EMAIL = os.getenv("ERIC_EMAIL")
+ERIC_EMAIL_PASSWORD = os.getenv("ERIC_EMAIL_PASSWORD")
+SMTP_SERVER = "smtp.office365.com"
+SMTP_PORT = 587
+
+
+def send_results_email(
+    to_email: str,
+    first_name: str,
+    business_name: str,
+    risk_level: str,
+    score: str,
+    top_risks: List[str]
+) -> Dict[str, Any]:
+    """
+    Send assessment results email via Microsoft 365 SMTP.
+    Returns success status. Errors are logged but don't break the flow.
+    """
+    logger.info("=" * 50)
+    logger.info("SENDING RESULTS EMAIL VIA SMTP")
+    logger.info("=" * 50)
+    logger.info(f"To: {to_email}")
+    logger.info(f"First Name: {first_name}")
+    logger.info(f"Business Name: {business_name}")
+    logger.info(f"Risk Level: {risk_level}")
+    logger.info(f"Score: {score}")
+    logger.info(f"Top Risks: {top_risks}")
+
+    # Check if SMTP is configured
+    if not ERIC_EMAIL or not ERIC_EMAIL_PASSWORD:
+        logger.error("SMTP credentials not configured (ERIC_EMAIL or ERIC_EMAIL_PASSWORD missing)")
+        return {"success": False, "error": "SMTP credentials not configured"}
+
+    # Determine risk level colors and display text
+    if risk_level == "red":
+        risk_bg = "#FEE2E2"
+        risk_color = "#991B1B"
+        risk_level_display = "HIGH"
+    elif risk_level == "yellow":
+        risk_bg = "#FEF3C7"
+        risk_color = "#92400E"
+        risk_level_display = "MEDIUM"
+    else:  # green
+        risk_bg = "#D1FAE5"
+        risk_color = "#065F46"
+        risk_level_display = "LOW"
+
+    # Build risk bullets HTML
+    risk_bullets = ""
+    for risk in top_risks:
+        risk_bullets += f'''<div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;">
+<div style="width:8px;height:8px;border-radius:50%;background:#F97316;margin-top:5px;flex-shrink:0;"></div>
+<div style="font-size:14px;color:#444;">{risk}</div>
+</div>'''
+
+    if not risk_bullets:
+        risk_bullets = '<div style="font-size:14px;color:#888;">No critical risks identified - great job!</div>'
+
+    # Build the HTML email
+    html_body = f'''<!DOCTYPE html>
+<html>
+<body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,sans-serif;">
+<div style="max-width:600px;margin:0 auto;padding:20px;">
+<div style="background:#ffffff;border-radius:8px;overflow:hidden;">
+
+<div style="background:#1B2B4B;padding:24px 32px;">
+<div style="color:#ffffff;font-size:22px;font-weight:600;">Jeppson Law, LLP</div>
+<div style="color:#a0b0c8;font-size:13px;margin-top:4px;">Preventive Business Law</div>
+</div>
+
+<div style="padding:32px;">
+<p style="font-size:16px;color:#333;margin:0 0 8px;">Hi {first_name or "there"},</p>
+<p style="font-size:15px;color:#555;margin:0 0 24px;">Thank you for completing the Clean Legal Bill of Health Assessment for <strong>{business_name or "your business"}</strong>. Here are your personalized results.</p>
+
+<div style="background:#f8f9fb;border-radius:8px;border:1px solid #e2e8f0;padding:24px;margin-bottom:24px;">
+<div style="font-size:13px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:16px;">Your Results</div>
+
+<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
+<tr>
+<td width="50%" style="padding-right:8px;">
+<div style="background:#fff;border-radius:8px;border:1px solid #e2e8f0;padding:16px;text-align:center;">
+<div style="font-size:12px;color:#888;margin-bottom:8px;text-transform:uppercase;">Risk Level</div>
+<div style="display:inline-block;background:{risk_bg};color:{risk_color};font-size:16px;font-weight:700;padding:6px 18px;border-radius:20px;">{risk_level_display}</div>
+</div>
+</td>
+<td width="50%" style="padding-left:8px;">
+<div style="background:#fff;border-radius:8px;border:1px solid #e2e8f0;padding:16px;text-align:center;">
+<div style="font-size:12px;color:#888;margin-bottom:8px;text-transform:uppercase;">Overall Score</div>
+<div style="font-size:28px;font-weight:700;color:#1B2B4B;">{score}</div>
+</div>
+</td>
+</tr>
+</table>
+
+<div style="background:#fff;border-radius:8px;border:1px solid #e2e8f0;padding:16px;">
+<div style="font-size:13px;font-weight:600;color:#1B2B4B;margin-bottom:12px;">Your Top Risk Areas</div>
+{risk_bullets}
+</div>
+</div>
+
+<p style="font-size:15px;color:#555;margin:0 0 24px;">These are areas where your business may have legal exposure that could cost you significantly if left unaddressed. The good news? Most of these risks can be resolved quickly with the right legal foundation in place.</p>
+
+<div style="text-align:center;margin-bottom:24px;">
+<a href="https://jeppsonlaw.cliogrow.com/book/5d7625ad3292b0e84db81965f80ee5f4" style="display:inline-block;background:#F97316;color:#ffffff;font-size:16px;font-weight:600;padding:14px 32px;border-radius:8px;text-decoration:none;">Book Your Free Consultation</a>
+</div>
+
+<p style="font-size:14px;color:#888;margin:0;">No obligation. We will walk you through exactly what these results mean for your business and what steps make sense next.</p>
+</div>
+
+<div style="background:#1B2B4B;padding:20px 32px;text-align:center;">
+<div style="color:#a0b0c8;font-size:13px;">Eric Jeppson | Jeppson Law, LLP</div>
+<div style="color:#6a7f9a;font-size:12px;margin-top:4px;">2999 Douglas Blvd Suite 180, Roseville, CA 95661</div>
+<div style="color:#6a7f9a;font-size:12px;margin-top:4px;">jeppsonlaw.com</div>
+</div>
+
+</div>
+</div>
+</body>
+</html>'''
+
+    try:
+        # Create the email message
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = f"Your Legal Risk Results - {business_name or 'Assessment Complete'}"
+        msg["From"] = ERIC_EMAIL
+        msg["To"] = to_email
+
+        # Attach HTML body
+        msg.attach(MIMEText(html_body, "html"))
+
+        # Connect to SMTP server and send
+        logger.info(f"Connecting to {SMTP_SERVER}:{SMTP_PORT}...")
+        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+            server.starttls()
+            logger.info("STARTTLS enabled, logging in...")
+            server.login(ERIC_EMAIL, ERIC_EMAIL_PASSWORD)
+            logger.info("Login successful, sending email...")
+            server.sendmail(ERIC_EMAIL, to_email, msg.as_string())
+            logger.info("EMAIL SENT SUCCESSFULLY!")
+            return {"success": True}
+
+    except smtplib.SMTPAuthenticationError as e:
+        logger.error(f"SMTP Authentication Error: {str(e)}")
+        return {"success": False, "error": f"Authentication failed: {str(e)}"}
+    except smtplib.SMTPException as e:
+        logger.error(f"SMTP Error: {str(e)}")
+        return {"success": False, "error": f"SMTP error: {str(e)}"}
+    except Exception as e:
+        logger.error(f"Email Error: {str(e)}")
+        logger.exception("Full traceback:")
+        return {"success": False, "error": f"Unexpected error: {str(e)}"}
 
 async def subscribe_to_kit(
     email: str,
@@ -1092,9 +1248,23 @@ async def create_lead(data: LeadCreate):
 
     first_name = data.name.split()[0] if data.name else ""
 
-    # Subscribe to Kit with all assessment data in a single API call
+    # STEP 1: Send results email via Microsoft 365 SMTP
     logger.info("=" * 50)
-    logger.info("SUBSCRIBING TO KIT WITH ALL ASSESSMENT DATA")
+    logger.info("STEP 1: SENDING RESULTS EMAIL VIA SMTP")
+    logger.info("=" * 50)
+    email_result = send_results_email(
+        to_email=data.email,
+        first_name=first_name,
+        business_name=data.business_name,
+        risk_level=risk_level_str,
+        score=score_str,
+        top_risks=lead.top_risks  # Pass as list for bullet formatting
+    )
+    logger.info(f"Email result: {email_result}")
+
+    # STEP 2: Subscribe to Kit for marketing list (keeps subscriber in Kit)
+    logger.info("=" * 50)
+    logger.info("STEP 2: SUBSCRIBING TO KIT FOR MARKETING LIST")
     logger.info("=" * 50)
     kit_result = await subscribe_to_kit(
         email=data.email,
@@ -1110,6 +1280,7 @@ async def create_lead(data: LeadCreate):
     return {
         "success": True,
         "lead_id": lead.id,
+        "email_result": email_result,
         "kit_result": kit_result
     }
 
