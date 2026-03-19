@@ -298,6 +298,37 @@ def require_db():
         )
     return db
 
+def test_smtp_connection() -> Dict[str, Any]:
+    """Test SMTP connection and return detailed error info."""
+    logger.info("=" * 50)
+    logger.info("TESTING SMTP CONNECTION")
+    logger.info("=" * 50)
+    logger.info(f"Server: {SMTP_SERVER}:{SMTP_PORT}")
+    logger.info(f"Username: {ERIC_EMAIL}")
+    logger.info(f"Password: {'*' * len(ERIC_EMAIL_PASSWORD) if ERIC_EMAIL_PASSWORD else 'NOT SET'}")
+
+    if not ERIC_EMAIL or not ERIC_EMAIL_PASSWORD:
+        return {"success": False, "error": "SMTP credentials not configured"}
+
+    try:
+        logger.info("Connecting to SMTP server...")
+        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=15) as server:
+            logger.info("Connected, enabling STARTTLS...")
+            server.starttls()
+            logger.info("STARTTLS enabled, attempting login...")
+            server.login(ERIC_EMAIL, ERIC_EMAIL_PASSWORD)
+            logger.info("LOGIN SUCCESSFUL!")
+            return {"success": True, "message": "SMTP connection successful"}
+    except socket.timeout as e:
+        return {"success": False, "error": f"Connection timeout: {str(e)}"}
+    except smtplib.SMTPAuthenticationError as e:
+        return {"success": False, "error": f"Authentication failed: {str(e)}"}
+    except smtplib.SMTPException as e:
+        return {"success": False, "error": f"SMTP error: {str(e)}"}
+    except Exception as e:
+        return {"success": False, "error": f"Unexpected error: {str(e)}"}
+
+
 def require_admin(request: Request) -> None:
     """
     Minimal admin protection for MVP.
@@ -1022,6 +1053,11 @@ def generate_action_plan(top_risks: List[Dict], risk_level: str, area_scores: Li
 @api_router.get("/")
 async def root():
     return {"message": "CLBH Quick Checkup API"}
+
+@api_router.get("/test-smtp")
+async def test_smtp():
+    """Test SMTP connection - for debugging email issues"""
+    return test_smtp_connection()
 
 @api_router.get("/questions/{module}")
 async def get_questions(module: str, areas: Optional[str] = None):
