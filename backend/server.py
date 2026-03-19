@@ -17,6 +17,7 @@ import httpx
 import asyncio
 import smtplib
 import socket
+import concurrent.futures
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
@@ -1184,7 +1185,6 @@ async def create_lead(data: LeadCreate):
     logger.info("=" * 50)
     try:
         # Run synchronous SMTP in thread pool to avoid blocking event loop
-        import concurrent.futures
         loop = asyncio.get_event_loop()
         with concurrent.futures.ThreadPoolExecutor() as pool:
             email_result = await asyncio.wait_for(
