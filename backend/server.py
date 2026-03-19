@@ -1181,22 +1181,12 @@ async def create_lead(data: LeadCreate):
     first_name = data.name.split()[0] if data.name else ""
 
     # STEP 1: Send results email via Microsoft 365 SMTP
-    email_result = {"success": False, "error": "SMTP not configured"}
-    if ERIC_EMAIL and ERIC_EMAIL_PASSWORD:
-        logger.info(f"SMTP configured with email: {ERIC_EMAIL[:3]}***")
-        try:
-            email_result = send_results_email(
-                to_email=data.email,
-                first_name=first_name,
-                business_name=data.business_name,
-                risk_level=risk_level_str,
-                score=score_str,
-                top_risks=lead.top_risks
-            )
-            logger.info(f"Email result: {email_result}")
-        except Exception as e:
-            logger.error(f"Email error: {e}")
-            email_result = {"success": False, "error": str(e)}
+    # TEMPORARILY DISABLED - check SMTP credentials in Railway
+    # If using Microsoft 365 with MFA, you need an App Password:
+    # 1. Go to https://account.microsoft.com/security
+    # 2. Advanced security options -> App passwords -> Create new
+    # 3. Use that app password for ERIC_EMAIL_PASSWORD
+    email_result = {"success": False, "error": "Email disabled - check SMTP credentials"}
 
     # STEP 2: Subscribe to Kit (disabled for now - enable when needed)
     kit_result = {"success": False, "error": "Disabled"}
