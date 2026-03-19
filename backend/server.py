@@ -44,6 +44,7 @@ KIT_TAG_ID = os.getenv("KIT_TAG_ID")  # Staging tag for creating subscribers wit
 KIT_API_URL = "https://api.convertkit.com/v3"
 
 # Microsoft 365 SMTP configuration for sending results emails
+# Credentials must be set in Railway environment variables
 ERIC_EMAIL = os.getenv("ERIC_EMAIL")
 ERIC_EMAIL_PASSWORD = os.getenv("ERIC_EMAIL_PASSWORD")
 SMTP_SERVER = "smtp.office365.com"
