@@ -43,11 +43,11 @@ KIT_FORM_ID = os.getenv("KIT_FORM_ID")
 KIT_TAG_ID = os.getenv("KIT_TAG_ID")  # Staging tag for creating subscribers with fields
 KIT_API_URL = "https://api.convertkit.com/v3"
 
-# Microsoft 365 SMTP configuration for sending results emails
+# SMTP configuration for sending results emails
 # Credentials must be set in Railway environment variables
 ERIC_EMAIL = os.getenv("ERIC_EMAIL")
 ERIC_EMAIL_PASSWORD = os.getenv("ERIC_EMAIL_PASSWORD")
-SMTP_SERVER = "smtp.office365.com"
+SMTP_SERVER = "outbound-us1.ppe-hosted.com"
 SMTP_PORT = 587
 
 
@@ -1180,13 +1180,23 @@ async def create_lead(data: LeadCreate):
 
     first_name = data.name.split()[0] if data.name else ""
 
-    # STEP 1: Send results email via Microsoft 365 SMTP
-    # TEMPORARILY DISABLED - check SMTP credentials in Railway
-    # If using Microsoft 365 with MFA, you need an App Password:
-    # 1. Go to https://account.microsoft.com/security
-    # 2. Advanced security options -> App passwords -> Create new
-    # 3. Use that app password for ERIC_EMAIL_PASSWORD
-    email_result = {"success": False, "error": "Email disabled - check SMTP credentials"}
+    # STEP 1: Send results email via SMTP
+    email_result = {"success": False, "error": "SMTP not configured"}
+    if ERIC_EMAIL and ERIC_EMAIL_PASSWORD:
+        logger.info(f"Sending email via {SMTP_SERVER}...")
+        try:
+            email_result = send_results_email(
+                to_email=data.email,
+                first_name=first_name,
+                business_name=data.business_name,
+                risk_level=risk_level_str,
+                score=score_str,
+                top_risks=lead.top_risks
+            )
+            logger.info(f"Email result: {email_result}")
+        except Exception as e:
+            logger.error(f"Email error: {e}")
+            email_result = {"success": False, "error": str(e)}
 
     # STEP 2: Subscribe to Kit (disabled for now - enable when needed)
     kit_result = {"success": False, "error": "Disabled"}
