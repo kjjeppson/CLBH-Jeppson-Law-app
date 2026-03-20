@@ -300,33 +300,58 @@ def require_db():
 
 def test_smtp_connection() -> Dict[str, Any]:
     """Test SMTP connection and return detailed error info."""
-    logger.info("=" * 50)
-    logger.info("TESTING SMTP CONNECTION")
-    logger.info("=" * 50)
-    logger.info(f"Server: {SMTP_SERVER}:{SMTP_PORT}")
-    logger.info(f"Username: {ERIC_EMAIL}")
-    logger.info(f"Password: {'*' * len(ERIC_EMAIL_PASSWORD) if ERIC_EMAIL_PASSWORD else 'NOT SET'}")
+    result = {
+        "server": SMTP_SERVER,
+        "port": SMTP_PORT,
+        "username": ERIC_EMAIL,
+        "password_set": bool(ERIC_EMAIL_PASSWORD),
+    }
 
     if not ERIC_EMAIL or not ERIC_EMAIL_PASSWORD:
-        return {"success": False, "error": "SMTP credentials not configured"}
+        result["success"] = False
+        result["error"] = "SMTP credentials not configured"
+        return result
 
+    # First test DNS resolution
     try:
-        logger.info("Connecting to SMTP server...")
-        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=5) as server:
-            logger.info("Connected, enabling STARTTLS...")
-            server.starttls()
-            logger.info("STARTTLS enabled, attempting login...")
-            server.login(ERIC_EMAIL, ERIC_EMAIL_PASSWORD)
-            logger.info("LOGIN SUCCESSFUL!")
-            return {"success": True, "message": "SMTP connection successful"}
-    except socket.timeout as e:
-        return {"success": False, "error": f"Connection timeout: {str(e)}"}
-    except smtplib.SMTPAuthenticationError as e:
-        return {"success": False, "error": f"Authentication failed: {str(e)}"}
-    except smtplib.SMTPException as e:
-        return {"success": False, "error": f"SMTP error: {str(e)}"}
+        import socket as sock
+        ip = sock.gethostbyname(SMTP_SERVER)
+        result["server_ip"] = ip
     except Exception as e:
-        return {"success": False, "error": f"Unexpected error: {str(e)}"}
+        result["success"] = False
+        result["error"] = f"DNS lookup failed: {str(e)}"
+        return result
+
+    # Test TCP connection
+    try:
+        import socket as sock
+        s = sock.socket(sock.AF_INET, sock.SOCK_STREAM)
+        s.settimeout(5)
+        s.connect((SMTP_SERVER, SMTP_PORT))
+        s.close()
+        result["tcp_connect"] = "success"
+    except Exception as e:
+        result["success"] = False
+        result["error"] = f"TCP connect failed: {str(e)}"
+        return result
+
+    # Test SMTP
+    try:
+        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=5) as server:
+            server.starttls()
+            result["starttls"] = "success"
+            server.login(ERIC_EMAIL, ERIC_EMAIL_PASSWORD)
+            result["login"] = "success"
+            result["success"] = True
+            return result
+    except smtplib.SMTPAuthenticationError as e:
+        result["success"] = False
+        result["error"] = f"Authentication failed: {str(e)}"
+        return result
+    except Exception as e:
+        result["success"] = False
+        result["error"] = f"SMTP error: {str(e)}"
+        return result
 
 
 def require_admin(request: Request) -> None:
