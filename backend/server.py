@@ -334,7 +334,7 @@ def test_smtp_connection() -> Dict[str, Any]:
     try:
         import socket as sock
         s = sock.socket(sock.AF_INET, sock.SOCK_STREAM)
-        s.settimeout(5)
+        s.settimeout(15)
         s.connect((SMTP_SERVER, SMTP_PORT))
         s.close()
         result["tcp_connect"] = "success"
@@ -345,7 +345,7 @@ def test_smtp_connection() -> Dict[str, Any]:
 
     # Test SMTP
     try:
-        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=5) as server:
+        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=15) as server:
             server.starttls()
             result["starttls"] = "success"
             server.login(ERIC_EMAIL, ERIC_EMAIL_PASSWORD)
