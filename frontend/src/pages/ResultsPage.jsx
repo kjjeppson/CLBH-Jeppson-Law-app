@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
@@ -16,26 +15,6 @@ import {
 } from "lucide-react";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
-
-const US_STATES = [
-  "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut",
-  "Delaware", "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa",
-  "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland", "Massachusetts", "Michigan",
-  "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire",
-  "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio",
-  "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota",
-  "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia",
-  "Wisconsin", "Wyoming"
-];
-
-const SITUATIONS = [
-  "General business health check",
-  "Preparing for growth or expansion",
-  "Reviewing contracts and agreements",
-  "Addressing compliance concerns",
-  "Planning to sell or acquire a business",
-  "Other"
-];
 
 const AREA_ICONS = {
   contracts: <FileText className="w-5 h-5" />,
@@ -56,11 +35,9 @@ export default function ResultsPage() {
   const [isSubmittingLead, setIsSubmittingLead] = useState(false);
   const [leadSubmitted, setLeadSubmitted] = useState(false);
   const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    business_name: "",
-    state: "",
-    situation: ""
+    first_name: "",
+    last_name: "",
+    email: ""
   });
 
   useEffect(() => {
@@ -87,7 +64,7 @@ export default function ResultsPage() {
   const handleLeadSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.name || !formData.email || !formData.business_name || !formData.state || !formData.situation) {
+    if (!formData.first_name || !formData.last_name || !formData.email) {
       toast.error("Please fill in all fields");
       return;
     }
@@ -124,11 +101,9 @@ export default function ResultsPage() {
       setLeadSubmitted(false);
       setIsSubmittingLead(false);
       setFormData({
-        name: "",
-        email: "",
-        business_name: "",
-        state: "",
-        situation: ""
+        first_name: "",
+        last_name: "",
+        email: ""
       });
     }
   };
@@ -566,14 +541,26 @@ export default function ResultsPage() {
           ) : (
             <form onSubmit={handleLeadSubmit} className="space-y-4">
               <div>
-                <Label htmlFor="name">Full Name *</Label>
+                <Label htmlFor="first_name">First Name *</Label>
                 <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => handleInputChange("name", e.target.value)}
-                  placeholder="John Smith"
+                  id="first_name"
+                  value={formData.first_name}
+                  onChange={(e) => handleInputChange("first_name", e.target.value)}
+                  placeholder="John"
                   className="mt-1"
-                  data-testid="lead-name-input"
+                  data-testid="lead-first-name-input"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="last_name">Last Name *</Label>
+                <Input
+                  id="last_name"
+                  value={formData.last_name}
+                  onChange={(e) => handleInputChange("last_name", e.target.value)}
+                  placeholder="Smith"
+                  className="mt-1"
+                  data-testid="lead-last-name-input"
                 />
               </div>
 
@@ -588,58 +575,6 @@ export default function ResultsPage() {
                   className="mt-1"
                   data-testid="lead-email-input"
                 />
-              </div>
-
-              <div>
-                <Label htmlFor="business_name">Business Name *</Label>
-                <Input
-                  id="business_name"
-                  value={formData.business_name}
-                  onChange={(e) => handleInputChange("business_name", e.target.value)}
-                  placeholder="Acme Construction LLC"
-                  className="mt-1"
-                  data-testid="lead-business-input"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="state">State *</Label>
-                <Select value={formData.state} onValueChange={(value) => handleInputChange("state", value)}>
-                  <SelectTrigger className="mt-1" data-testid="lead-state-select">
-                    <SelectValue placeholder="Select your state" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {US_STATES.map((state) => (
-                      <SelectItem
-                        key={state}
-                        value={state}
-                        data-testid={`lead-state-option-${state.replace(/\s+/g, "-")}`}
-                      >
-                        {state}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="situation">What best describes your situation? *</Label>
-                <Select value={formData.situation} onValueChange={(value) => handleInputChange("situation", value)}>
-                  <SelectTrigger className="mt-1" data-testid="lead-situation-select">
-                    <SelectValue placeholder="Select your situation" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SITUATIONS.map((situation) => (
-                      <SelectItem
-                        key={situation}
-                        value={situation}
-                        data-testid={`lead-situation-option-${situation.replace(/\s+/g, "-")}`}
-                      >
-                        {situation}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
               </div>
 
               <Button

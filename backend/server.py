@@ -54,7 +54,6 @@ SMTP_PORT = 587
 def send_results_email(
     to_email: str,
     first_name: str,
-    business_name: str,
     risk_level: str,
     score: str,
     top_risks: List[str]
@@ -68,7 +67,6 @@ def send_results_email(
     logger.info("=" * 50)
     logger.info(f"To: {to_email}")
     logger.info(f"First Name: {first_name}")
-    logger.info(f"Business Name: {business_name}")
     logger.info(f"Risk Level: {risk_level}")
     logger.info(f"Score: {score}")
     logger.info(f"Top Risks: {top_risks}")
@@ -117,7 +115,7 @@ def send_results_email(
 
 <div style="padding:32px;">
 <p style="font-size:16px;color:#333;margin:0 0 8px;">Hi {first_name or "there"},</p>
-<p style="font-size:15px;color:#555;margin:0 0 24px;">Thank you for completing the Clean Legal Bill of Health Assessment for <strong>{business_name or "your business"}</strong>. Here are your personalized results.</p>
+<p style="font-size:15px;color:#555;margin:0 0 24px;">Thank you for completing the Clean Legal Bill of Health Assessment. Here are your personalized results.</p>
 
 <div style="background:#f8f9fb;border-radius:8px;border:1px solid #e2e8f0;padding:24px;margin-bottom:24px;">
 <div style="font-size:13px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:16px;">Your Results</div>
@@ -168,7 +166,7 @@ def send_results_email(
     try:
         # Create the email message
         msg = MIMEMultipart("alternative")
-        msg["Subject"] = f"Your Legal Risk Results - {business_name or 'Assessment Complete'}"
+        msg["Subject"] = "Your Legal Risk Assessment Results"
         msg["From"] = ERIC_EMAIL
         msg["To"] = to_email
 
@@ -203,8 +201,7 @@ def send_results_email(
 async def subscribe_to_kit(
     email: str,
     first_name: str = "",
-    business_name: str = "",
-    state: str = "",
+    last_name: str = "",
     risk_level: str = "",
     score: str = "",
     top_risks: str = ""
@@ -230,8 +227,7 @@ async def subscribe_to_kit(
     # Log all fields being sent
     logger.info(f"  email: '{email}'")
     logger.info(f"  first_name: '{first_name}'")
-    logger.info(f"  fields.business_name: '{business_name}'")
-    logger.info(f"  fields.state: '{state}'")
+    logger.info(f"  last_name: '{last_name}'")
     logger.info(f"  fields.risk_level: '{risk_level}'")
     logger.info(f"  fields.score: '{score}'")
     logger.info(f"  fields.top_risks: '{top_risks}'")
@@ -244,8 +240,7 @@ async def subscribe_to_kit(
                 "email": email,
                 "first_name": first_name,
                 "fields": {
-                    "business_name": business_name,
-                    "state": state,
+                    "last_name": last_name,
                     "risk_level": risk_level,
                     "score": score,
                     "top_risks": top_risks
@@ -446,25 +441,19 @@ class AssessmentResult(BaseModel):
     completed: bool = False
 
 class LeadCreate(BaseModel):
-    name: str
+    first_name: str
+    last_name: str
     email: EmailStr
-    phone: Optional[str] = None
-    business_name: str
-    state: str
-    modules: List[str]
-    situation: str
+    modules: List[str] = []
     assessment_id: Optional[str] = None
 
 class Lead(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    name: str
+    first_name: str
+    last_name: str
     email: str
-    phone: Optional[str] = None
-    business_name: str
-    state: str
-    modules: List[str]
-    situation: str
+    modules: List[str] = []
     assessment_id: Optional[str] = None
     score: Optional[str] = None
     risk_level: Optional[str] = None
@@ -1191,10 +1180,9 @@ async def create_lead(data: LeadCreate):
     logger.info("=" * 50)
     logger.info("LEAD CAPTURE FORM SUBMITTED")
     logger.info("=" * 50)
-    logger.info(f"Name: {data.name}")
+    logger.info(f"First Name: {data.first_name}")
+    logger.info(f"Last Name: {data.last_name}")
     logger.info(f"Email: {data.email}")
-    logger.info(f"Business Name: {data.business_name}")
-    logger.info(f"State: {data.state}")
     logger.info(f"Assessment ID: {data.assessment_id}")
 
     db = require_db()
@@ -1247,16 +1235,13 @@ async def create_lead(data: LeadCreate):
     await db.leads.insert_one(doc)
     logger.info(f"Lead saved to database with ID: {lead.id}")
 
-    first_name = data.name.split()[0] if data.name else ""
-
     # STEP 1: Send results email via SMTP (background thread - non-blocking)
     email_result = {"success": True, "status": "sending"}
     if ERIC_EMAIL and ERIC_EMAIL_PASSWORD:
         import threading
         # Capture variables for closure
         email_to = data.email
-        email_first_name = first_name
-        email_business = data.business_name
+        email_first_name = data.first_name
         email_risk = risk_level_str
         email_score = score_str
         email_risks = list(lead.top_risks) if lead.top_risks else []
@@ -1267,7 +1252,6 @@ async def create_lead(data: LeadCreate):
                 result = send_results_email(
                     to_email=email_to,
                     first_name=email_first_name,
-                    business_name=email_business,
                     risk_level=email_risk,
                     score=email_score,
                     top_risks=email_risks
