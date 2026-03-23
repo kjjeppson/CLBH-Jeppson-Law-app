@@ -47,7 +47,7 @@ KIT_API_URL = "https://api.convertkit.com/v3"
 # Credentials must be set in Railway environment variables
 ERIC_EMAIL = os.getenv("ERIC_EMAIL")
 ERIC_EMAIL_PASSWORD = os.getenv("ERIC_EMAIL_PASSWORD")
-SMTP_SERVER = "outbound-us1.ppe-hosted.com"
+SMTP_SERVER = "smtp.office365.com"
 SMTP_PORT = 587
 
 
