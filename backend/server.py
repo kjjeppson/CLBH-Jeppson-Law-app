@@ -307,6 +307,14 @@ def test_smtp_connection() -> Dict[str, Any]:
         "password_set": bool(ERIC_EMAIL_PASSWORD),
     }
 
+    # Get Railway's outbound IP address
+    try:
+        import urllib.request
+        with urllib.request.urlopen("https://api.ipify.org", timeout=5) as response:
+            result["outbound_ip"] = response.read().decode("utf-8").strip()
+    except Exception as e:
+        result["outbound_ip"] = f"Failed to get: {str(e)}"
+
     if not ERIC_EMAIL or not ERIC_EMAIL_PASSWORD:
         result["success"] = False
         result["error"] = "SMTP credentials not configured"
