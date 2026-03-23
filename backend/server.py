@@ -167,7 +167,7 @@ def send_results_email(
         # Create the email message
         msg = MIMEMultipart("alternative")
         msg["Subject"] = "Your Legal Risk Assessment Results"
-        msg["From"] = ERIC_EMAIL
+        msg["From"] = f"Eric Jeppson | Jeppson Law <{ERIC_EMAIL}>"
         msg["To"] = to_email
 
         # Attach HTML body
