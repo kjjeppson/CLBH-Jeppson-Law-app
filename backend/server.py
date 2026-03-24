@@ -1232,8 +1232,15 @@ async def create_lead(data: LeadCreate):
     else:
         email_result = {"success": False, "error": "SMTP not configured"}
 
-    # STEP 2: Subscribe to Kit (disabled for now - enable when needed)
-    kit_result = {"success": False, "error": "Disabled"}
+    # STEP 2: Subscribe to Kit for marketing list
+    kit_result = await subscribe_to_kit(
+        email=data.email,
+        first_name=data.first_name,
+        last_name=data.last_name,
+        risk_level=risk_level_str,
+        score=score_str,
+        top_risks=top_risks_str
+    )
 
     return {
         "success": True,
