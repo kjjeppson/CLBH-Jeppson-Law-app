@@ -294,104 +294,24 @@ def require_db():
     return db
 
 def test_smtp_connection() -> Dict[str, Any]:
-    """Test SMTP connection and return detailed error info."""
+    """Test SMTP connection and return status."""
     result = {
         "server": SMTP_SERVER,
         "port": SMTP_PORT,
         "username": ERIC_EMAIL,
-        "username_length": len(ERIC_EMAIL) if ERIC_EMAIL else 0,
         "password_set": bool(ERIC_EMAIL_PASSWORD),
-        "password_length": len(ERIC_EMAIL_PASSWORD) if ERIC_EMAIL_PASSWORD else 0,
-        "password_ascii": ERIC_EMAIL_PASSWORD.isascii() if ERIC_EMAIL_PASSWORD else False,
-        "password_first_char": ord(ERIC_EMAIL_PASSWORD[0]) if ERIC_EMAIL_PASSWORD else None,
-        "password_last_char": ord(ERIC_EMAIL_PASSWORD[-1]) if ERIC_EMAIL_PASSWORD else None,
-        "password_has_control_chars": any(ord(c) < 32 or ord(c) > 126 for c in ERIC_EMAIL_PASSWORD) if ERIC_EMAIL_PASSWORD else False,
     }
-
-    # Get Railway's outbound IP address
-    try:
-        import urllib.request
-        with urllib.request.urlopen("https://api.ipify.org", timeout=5) as response:
-            result["outbound_ip"] = response.read().decode("utf-8").strip()
-    except Exception as e:
-        result["outbound_ip"] = f"Failed to get: {str(e)}"
 
     if not ERIC_EMAIL or not ERIC_EMAIL_PASSWORD:
         result["success"] = False
         result["error"] = "SMTP credentials not configured"
         return result
 
-    # First test DNS resolution
     try:
-        import socket as sock
-        ip = sock.gethostbyname(SMTP_SERVER)
-        result["server_ip"] = ip
-    except Exception as e:
-        result["success"] = False
-        result["error"] = f"DNS lookup failed: {str(e)}"
-        return result
-
-    # Test TCP connection
-    try:
-        import socket as sock
-        s = sock.socket(sock.AF_INET, sock.SOCK_STREAM)
-        s.settimeout(15)
-        s.connect((SMTP_SERVER, SMTP_PORT))
-        s.close()
-        result["tcp_connect"] = "success"
-    except Exception as e:
-        result["success"] = False
-        result["error"] = f"TCP connect failed: {str(e)}"
-        return result
-
-    # Test SMTP
-    try:
-        import base64
         with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=15) as server:
-            # Send EHLO first
-            ehlo_response = server.ehlo()
-            result["ehlo"] = f"{ehlo_response[0]} {ehlo_response[1].decode()[:100]}"
-
             server.starttls()
-            result["starttls"] = "success"
-
-            # Send EHLO again after STARTTLS (required by RFC)
-            ehlo_response2 = server.ehlo()
-            result["ehlo_after_tls"] = f"{ehlo_response2[0]}"
-
-            # Check what auth methods are supported
-            if hasattr(server, 'esmtp_features'):
-                auth_methods = server.esmtp_features.get('auth', '')
-                result["auth_methods"] = auth_methods
-
-            # Try AUTH LOGIN method (step by step)
-            code, resp = server.docmd("AUTH LOGIN")
-            result["auth_login_init"] = f"{code} {resp.decode()[:50]}"
-
-            if code == 334:
-                # Server asks for username (base64)
-                user_b64 = base64.b64encode(ERIC_EMAIL.encode()).decode()
-                code, resp = server.docmd(user_b64)
-                result["auth_login_user"] = f"{code} {resp.decode()[:50]}"
-
-                if code == 334:
-                    # Server asks for password (base64)
-                    pass_b64 = base64.b64encode(ERIC_EMAIL_PASSWORD.encode()).decode()
-                    code, resp = server.docmd(pass_b64)
-                    result["auth_login_pass"] = f"{code} {resp.decode()[:50]}"
-
-                    if code == 235:
-                        result["login"] = "success"
-                        result["success"] = True
-                    else:
-                        result["success"] = False
-                        result["error"] = f"AUTH LOGIN password failed: {code} {resp.decode()}"
-                else:
-                    result["success"] = False
-                    result["error"] = f"AUTH LOGIN user failed: {code} {resp.decode()}"
-            else:
-                result["success"] = False
-                result["error"] = f"AUTH LOGIN init failed: {code} {resp.decode()}"
+            server.login(ERIC_EMAIL, ERIC_EMAIL_PASSWORD)
+            result["success"] = True
             return result
     except smtplib.SMTPAuthenticationError as e:
         result["success"] = False
