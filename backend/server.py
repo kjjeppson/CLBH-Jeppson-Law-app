@@ -303,6 +303,9 @@ def test_smtp_connection() -> Dict[str, Any]:
         "password_set": bool(ERIC_EMAIL_PASSWORD),
         "password_length": len(ERIC_EMAIL_PASSWORD) if ERIC_EMAIL_PASSWORD else 0,
         "password_ascii": ERIC_EMAIL_PASSWORD.isascii() if ERIC_EMAIL_PASSWORD else False,
+        "password_first_char": ord(ERIC_EMAIL_PASSWORD[0]) if ERIC_EMAIL_PASSWORD else None,
+        "password_last_char": ord(ERIC_EMAIL_PASSWORD[-1]) if ERIC_EMAIL_PASSWORD else None,
+        "password_has_control_chars": any(ord(c) < 32 or ord(c) > 126 for c in ERIC_EMAIL_PASSWORD) if ERIC_EMAIL_PASSWORD else False,
     }
 
     # Get Railway's outbound IP address
@@ -361,19 +364,34 @@ def test_smtp_connection() -> Dict[str, Any]:
                 auth_methods = server.esmtp_features.get('auth', '')
                 result["auth_methods"] = auth_methods
 
-            # Try explicit AUTH PLAIN (what PowerShell likely uses)
-            # AUTH PLAIN format: base64(\0username\0password)
-            auth_string = f"\0{ERIC_EMAIL}\0{ERIC_EMAIL_PASSWORD}"
-            auth_b64 = base64.b64encode(auth_string.encode()).decode()
-            code, resp = server.docmd("AUTH PLAIN", auth_b64)
-            result["auth_response"] = f"{code} {resp.decode()[:100]}"
+            # Try AUTH LOGIN method (step by step)
+            code, resp = server.docmd("AUTH LOGIN")
+            result["auth_login_init"] = f"{code} {resp.decode()[:50]}"
 
-            if code == 235:
-                result["login"] = "success"
-                result["success"] = True
+            if code == 334:
+                # Server asks for username (base64)
+                user_b64 = base64.b64encode(ERIC_EMAIL.encode()).decode()
+                code, resp = server.docmd(user_b64)
+                result["auth_login_user"] = f"{code} {resp.decode()[:50]}"
+
+                if code == 334:
+                    # Server asks for password (base64)
+                    pass_b64 = base64.b64encode(ERIC_EMAIL_PASSWORD.encode()).decode()
+                    code, resp = server.docmd(pass_b64)
+                    result["auth_login_pass"] = f"{code} {resp.decode()[:50]}"
+
+                    if code == 235:
+                        result["login"] = "success"
+                        result["success"] = True
+                    else:
+                        result["success"] = False
+                        result["error"] = f"AUTH LOGIN password failed: {code} {resp.decode()}"
+                else:
+                    result["success"] = False
+                    result["error"] = f"AUTH LOGIN user failed: {code} {resp.decode()}"
             else:
                 result["success"] = False
-                result["error"] = f"AUTH PLAIN failed: {code} {resp.decode()}"
+                result["error"] = f"AUTH LOGIN init failed: {code} {resp.decode()}"
             return result
     except smtplib.SMTPAuthenticationError as e:
         result["success"] = False
