@@ -299,7 +299,10 @@ def test_smtp_connection() -> Dict[str, Any]:
         "server": SMTP_SERVER,
         "port": SMTP_PORT,
         "username": ERIC_EMAIL,
+        "username_length": len(ERIC_EMAIL) if ERIC_EMAIL else 0,
         "password_set": bool(ERIC_EMAIL_PASSWORD),
+        "password_length": len(ERIC_EMAIL_PASSWORD) if ERIC_EMAIL_PASSWORD else 0,
+        "password_ascii": ERIC_EMAIL_PASSWORD.isascii() if ERIC_EMAIL_PASSWORD else False,
     }
 
     # Get Railway's outbound IP address
@@ -340,6 +343,7 @@ def test_smtp_connection() -> Dict[str, Any]:
 
     # Test SMTP
     try:
+        import base64
         with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=15) as server:
             # Send EHLO first
             ehlo_response = server.ehlo()
@@ -357,9 +361,19 @@ def test_smtp_connection() -> Dict[str, Any]:
                 auth_methods = server.esmtp_features.get('auth', '')
                 result["auth_methods"] = auth_methods
 
-            server.login(ERIC_EMAIL, ERIC_EMAIL_PASSWORD)
-            result["login"] = "success"
-            result["success"] = True
+            # Try explicit AUTH PLAIN (what PowerShell likely uses)
+            # AUTH PLAIN format: base64(\0username\0password)
+            auth_string = f"\0{ERIC_EMAIL}\0{ERIC_EMAIL_PASSWORD}"
+            auth_b64 = base64.b64encode(auth_string.encode()).decode()
+            code, resp = server.docmd("AUTH PLAIN", auth_b64)
+            result["auth_response"] = f"{code} {resp.decode()[:100]}"
+
+            if code == 235:
+                result["login"] = "success"
+                result["success"] = True
+            else:
+                result["success"] = False
+                result["error"] = f"AUTH PLAIN failed: {code} {resp.decode()}"
             return result
     except smtplib.SMTPAuthenticationError as e:
         result["success"] = False
