@@ -341,8 +341,22 @@ def test_smtp_connection() -> Dict[str, Any]:
     # Test SMTP
     try:
         with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=15) as server:
+            # Send EHLO first
+            ehlo_response = server.ehlo()
+            result["ehlo"] = f"{ehlo_response[0]} {ehlo_response[1].decode()[:100]}"
+
             server.starttls()
             result["starttls"] = "success"
+
+            # Send EHLO again after STARTTLS (required by RFC)
+            ehlo_response2 = server.ehlo()
+            result["ehlo_after_tls"] = f"{ehlo_response2[0]}"
+
+            # Check what auth methods are supported
+            if hasattr(server, 'esmtp_features'):
+                auth_methods = server.esmtp_features.get('auth', '')
+                result["auth_methods"] = auth_methods
+
             server.login(ERIC_EMAIL, ERIC_EMAIL_PASSWORD)
             result["login"] = "success"
             result["success"] = True
