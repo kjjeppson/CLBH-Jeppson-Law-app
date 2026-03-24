@@ -56,12 +56,13 @@ def send_results_email(
     first_name: str,
     risk_level: str,
     score: str,
-    red_risks: List[str],
-    yellow_risks: List[str],
-    green_risks: List[str]
+    red_risks: List[Dict[str, str]],
+    yellow_risks: List[Dict[str, str]],
+    green_risks: List[Dict[str, str]]
 ) -> Dict[str, Any]:
     """
     Send assessment results email via SMTP.
+    Each risk is a dict with 'title' and 'description' keys.
     Returns success status. Errors are logged but don't break the flow.
     """
     logger.info("=" * 50)
@@ -80,97 +81,209 @@ def send_results_email(
 
     # Determine risk level colors and display text
     if risk_level == "red":
-        risk_bg = "#FEE2E2"
-        risk_color = "#991B1B"
+        risk_bg = "#FEF2F2"
+        risk_color = "#DC2626"
         risk_label = "IMMEDIATE ATTENTION REQUIRED"
     elif risk_level == "yellow":
-        risk_bg = "#FEF3C7"
-        risk_color = "#92400E"
+        risk_bg = "#FFFBEB"
+        risk_color = "#D97706"
         risk_label = "AT RISK"
     else:  # green
-        risk_bg = "#D1FAE5"
-        risk_color = "#065F46"
+        risk_bg = "#F0FDF4"
+        risk_color = "#16A34A"
         risk_label = "HEALTHY"
 
-    # Build risk sections HTML
-    def build_risk_section(title: str, risks: List[str], dot_color: str, bg_color: str, text_color: str) -> str:
+    # Build risk section HTML using tables for email compatibility
+    def build_risk_section(section_title: str, risks: List[Dict[str, str]], header_color: str, bg_color: str) -> str:
         if not risks:
             return ""
-        items = ""
-        for risk in risks:
-            items += f'''<div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px;">
-<div style="width:8px;height:8px;border-radius:50%;background:{dot_color};margin-top:5px;flex-shrink:0;"></div>
-<div style="font-size:14px;color:#444;word-wrap:break-word;">{risk}</div>
-</div>'''
-        return f'''<div style="margin-bottom:16px;">
-<div style="display:inline-block;background:{bg_color};color:{text_color};font-size:12px;font-weight:700;padding:4px 12px;border-radius:12px;margin-bottom:12px;">{title}</div>
-{items}
-</div>'''
 
-    red_section = build_risk_section("IMMEDIATE ATTENTION", red_risks, "#EF4444", "#FEE2E2", "#991B1B")
-    yellow_section = build_risk_section("AT RISK", yellow_risks, "#F59E0B", "#FEF3C7", "#92400E")
-    green_section = build_risk_section("HEALTHY", green_risks, "#10B981", "#D1FAE5", "#065F46")
+        items_html = ""
+        for risk in risks:
+            title = risk.get('title', '')
+            desc = risk.get('description', '')
+            items_html += f'''<tr>
+<td style="padding:8px 0;border-bottom:1px solid #f0f0f0;word-break:normal;white-space:normal;">
+<span style="font-size:14px;font-weight:600;color:#333;display:block;margin-bottom:4px;">{title}</span>
+<span style="font-size:13px;color:#666;display:block;">{desc}</span>
+</td>
+</tr>'''
+
+        return f'''<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
+<tr>
+<td style="background:{bg_color};border-radius:8px;padding:16px;">
+<table width="100%" cellpadding="0" cellspacing="0">
+<tr>
+<td style="padding-bottom:12px;">
+<span style="display:inline-block;background:{header_color};color:#ffffff;font-size:12px;font-weight:700;padding:6px 14px;border-radius:4px;text-transform:uppercase;">{section_title}</span>
+</td>
+</tr>
+{items_html}
+</table>
+</td>
+</tr>
+</table>'''
+
+    red_section = build_risk_section("Immediate Attention", red_risks, "#DC2626", "#FEF2F2")
+    yellow_section = build_risk_section("At Risk", yellow_risks, "#D97706", "#FFFBEB")
+    green_section = build_risk_section("Healthy", green_risks, "#16A34A", "#F0FDF4")
 
     risk_sections = red_section + yellow_section + green_section
     if not risk_sections:
-        risk_sections = '<div style="font-size:14px;color:#888;">No risk areas identified.</div>'
+        risk_sections = '<p style="font-size:14px;color:#888;">No risk areas identified.</p>'
 
-    # Build the HTML email
+    # Build the HTML email using tables for mobile compatibility
     html_body = f'''<!DOCTYPE html>
 <html>
-<body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,sans-serif;">
-<div style="max-width:600px;margin:0 auto;padding:20px;">
-<div style="background:#ffffff;border-radius:8px;overflow:hidden;">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,Helvetica,sans-serif;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;">
+<tr>
+<td align="center" style="padding:20px;">
+<table cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:8px;overflow:hidden;">
 
-<div style="background:#1B2B4B;padding:24px 32px;">
-<div style="color:#ffffff;font-size:22px;font-weight:600;">Jeppson Law, LLP</div>
-<div style="color:#a0b0c8;font-size:13px;margin-top:4px;">Preventive Business Law</div>
-</div>
+<!-- Header -->
+<tr>
+<td style="background:#1e2d4a;padding:24px 32px;">
+<table width="100%" cellpadding="0" cellspacing="0">
+<tr>
+<td style="color:#ffffff;font-size:22px;font-weight:600;word-break:normal;white-space:normal;">Jeppson Law, LLP</td>
+</tr>
+<tr>
+<td style="color:#a0b0c8;font-size:13px;padding-top:4px;word-break:normal;white-space:normal;">Preventive Business Law</td>
+</tr>
+</table>
+</td>
+</tr>
 
-<div style="padding:32px;">
-<p style="font-size:16px;color:#333;margin:0 0 8px;">Hi {first_name or "there"},</p>
-<p style="font-size:15px;color:#555;margin:0 0 24px;">Thank you for completing the Clean Legal Bill of Health Assessment. Here are your personalized results.</p>
+<!-- Body -->
+<tr>
+<td style="padding:32px;">
+<table width="100%" cellpadding="0" cellspacing="0">
+<tr>
+<td style="font-size:16px;color:#333;padding-bottom:8px;word-break:normal;white-space:normal;">Hi {first_name or "there"},</td>
+</tr>
+<tr>
+<td style="font-size:15px;color:#555;padding-bottom:24px;word-break:normal;white-space:normal;">Thank you for completing the Clean Legal Bill of Health Assessment. Here are your personalized results.</td>
+</tr>
+</table>
 
-<div style="background:#f8f9fb;border-radius:8px;border:1px solid #e2e8f0;padding:24px;margin-bottom:24px;">
-<div style="font-size:13px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:16px;">Your Results</div>
+<!-- Results Box -->
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f8f9fb;border-radius:8px;border:1px solid #e2e8f0;margin-bottom:24px;">
+<tr>
+<td style="padding:24px;">
+<table width="100%" cellpadding="0" cellspacing="0">
+<tr>
+<td style="font-size:13px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:1px;padding-bottom:16px;word-break:normal;white-space:normal;">Your Results</td>
+</tr>
+</table>
 
-<div style="margin-bottom:16px;">
-<div style="background:#fff;border-radius:8px;border:1px solid #e2e8f0;padding:16px;text-align:center;margin-bottom:12px;">
-<div style="font-size:12px;color:#888;margin-bottom:8px;text-transform:uppercase;">Risk Level</div>
-<div style="display:inline-block;background:{risk_bg};color:{risk_color};font-size:14px;font-weight:700;padding:6px 18px;border-radius:20px;white-space:nowrap;">{risk_label}</div>
-</div>
-<div style="background:#fff;border-radius:8px;border:1px solid #e2e8f0;padding:16px;text-align:center;">
-<div style="font-size:12px;color:#888;margin-bottom:8px;text-transform:uppercase;">Overall Score</div>
-<div style="font-size:28px;font-weight:700;color:#1B2B4B;">{score}</div>
-</div>
-</div>
+<!-- Risk Level Card -->
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;border:1px solid #e2e8f0;margin-bottom:12px;">
+<tr>
+<td style="padding:16px;text-align:center;">
+<table width="100%" cellpadding="0" cellspacing="0">
+<tr>
+<td style="font-size:12px;color:#888;text-transform:uppercase;padding-bottom:8px;word-break:normal;white-space:normal;">Risk Level</td>
+</tr>
+<tr>
+<td align="center">
+<span style="display:inline-block;background:{risk_bg};color:{risk_color};font-size:14px;font-weight:700;padding:8px 20px;border-radius:20px;word-break:normal;white-space:nowrap;">{risk_label}</span>
+</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
 
-<div style="background:#fff;border-radius:8px;border:1px solid #e2e8f0;padding:16px;">
-<div style="font-size:13px;font-weight:600;color:#1B2B4B;margin-bottom:12px;">Your Risk Areas</div>
+<!-- Score Card -->
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;border:1px solid #e2e8f0;margin-bottom:16px;">
+<tr>
+<td style="padding:16px;text-align:center;">
+<table width="100%" cellpadding="0" cellspacing="0">
+<tr>
+<td style="font-size:12px;color:#888;text-transform:uppercase;padding-bottom:8px;word-break:normal;white-space:normal;">Overall Score</td>
+</tr>
+<tr>
+<td style="font-size:28px;font-weight:700;color:#1e2d4a;word-break:normal;white-space:normal;">{score}</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+
+<!-- Risk Areas -->
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;border:1px solid #e2e8f0;">
+<tr>
+<td style="padding:16px;">
+<table width="100%" cellpadding="0" cellspacing="0">
+<tr>
+<td style="font-size:13px;font-weight:600;color:#1e2d4a;padding-bottom:16px;word-break:normal;white-space:normal;">Your Risk Areas</td>
+</tr>
+<tr>
+<td>
 {risk_sections}
-</div>
-</div>
+</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
 
-<p style="font-size:15px;color:#555;margin:0 0 24px;">These are areas where your business may have legal exposure that could cost you significantly if left unaddressed. The good news? Most of these risks can be resolved quickly with the right legal foundation in place.</p>
+</td>
+</tr>
+</table>
 
-<div style="text-align:center;margin-bottom:24px;">
+<!-- Message -->
+<table width="100%" cellpadding="0" cellspacing="0">
+<tr>
+<td style="font-size:15px;color:#555;padding-bottom:24px;word-break:normal;white-space:normal;">These are areas where your business may have legal exposure that could cost you significantly if left unaddressed. The good news? Most of these risks can be resolved quickly with the right legal foundation in place.</td>
+</tr>
+</table>
+
+<!-- CTA Button -->
+<table width="100%" cellpadding="0" cellspacing="0">
+<tr>
+<td align="center" style="padding-bottom:24px;">
 <a href="https://jeppsonlaw.cliogrow.com/book/5d7625ad3292b0e84db81965f80ee5f4"
-style="display:inline-block;background:#F97316;color:#ffffff;font-size:16px;font-weight:600;padding:14px 32px;border-radius:8px;text-decoration:none;">
-Book Your Free Consultation
-</a>
-</div>
+style="display:inline-block;background:#F97316;color:#ffffff;font-size:16px;font-weight:600;padding:14px 32px;border-radius:8px;text-decoration:none;word-break:normal;white-space:nowrap;">Schedule Your Free Legal Risk Review</a>
+</td>
+</tr>
+</table>
 
-<p style="font-size:14px;color:#888;margin:0;">No obligation. We will walk you through exactly what these results mean for your business and what steps make sense next.</p>
-</div>
+<table width="100%" cellpadding="0" cellspacing="0">
+<tr>
+<td style="font-size:14px;color:#888;word-break:normal;white-space:normal;">No obligation. We will walk you through exactly what these results mean for your business and what steps make sense next.</td>
+</tr>
+</table>
 
-<div style="background:#1B2B4B;padding:20px 32px;text-align:center;">
-<div style="color:#a0b0c8;font-size:13px;">Eric Jeppson | Jeppson Law, LLP</div>
-<div style="color:#6a7f9a;font-size:12px;margin-top:4px;">2999 Douglas Blvd Suite 180, Roseville, CA 95661</div>
-<div style="color:#6a7f9a;font-size:12px;margin-top:4px;">jeppsonlaw.com</div>
-</div>
+</td>
+</tr>
 
-</div>
-</div>
+<!-- Footer -->
+<tr>
+<td style="background:#1e2d4a;padding:20px 32px;text-align:center;">
+<table width="100%" cellpadding="0" cellspacing="0">
+<tr>
+<td style="color:#a0b0c8;font-size:13px;padding-bottom:4px;word-break:normal;white-space:normal;">Eric Jeppson | Jeppson Law, LLP</td>
+</tr>
+<tr>
+<td style="color:#6a7f9a;font-size:12px;padding-bottom:4px;word-break:normal;white-space:normal;">2999 Douglas Blvd Suite 180, Roseville, CA 95661</td>
+</tr>
+<tr>
+<td style="color:#6a7f9a;font-size:12px;word-break:normal;white-space:normal;">jeppsonlaw.com</td>
+</tr>
+</table>
+</td>
+</tr>
+
+</table>
+</td>
+</tr>
+</table>
 </body>
 </html>'''
 
@@ -1194,10 +1307,10 @@ async def create_lead(data: LeadCreate):
             lead.risk_level = assessment.get('risk_level', 'unknown')
             lead.top_risks = [r.get('title', '') for r in assessment.get('top_risks', [])]
 
-            # Extract risks by severity for email
-            red_risks = [r.get('title', '') for r in assessment.get('red_flag_details', [])]
-            yellow_risks = [r.get('title', '') for r in assessment.get('yellow_flag_details', [])]
-            green_risks = [r.get('title', '') for r in assessment.get('green_flag_details', [])]
+            # Extract risks by severity for email (title + description)
+            red_risks = [{'title': r.get('title', ''), 'description': r.get('description', '')} for r in assessment.get('red_flag_details', [])]
+            yellow_risks = [{'title': r.get('title', ''), 'description': r.get('description', '')} for r in assessment.get('yellow_flag_details', [])]
+            green_risks = [{'title': r.get('title', ''), 'description': r.get('description', '')} for r in assessment.get('green_flag_details', [])]
 
             # Prepare data for Kit API
             score_str = lead.score
