@@ -80,15 +80,15 @@ def send_results_email(
     if risk_level == "red":
         risk_bg = "#FEE2E2"
         risk_color = "#991B1B"
-        risk_level_display = "HIGH"
+        risk_label = "HIGH RISK"
     elif risk_level == "yellow":
         risk_bg = "#FEF3C7"
         risk_color = "#92400E"
-        risk_level_display = "MEDIUM"
+        risk_label = "MEDIUM RISK"
     else:  # green
         risk_bg = "#D1FAE5"
         risk_color = "#065F46"
-        risk_level_display = "LOW"
+        risk_label = "LOW RISK"
 
     # Build risk bullets HTML
     risk_bullets = ""
@@ -120,22 +120,16 @@ def send_results_email(
 <div style="background:#f8f9fb;border-radius:8px;border:1px solid #e2e8f0;padding:24px;margin-bottom:24px;">
 <div style="font-size:13px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:16px;">Your Results</div>
 
-<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
-<tr>
-<td width="50%" style="padding-right:8px;">
-<div style="background:#fff;border-radius:8px;border:1px solid #e2e8f0;padding:16px;text-align:center;">
+<div style="display:flex;gap:16px;margin-bottom:20px;">
+<div style="flex:1;background:#fff;border-radius:8px;border:1px solid #e2e8f0;padding:16px;text-align:center;">
 <div style="font-size:12px;color:#888;margin-bottom:8px;text-transform:uppercase;">Risk Level</div>
-<div style="display:inline-block;background:{risk_bg};color:{risk_color};font-size:16px;font-weight:700;padding:6px 18px;border-radius:20px;">{risk_level_display}</div>
+<div style="display:inline-block;background:{risk_bg};color:{risk_color};font-size:14px;font-weight:700;padding:6px 18px;border-radius:20px;">{risk_label}</div>
 </div>
-</td>
-<td width="50%" style="padding-left:8px;">
-<div style="background:#fff;border-radius:8px;border:1px solid #e2e8f0;padding:16px;text-align:center;">
+<div style="flex:1;background:#fff;border-radius:8px;border:1px solid #e2e8f0;padding:16px;text-align:center;">
 <div style="font-size:12px;color:#888;margin-bottom:8px;text-transform:uppercase;">Overall Score</div>
 <div style="font-size:28px;font-weight:700;color:#1B2B4B;">{score}</div>
 </div>
-</td>
-</tr>
-</table>
+</div>
 
 <div style="background:#fff;border-radius:8px;border:1px solid #e2e8f0;padding:16px;">
 <div style="font-size:13px;font-weight:600;color:#1B2B4B;margin-bottom:12px;">Your Top Risk Areas</div>
@@ -146,7 +140,10 @@ def send_results_email(
 <p style="font-size:15px;color:#555;margin:0 0 24px;">These are areas where your business may have legal exposure that could cost you significantly if left unaddressed. The good news? Most of these risks can be resolved quickly with the right legal foundation in place.</p>
 
 <div style="text-align:center;margin-bottom:24px;">
-<a href="https://jeppsonlaw.cliogrow.com/book/5d7625ad3292b0e84db81965f80ee5f4" style="display:inline-block;background:#F97316;color:#ffffff;font-size:16px;font-weight:600;padding:14px 32px;border-radius:8px;text-decoration:none;">Book Your Free Consultation</a>
+<a href="https://jeppsonlaw.cliogrow.com/book/5d7625ad3292b0e84db81965f80ee5f4"
+style="display:inline-block;background:#F97316;color:#ffffff;font-size:16px;font-weight:600;padding:14px 32px;border-radius:8px;text-decoration:none;">
+Book Your Free Consultation
+</a>
 </div>
 
 <p style="font-size:14px;color:#888;margin:0;">No obligation. We will walk you through exactly what these results mean for your business and what steps make sense next.</p>
