@@ -56,7 +56,9 @@ def send_results_email(
     first_name: str,
     risk_level: str,
     score: str,
-    top_risks: List[str]
+    red_risks: List[str],
+    yellow_risks: List[str],
+    green_risks: List[str]
 ) -> Dict[str, Any]:
     """
     Send assessment results email via SMTP.
@@ -69,7 +71,7 @@ def send_results_email(
     logger.info(f"First Name: {first_name}")
     logger.info(f"Risk Level: {risk_level}")
     logger.info(f"Score: {score}")
-    logger.info(f"Top Risks: {top_risks}")
+    logger.info(f"Red Risks: {len(red_risks)}, Yellow: {len(yellow_risks)}, Green: {len(green_risks)}")
 
     # Check if SMTP is configured (must have non-empty values)
     if not ERIC_EMAIL or not ERIC_EMAIL_PASSWORD or len(ERIC_EMAIL.strip()) == 0 or len(ERIC_EMAIL_PASSWORD.strip()) == 0:
@@ -80,26 +82,38 @@ def send_results_email(
     if risk_level == "red":
         risk_bg = "#FEE2E2"
         risk_color = "#991B1B"
-        risk_label = "HIGH RISK"
+        risk_label = "IMMEDIATE ATTENTION REQUIRED"
     elif risk_level == "yellow":
         risk_bg = "#FEF3C7"
         risk_color = "#92400E"
-        risk_label = "MEDIUM RISK"
+        risk_label = "AT RISK"
     else:  # green
         risk_bg = "#D1FAE5"
         risk_color = "#065F46"
-        risk_label = "LOW RISK"
+        risk_label = "HEALTHY"
 
-    # Build risk bullets HTML
-    risk_bullets = ""
-    for risk in top_risks:
-        risk_bullets += f'''<div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;">
-<div style="width:8px;height:8px;border-radius:50%;background:#F97316;margin-top:5px;flex-shrink:0;"></div>
-<div style="font-size:14px;color:#444;">{risk}</div>
+    # Build risk sections HTML
+    def build_risk_section(title: str, risks: List[str], dot_color: str, bg_color: str, text_color: str) -> str:
+        if not risks:
+            return ""
+        items = ""
+        for risk in risks:
+            items += f'''<div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px;">
+<div style="width:8px;height:8px;border-radius:50%;background:{dot_color};margin-top:5px;flex-shrink:0;"></div>
+<div style="font-size:14px;color:#444;word-wrap:break-word;">{risk}</div>
+</div>'''
+        return f'''<div style="margin-bottom:16px;">
+<div style="display:inline-block;background:{bg_color};color:{text_color};font-size:12px;font-weight:700;padding:4px 12px;border-radius:12px;margin-bottom:12px;">{title}</div>
+{items}
 </div>'''
 
-    if not risk_bullets:
-        risk_bullets = '<div style="font-size:14px;color:#888;">No critical risks identified - great job!</div>'
+    red_section = build_risk_section("IMMEDIATE ATTENTION", red_risks, "#EF4444", "#FEE2E2", "#991B1B")
+    yellow_section = build_risk_section("AT RISK", yellow_risks, "#F59E0B", "#FEF3C7", "#92400E")
+    green_section = build_risk_section("HEALTHY", green_risks, "#10B981", "#D1FAE5", "#065F46")
+
+    risk_sections = red_section + yellow_section + green_section
+    if not risk_sections:
+        risk_sections = '<div style="font-size:14px;color:#888;">No risk areas identified.</div>'
 
     # Build the HTML email
     html_body = f'''<!DOCTYPE html>
@@ -120,20 +134,20 @@ def send_results_email(
 <div style="background:#f8f9fb;border-radius:8px;border:1px solid #e2e8f0;padding:24px;margin-bottom:24px;">
 <div style="font-size:13px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:16px;">Your Results</div>
 
-<div style="display:flex;gap:16px;margin-bottom:20px;">
-<div style="flex:1;background:#fff;border-radius:8px;border:1px solid #e2e8f0;padding:16px;text-align:center;">
+<div style="margin-bottom:16px;">
+<div style="background:#fff;border-radius:8px;border:1px solid #e2e8f0;padding:16px;text-align:center;margin-bottom:12px;">
 <div style="font-size:12px;color:#888;margin-bottom:8px;text-transform:uppercase;">Risk Level</div>
-<div style="display:inline-block;background:{risk_bg};color:{risk_color};font-size:14px;font-weight:700;padding:6px 18px;border-radius:20px;">{risk_label}</div>
+<div style="display:inline-block;background:{risk_bg};color:{risk_color};font-size:14px;font-weight:700;padding:6px 18px;border-radius:20px;white-space:nowrap;">{risk_label}</div>
 </div>
-<div style="flex:1;background:#fff;border-radius:8px;border:1px solid #e2e8f0;padding:16px;text-align:center;">
+<div style="background:#fff;border-radius:8px;border:1px solid #e2e8f0;padding:16px;text-align:center;">
 <div style="font-size:12px;color:#888;margin-bottom:8px;text-transform:uppercase;">Overall Score</div>
 <div style="font-size:28px;font-weight:700;color:#1B2B4B;">{score}</div>
 </div>
 </div>
 
 <div style="background:#fff;border-radius:8px;border:1px solid #e2e8f0;padding:16px;">
-<div style="font-size:13px;font-weight:600;color:#1B2B4B;margin-bottom:12px;">Your Top Risk Areas</div>
-{risk_bullets}
+<div style="font-size:13px;font-weight:600;color:#1B2B4B;margin-bottom:12px;">Your Risk Areas</div>
+{risk_sections}
 </div>
 </div>
 
@@ -1151,10 +1165,13 @@ async def create_lead(data: LeadCreate):
     db = require_db()
     lead = Lead(**data.model_dump())
 
-    # Variables for Kit API
+    # Variables for Kit API and email
     score_str = ""
     risk_level_str = ""
     top_risks_str = ""
+    red_risks = []
+    yellow_risks = []
+    green_risks = []
 
     # If assessment_id provided, get score info
     if data.assessment_id:
@@ -1176,6 +1193,11 @@ async def create_lead(data: LeadCreate):
             lead.score = f"{assessment.get('score_percentage', 0)}%"
             lead.risk_level = assessment.get('risk_level', 'unknown')
             lead.top_risks = [r.get('title', '') for r in assessment.get('top_risks', [])]
+
+            # Extract risks by severity for email
+            red_risks = [r.get('title', '') for r in assessment.get('red_flag_details', [])]
+            yellow_risks = [r.get('title', '') for r in assessment.get('yellow_flag_details', [])]
+            green_risks = [r.get('title', '') for r in assessment.get('green_flag_details', [])]
 
             # Prepare data for Kit API
             score_str = lead.score
@@ -1207,7 +1229,9 @@ async def create_lead(data: LeadCreate):
         email_first_name = data.first_name
         email_risk = risk_level_str
         email_score = score_str
-        email_risks = list(lead.top_risks) if lead.top_risks else []
+        email_red_risks = list(red_risks) if red_risks else []
+        email_yellow_risks = list(yellow_risks) if yellow_risks else []
+        email_green_risks = list(green_risks) if green_risks else []
 
         def send_email_thread():
             logger.info(f"Background: Sending email via {SMTP_SERVER} to {email_to}")
@@ -1217,7 +1241,9 @@ async def create_lead(data: LeadCreate):
                     first_name=email_first_name,
                     risk_level=email_risk,
                     score=email_score,
-                    top_risks=email_risks
+                    red_risks=email_red_risks,
+                    yellow_risks=email_yellow_risks,
+                    green_risks=email_green_risks
                 )
                 logger.info(f"Background: Email result: {result}")
             except Exception as e:
