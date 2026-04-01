@@ -104,7 +104,7 @@ def send_results_email(
             title = risk.get('title', '')
             desc = risk.get('description', '')
             area_name = risk.get('area_name', '')
-            area_html = f'<span style="font-size:12px;font-style:italic;color:{header_color};display:block;margin-top:4px;">{area_name}</span>' if area_name else ''
+            area_html = f'<span style="font-size:11px;font-style:italic;color:{header_color};display:block;margin-top:4px;">{area_name}</span>' if area_name else ''
             items_html += f'''<tr>
 <td style="padding:8px 0;border-bottom:1px solid #f0f0f0;word-break:normal;white-space:normal;">
 <span style="font-size:14px;font-weight:600;color:#333;display:block;margin-bottom:4px;">{title}</span>
@@ -1325,10 +1325,10 @@ async def create_lead(data: LeadCreate):
             lead.risk_level = assessment.get('risk_level', 'unknown')
             lead.top_risks = [r.get('title', '') for r in assessment.get('top_risks', [])]
 
-            # Extract risks by severity for email (title + description)
-            red_risks = [{'title': r.get('title', ''), 'description': r.get('description', '')} for r in assessment.get('red_flag_details', [])]
-            yellow_risks = [{'title': r.get('title', ''), 'description': r.get('description', '')} for r in assessment.get('yellow_flag_details', [])]
-            green_risks = [{'title': r.get('title', ''), 'description': r.get('description', '')} for r in assessment.get('green_flag_details', [])]
+            # Extract risks by severity for email (title + description + area_name)
+            red_risks = [{'title': r.get('title', ''), 'description': r.get('description', ''), 'area_name': r.get('area_name', '')} for r in assessment.get('red_flag_details', [])]
+            yellow_risks = [{'title': r.get('title', ''), 'description': r.get('description', ''), 'area_name': r.get('area_name', '')} for r in assessment.get('yellow_flag_details', [])]
+            green_risks = [{'title': r.get('title', ''), 'description': r.get('description', ''), 'area_name': r.get('area_name', '')} for r in assessment.get('green_flag_details', [])]
 
             # Prepare data for Kit API
             score_str = lead.score
