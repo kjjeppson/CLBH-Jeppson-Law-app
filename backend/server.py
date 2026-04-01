@@ -17,6 +17,7 @@ import httpx
 import asyncio
 import smtplib
 import socket
+import time
 import concurrent.futures
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -287,40 +288,54 @@ style="display:inline-block;background:#F97316;color:#ffffff;font-size:16px;font
 </body>
 </html>'''
 
-    try:
-        # Create the email message
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = "Your Legal Risk Assessment Results"
-        msg["From"] = f"Eric Jeppson | Jeppson Law <{ERIC_EMAIL}>"
-        msg["To"] = to_email
+    # Create the email message
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = "Your Legal Risk Assessment Results"
+    msg["From"] = f"Eric Jeppson | Jeppson Law <{ERIC_EMAIL}>"
+    msg["To"] = to_email
 
-        # Attach HTML body
-        msg.attach(MIMEText(html_body, "html"))
+    # Attach HTML body
+    msg.attach(MIMEText(html_body, "html"))
 
-        # Connect to SMTP server and send (with 5 second timeout)
-        logger.info(f"Connecting to {SMTP_SERVER}:{SMTP_PORT}...")
-        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=5) as server:
-            server.starttls()
-            logger.info("STARTTLS enabled, logging in...")
-            server.login(ERIC_EMAIL, ERIC_EMAIL_PASSWORD)
-            logger.info("Login successful, sending email...")
-            server.sendmail(ERIC_EMAIL, to_email, msg.as_string())
-            logger.info("EMAIL SENT SUCCESSFULLY!")
-            return {"success": True}
+    # Retry logic: up to 3 attempts with 5 second wait between retries
+    max_retries = 3
+    last_error = None
 
-    except socket.timeout as e:
-        logger.error(f"SMTP Timeout: {str(e)}")
-        return {"success": False, "error": "Connection timed out"}
-    except smtplib.SMTPAuthenticationError as e:
-        logger.error(f"SMTP Authentication Error: {str(e)}")
-        return {"success": False, "error": f"Authentication failed: {str(e)}"}
-    except smtplib.SMTPException as e:
-        logger.error(f"SMTP Error: {str(e)}")
-        return {"success": False, "error": f"SMTP error: {str(e)}"}
-    except Exception as e:
-        logger.error(f"Email Error: {str(e)}")
-        logger.exception("Full traceback:")
-        return {"success": False, "error": f"Unexpected error: {str(e)}"}
+    for attempt in range(1, max_retries + 1):
+        try:
+            logger.info(f"SMTP attempt {attempt}/{max_retries}: Connecting to {SMTP_SERVER}:{SMTP_PORT}...")
+            with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=30) as server:
+                server.starttls()
+                logger.info(f"Attempt {attempt}: STARTTLS enabled, logging in...")
+                server.login(ERIC_EMAIL, ERIC_EMAIL_PASSWORD)
+                logger.info(f"Attempt {attempt}: Login successful, sending email...")
+                server.sendmail(ERIC_EMAIL, to_email, msg.as_string())
+                logger.info(f"EMAIL SENT SUCCESSFULLY on attempt {attempt}!")
+                return {"success": True}
+
+        except (socket.timeout, OSError) as e:
+            last_error = f"Connection timed out: {str(e)}"
+            logger.warning(f"SMTP Timeout on attempt {attempt}/{max_retries}: {str(e)}")
+            if attempt < max_retries:
+                logger.info(f"Waiting 5 seconds before retry {attempt + 1}...")
+                time.sleep(5)
+        except smtplib.SMTPAuthenticationError as e:
+            logger.error(f"SMTP Authentication Error (attempt {attempt}): {str(e)}")
+            return {"success": False, "error": f"Authentication failed: {str(e)}"}
+        except smtplib.SMTPException as e:
+            last_error = f"SMTP error: {str(e)}"
+            logger.warning(f"SMTP Error on attempt {attempt}/{max_retries}: {str(e)}")
+            if attempt < max_retries:
+                logger.info(f"Waiting 5 seconds before retry {attempt + 1}...")
+                time.sleep(5)
+        except Exception as e:
+            logger.error(f"Email Error (attempt {attempt}): {str(e)}")
+            logger.exception("Full traceback:")
+            return {"success": False, "error": f"Unexpected error: {str(e)}"}
+
+    # All retries exhausted
+    logger.error(f"EMAIL FAILED after {max_retries} attempts. Last error: {last_error}")
+    return {"success": False, "error": f"Failed after {max_retries} attempts: {last_error}"}
 
 async def subscribe_to_kit(
     email: str,
