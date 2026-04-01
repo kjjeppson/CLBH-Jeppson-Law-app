@@ -103,10 +103,13 @@ def send_results_email(
         for risk in risks:
             title = risk.get('title', '')
             desc = risk.get('description', '')
+            area_name = risk.get('area_name', '')
+            area_html = f'<span style="font-size:12px;font-style:italic;color:{header_color};display:block;margin-top:4px;">{area_name}</span>' if area_name else ''
             items_html += f'''<tr>
 <td style="padding:8px 0;border-bottom:1px solid #f0f0f0;word-break:normal;white-space:normal;">
 <span style="font-size:14px;font-weight:600;color:#333;display:block;margin-bottom:4px;">{title}</span>
 <span style="font-size:13px;color:#666;display:block;">{desc}</span>
+{area_html}
 </td>
 </tr>'''
 
