@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import {
   Shield, CheckCircle2, AlertTriangle, XCircle,
   Mail, Calendar, ArrowRight, Loader2,
-  Phone, FileText, Users, Briefcase, UserCheck, ShieldCheck, Database
+  Phone, FileText, Users, Briefcase, UserCheck, ShieldCheck, Database, ShoppingCart
 } from "lucide-react";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -185,25 +185,36 @@ export default function ResultsPage() {
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Navigation */}
-      <nav className="bg-white border-b border-slate-200 sticky top-0 z-50 no-print">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+      <nav className="bg-white border-b border-slate-200 sticky top-0 z-50 no-print nav-grid">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center relative z-10">
           <div
             className="flex items-center gap-2 cursor-pointer"
             onClick={() => navigate("/")}
           >
-            <Shield className="w-8 h-8 text-blue-900" />
-            <span className="font-brand text-xl font-bold text-slate-900">
-              Jeppson Law<span className="text-slate-500">, LLP</span>
-            </span>
+            <img
+              src="/clbh-logo.png"
+              alt="Clean Legal Bill of Health — A Jeppson Law Product"
+              className="h-24 w-auto"
+            />
           </div>
-          <Button
-            onClick={handleEmailResults}
-            className="bg-orange-500 hover:bg-orange-600 text-white"
-            data-testid="email-results-btn"
-          >
-            <Mail className="w-4 h-4 mr-2" />
-            Email Me My Results
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() => window.open('https://cleanlegalbillofhealth.com/shop', '_blank')}
+              className="bg-slate-900 hover:bg-slate-800 text-white"
+              data-testid="purchase-checklist-btn"
+            >
+              <ShoppingCart className="w-4 h-4 mr-2" />
+              Purchase a Checklist
+            </Button>
+            <Button
+              onClick={handleEmailResults}
+              className="bg-orange-500 hover:bg-orange-600 text-white"
+              data-testid="email-results-btn"
+            >
+              <Mail className="w-4 h-4 mr-2" />
+              Email Me My Results
+            </Button>
+          </div>
         </div>
       </nav>
 
@@ -463,20 +474,21 @@ export default function ResultsPage() {
       </main>
 
       {/* Footer */}
-      <footer className="py-6 bg-white border-t border-slate-200">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-3">
-            <a href="https://www.jeppsonlaw.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-              <Shield className="w-6 h-6 text-blue-900" />
-              <span className="font-brand text-lg font-semibold text-blue-900">
-                JeppsonLaw.com
-              </span>
+      <footer className="py-6 bg-white border-t border-slate-200 grid-pattern-light">
+        <div className="max-w-7xl mx-auto px-6 relative z-10">
+          <div className="flex flex-col md:flex-row md:justify-between items-center gap-4 mb-3">
+            <a href="https://www.jeppsonlaw.com" target="_blank" rel="noopener noreferrer" className="md:flex-1 flex items-center gap-2 hover:opacity-80 transition-opacity">
+              <img
+                src="/clbh-logo.png"
+                alt="Clean Legal Bill of Health — A Jeppson Law Product"
+                className="h-20 w-auto"
+              />
             </a>
-            <a href="tel:916-780-7008" className="flex items-center gap-2 text-slate-600 hover:text-blue-900 transition-colors">
+            <a href="tel:916-780-7008" className="md:flex-1 flex items-center justify-center gap-2 text-slate-600 hover:text-blue-900 transition-colors">
               <Phone className="w-4 h-4" />
               <span className="text-sm font-medium">916-780-7008</span>
             </a>
-            <p className="text-slate-500 text-sm">
+            <p className="md:flex-1 text-slate-500 text-sm md:text-right">
               © {new Date().getFullYear()} Jeppson Law, LLP. All rights reserved.
             </p>
           </div>

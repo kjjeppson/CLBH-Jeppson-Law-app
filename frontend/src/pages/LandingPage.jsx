@@ -82,16 +82,17 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Navigation */}
-      <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+      <nav className="bg-white border-b border-slate-200 sticky top-0 z-50 nav-grid">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center relative z-10">
           <div
             className="flex items-center gap-2 cursor-pointer"
             onClick={() => navigate("/")}
           >
-            <Shield className="w-8 h-8 text-blue-900" />
-            <span className="font-brand text-xl font-bold text-slate-900">
-              Jeppson Law<span className="text-slate-500">, LLP</span>
-            </span>
+            <img
+              src="/clbh-logo.png"
+              alt="Clean Legal Bill of Health — A Jeppson Law Product"
+              className="h-24 w-auto"
+            />
           </div>
           <div className="flex gap-2">
             <Button
@@ -152,8 +153,8 @@ export default function LandingPage() {
       </section>
 
       {/* What You'll Get Section */}
-      <section className="py-20 bg-white" id="how-it-works">
-        <div className="max-w-7xl mx-auto px-6">
+      <section className="py-20 bg-white grid-pattern-light" id="how-it-works">
+        <div className="max-w-7xl mx-auto px-6 relative z-10">
           <div className="text-center mb-16">
             <h2 className="font-heading text-3xl md:text-4xl font-bold text-slate-900 mb-4">
               What You'll Get
@@ -264,8 +265,8 @@ export default function LandingPage() {
       </section>
 
       {/* Risk Score Explanation */}
-      <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-6">
+      <section className="py-20 bg-white grid-pattern-light">
+        <div className="max-w-7xl mx-auto px-6 relative z-10">
           <div className="text-center mb-16">
             <h2 className="font-heading text-3xl md:text-4xl font-bold text-slate-900 mb-4">
               Your Risk Score Explained
@@ -353,20 +354,21 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="py-8 bg-white border-t border-slate-200">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-4">
-            <a href="https://www.jeppsonlaw.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-              <Shield className="w-6 h-6 text-blue-900" />
-              <span className="font-brand text-lg font-semibold text-blue-900">
-                JeppsonLaw.com
-              </span>
+      <footer className="py-8 bg-white border-t border-slate-200 grid-pattern-light">
+        <div className="max-w-7xl mx-auto px-6 relative z-10">
+          <div className="flex flex-col md:flex-row md:justify-between items-center gap-4 mb-4">
+            <a href="https://www.jeppsonlaw.com" target="_blank" rel="noopener noreferrer" className="md:flex-1 flex items-center gap-2 hover:opacity-80 transition-opacity">
+              <img
+                src="/clbh-logo.png"
+                alt="Clean Legal Bill of Health — A Jeppson Law Product"
+                className="h-20 w-auto"
+              />
             </a>
-            <a href="tel:916-780-7008" className="flex items-center gap-2 text-slate-600 hover:text-blue-900 transition-colors">
+            <a href="tel:916-780-7008" className="md:flex-1 flex items-center justify-center gap-2 text-slate-600 hover:text-blue-900 transition-colors">
               <Phone className="w-4 h-4" />
               <span className="text-sm font-medium">916-780-7008</span>
             </a>
-            <p className="text-slate-500 text-sm">
+            <p className="md:flex-1 text-slate-500 text-sm md:text-right">
               © {new Date().getFullYear()} Jeppson Law, LLP. All rights reserved.
             </p>
           </div>

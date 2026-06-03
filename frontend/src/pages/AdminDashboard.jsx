@@ -110,17 +110,18 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Navigation */}
-      <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+      <nav className="bg-white border-b border-slate-200 sticky top-0 z-50 nav-grid">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center relative z-10">
           <div className="flex items-center gap-2">
             <div
               className="flex items-center gap-2 cursor-pointer"
               onClick={() => navigate("/")}
             >
-              <Shield className="w-8 h-8 text-blue-900" />
-              <span className="font-brand text-xl font-bold text-slate-900">
-                Jeppson Law<span className="text-slate-500">, LLP</span>
-              </span>
+              <img
+                src="/clbh-logo.png"
+                alt="Clean Legal Bill of Health — A Jeppson Law Product"
+                className="h-24 w-auto"
+              />
             </div>
             <Badge variant="outline" className="ml-2">Admin</Badge>
           </div>

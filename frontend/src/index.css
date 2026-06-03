@@ -218,9 +218,24 @@ code {
     position: absolute;
     inset: 0;
     background-image:
-        linear-gradient(rgba(59, 130, 246, 0.06) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(59, 130, 246, 0.06) 1px, transparent 1px);
+        linear-gradient(rgba(59, 130, 246, 0.16) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(59, 130, 246, 0.16) 1px, transparent 1px);
     background-size: 50px 50px;
+    filter: blur(0.7px);
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* Grid overlay for sticky headers — does not override positioning */
+.nav-grid::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+        linear-gradient(rgba(59, 130, 246, 0.16) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(59, 130, 246, 0.16) 1px, transparent 1px);
+    background-size: 50px 50px;
+    filter: blur(0.7px);
     pointer-events: none;
     z-index: 0;
 }
