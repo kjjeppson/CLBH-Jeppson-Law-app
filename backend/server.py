@@ -253,13 +253,13 @@ def send_results_email(
 <tr>
 <td align="center" style="padding-bottom:12px;">
 <a href="https://jeppsonlaw.cliogrow.com/book/5d7625ad3292b0e84db81965f80ee5f4"
-style="display:inline-block;background:#F97316;color:#ffffff;font-size:16px;font-weight:600;padding:14px 32px;border-radius:8px;text-decoration:none;word-break:normal;white-space:nowrap;">Schedule Your Free Legal Risk Review</a>
+style="display:inline-block;background:#F97316;color:#ffffff;font-size:16px;font-weight:600;padding:14px 32px;border-radius:8px;text-decoration:none;word-break:normal;white-space:nowrap;"><img src="https://assessment.jeppsonlaw.com/email-calendar.png" width="18" height="18" alt="" style="vertical-align:middle;margin-right:8px;border:0;"><span style="vertical-align:middle;">Schedule Your Free Legal Risk Review</span></a>
 </td>
 </tr>
 <tr>
 <td align="center" style="padding-bottom:24px;">
 <a href="https://cleanlegalbillofhealth.com/shop"
-style="display:inline-block;background:#1e2d4a;color:#ffffff;font-size:16px;font-weight:600;padding:14px 32px;border-radius:8px;text-decoration:none;word-break:normal;white-space:nowrap;">Purchase a Checklist</a>
+style="display:inline-block;background:#1e2d4a;color:#ffffff;font-size:16px;font-weight:600;padding:14px 32px;border-radius:8px;text-decoration:none;word-break:normal;white-space:nowrap;"><img src="https://assessment.jeppsonlaw.com/email-cart.png" width="18" height="18" alt="" style="vertical-align:middle;margin-right:8px;border:0;"><span style="vertical-align:middle;">Purchase a Checklist</span></a>
 </td>
 </tr>
 </table>
