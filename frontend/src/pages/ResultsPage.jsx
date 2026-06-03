@@ -200,19 +200,21 @@ export default function ResultsPage() {
           <div className="flex items-center gap-2">
             <Button
               onClick={() => window.open('https://cleanlegalbillofhealth.com/shop', '_blank')}
-              className="bg-slate-900 hover:bg-slate-800 text-white"
+              className="bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm px-2 sm:px-4 shrink-0"
               data-testid="purchase-checklist-btn"
             >
-              <ShoppingCart className="w-4 h-4 mr-2" />
-              Purchase a Checklist
+              <ShoppingCart className="w-4 h-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Purchase a Checklist</span>
+              <span className="sm:hidden">Checklist</span>
             </Button>
             <Button
               onClick={handleEmailResults}
-              className="bg-orange-500 hover:bg-orange-600 text-white"
+              className="bg-orange-500 hover:bg-orange-600 text-white text-xs sm:text-sm px-2 sm:px-4 shrink-0"
               data-testid="email-results-btn"
             >
-              <Mail className="w-4 h-4 mr-2" />
-              Email Me My Results
+              <Mail className="w-4 h-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Email Me My Results</span>
+              <span className="sm:hidden">Email Results</span>
             </Button>
           </div>
         </div>
@@ -474,7 +476,7 @@ export default function ResultsPage() {
       </main>
 
       {/* Footer */}
-      <footer className="py-6 bg-white border-t border-slate-200 grid-pattern-light">
+      <footer className="py-6 pb-24 sm:pb-6 bg-white border-t border-slate-200 grid-pattern-light">
         <div className="max-w-7xl mx-auto px-6 relative z-10">
           <div className="flex flex-col md:flex-row md:justify-between items-center gap-4 mb-3">
             <a href="https://www.jeppsonlaw.com" target="_blank" rel="noopener noreferrer" className="md:flex-1 flex items-center gap-2 hover:opacity-80 transition-opacity">
@@ -499,7 +501,7 @@ export default function ResultsPage() {
       </footer>
 
       {/* Floating Book Now Button */}
-      <div className="fixed bottom-6 right-6 z-40 no-print">
+      <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 no-print">
         <Button
           onClick={handleScheduleCall}
           className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-6 text-lg font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 rounded-full group"
