@@ -248,12 +248,18 @@ def send_results_email(
 </tr>
 </table>
 
-<!-- CTA Button -->
+<!-- CTA Buttons -->
 <table width="100%" cellpadding="0" cellspacing="0">
 <tr>
-<td align="center" style="padding-bottom:24px;">
+<td align="center" style="padding-bottom:12px;">
 <a href="https://jeppsonlaw.cliogrow.com/book/5d7625ad3292b0e84db81965f80ee5f4"
 style="display:inline-block;background:#F97316;color:#ffffff;font-size:16px;font-weight:600;padding:14px 32px;border-radius:8px;text-decoration:none;word-break:normal;white-space:nowrap;">Schedule Your Free Legal Risk Review</a>
+</td>
+</tr>
+<tr>
+<td align="center" style="padding-bottom:24px;">
+<a href="https://cleanlegalbillofhealth.com/shop"
+style="display:inline-block;background:#1e2d4a;color:#ffffff;font-size:16px;font-weight:600;padding:14px 32px;border-radius:8px;text-decoration:none;word-break:normal;white-space:nowrap;">Purchase a Checklist</a>
 </td>
 </tr>
 </table>
