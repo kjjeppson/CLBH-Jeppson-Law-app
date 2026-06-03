@@ -85,3 +85,6 @@ android-sdk/ -e
 # Environment files
 *.env
 *.env.*
+
+# Claude Code local tooling
+.claude/
