@@ -357,7 +357,7 @@ export default function LandingPage() {
       <footer className="py-8 bg-white border-t border-slate-200 grid-pattern-light">
         <div className="max-w-7xl mx-auto px-6 relative z-10">
           <div className="flex flex-col md:flex-row md:justify-between items-center gap-4 mb-4">
-            <a href="https://www.jeppsonlaw.com" target="_blank" rel="noopener noreferrer" className="md:flex-1 flex items-center gap-2 hover:opacity-80 transition-opacity">
+            <a href="https://cleanlegalbillofhealth.com" target="_blank" rel="noopener noreferrer" className="md:flex-1 flex items-center gap-2 hover:opacity-80 transition-opacity">
               <img
                 src="/clbh-logo.png"
                 alt="Clean Legal Bill of Health — A Jeppson Law Product"
