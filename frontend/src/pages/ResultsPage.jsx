@@ -186,7 +186,7 @@ export default function ResultsPage() {
     <div className="min-h-screen bg-slate-50">
       {/* Navigation */}
       <nav className="bg-white border-b border-slate-200 sticky top-0 z-50 no-print nav-grid">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center relative z-10">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex flex-col items-center gap-3 sm:flex-row sm:justify-between sm:gap-0 relative z-10">
           <div
             className="flex items-center gap-2 cursor-pointer"
             onClick={() => navigate("/")}
@@ -194,7 +194,7 @@ export default function ResultsPage() {
             <img
               src="/clbh-logo.png"
               alt="Clean Legal Bill of Health — A Jeppson Law Product"
-              className="h-24 w-auto"
+              className="h-16 sm:h-20 md:h-24 w-auto shrink-0"
             />
           </div>
           <div className="flex items-center gap-2">
@@ -500,8 +500,8 @@ export default function ResultsPage() {
         </div>
       </footer>
 
-      {/* Floating Book Now Button */}
-      <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 no-print">
+      {/* Floating Book Now Button (desktop/tablet only — hidden on mobile to avoid covering content) */}
+      <div className="hidden sm:block fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 no-print">
         <Button
           onClick={handleScheduleCall}
           className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-6 text-lg font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 rounded-full group"
