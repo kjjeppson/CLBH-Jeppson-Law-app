@@ -4,11 +4,21 @@
 @tailwind components;
 @tailwind utilities;
 
+html {
+    /* Prevent horizontal scroll / side-to-side drag on mobile.
+       overflow-x: clip (not hidden) does NOT break position: sticky. */
+    overflow-x: clip;
+    overscroll-behavior-x: none;
+}
+
 body {
     margin: 0;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    overflow-x: clip;
+    overscroll-behavior-x: none;
+    max-width: 100%;
 }
 
 h1, h2, h3, h4, h5, h6 {
