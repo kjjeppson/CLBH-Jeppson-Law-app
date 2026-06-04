@@ -64,6 +64,12 @@ export default function AssessmentWizard() {
     loadAssessment();
   }, [assessmentId, navigate]);
 
+  // Scroll back to the top each time the question changes so the next
+  // question is visible without manual scrolling.
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [currentQuestionIndex]);
+
   const currentQuestion = questions[currentQuestionIndex];
   const progress = questions.length > 0
     ? ((currentQuestionIndex + 1) / questions.length) * 100
