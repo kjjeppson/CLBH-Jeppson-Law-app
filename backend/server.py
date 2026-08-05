@@ -1432,10 +1432,10 @@ async def create_lead(data: LeadCreate):
             lead.risk_level = assessment.get('risk_level', 'unknown')
             lead.top_risks = [r.get('title', '') for r in assessment.get('top_risks', [])]
 
-            # Extract risks by severity for email (title + description + area_name)
-            red_risks = [{'title': r.get('title', ''), 'description': r.get('description', ''), 'area_name': r.get('area_name', '')} for r in assessment.get('red_flag_details', [])]
-            yellow_risks = [{'title': r.get('title', ''), 'description': r.get('description', ''), 'area_name': r.get('area_name', '')} for r in assessment.get('yellow_flag_details', [])]
-            green_risks = [{'title': r.get('title', ''), 'description': r.get('description', ''), 'area_name': r.get('area_name', '')} for r in assessment.get('green_flag_details', [])]
+            # Extract risks by severity for email (title + description + area + area_name)
+            red_risks = [{'title': r.get('title', ''), 'description': r.get('description', ''), 'area': r.get('area', ''), 'area_name': r.get('area_name', '')} for r in assessment.get('red_flag_details', [])]
+            yellow_risks = [{'title': r.get('title', ''), 'description': r.get('description', ''), 'area': r.get('area', ''), 'area_name': r.get('area_name', '')} for r in assessment.get('yellow_flag_details', [])]
+            green_risks = [{'title': r.get('title', ''), 'description': r.get('description', ''), 'area': r.get('area', ''), 'area_name': r.get('area_name', '')} for r in assessment.get('green_flag_details', [])]
 
             # Prepare data for Kit API
             score_str = lead.score
