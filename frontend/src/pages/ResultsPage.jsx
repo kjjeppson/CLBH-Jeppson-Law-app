@@ -16,6 +16,49 @@ import {
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
+// Squarespace shop products, keyed by the quiz's internal area IDs
+const SHOP_BASE = "https://www.cleanlegalbillofhealth.com";
+const BUNDLE_URL = `${SHOP_BASE}/shop/p/6-pillars-bundle`;
+const PILLAR_PRODUCTS = {
+  contracts: {
+    pillar: 1,
+    url: `${SHOP_BASE}/shop/p/pillar-1-checklist-customer-contracts-project-risks`
+  },
+  ownership: {
+    pillar: 2,
+    url: `${SHOP_BASE}/shop/p/pillar-2-checklist-ownership-governance`
+  },
+  subcontractor: {
+    pillar: 3,
+    url: `${SHOP_BASE}/shop/p/pillar-3-checklist-vendor-risk`
+  },
+  employment: {
+    pillar: 4,
+    url: `${SHOP_BASE}/shop/p/pillar-4-checklist-employment-safety-compliance`
+  },
+  insurance: {
+    pillar: 5,
+    url: `${SHOP_BASE}/shop/p/pillar-5-checklist-insurance-claims-readiness`
+  },
+  systems: {
+    pillar: 6,
+    url: `${SHOP_BASE}/shop/p/pillar-6-checklist-systems-records-digital-risk`
+  }
+};
+
+// Adds UTM tags so quiz-driven purchases show up in analytics
+const withUtm = (url, content) =>
+  `${url}?utm_source=quiz&utm_medium=results&utm_campaign=clbh&utm_content=${content}`;
+
+const openShopLink = (url, content) => {
+  try {
+    window.posthog?.capture?.("results_cta_click", { target: content });
+  } catch (e) {
+    // analytics should never block the click
+  }
+  window.open(withUtm(url, content), "_blank");
+};
+
 const AREA_ICONS = {
   contracts: <FileText className="w-5 h-5" />,
   ownership: <Users className="w-5 h-5" />,
@@ -182,6 +225,15 @@ export default function ResultsPage() {
   const scoreDisplay = getOverallScoreDisplay();
   const hasRedFlags = results?.red_flag_details?.length > 0 || results?.trigger_flags?.length > 0;
 
+  // Weak pillars (red first, then yellow, worst score first within each)
+  const weakAreas = (results?.area_scores || [])
+    .filter((a) => a.risk_level === "red" || a.risk_level === "yellow")
+    .sort((a, b) => {
+      if (a.risk_level !== b.risk_level) return a.risk_level === "red" ? -1 : 1;
+      return a.score - b.score;
+    });
+  const showBundleFirst = weakAreas.length >= 3;
+
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Navigation */}
@@ -199,7 +251,7 @@ export default function ResultsPage() {
           </div>
           <div className="flex items-center gap-2">
             <Button
-              onClick={() => window.open('https://cleanlegalbillofhealth.com/shop', '_blank')}
+              onClick={() => openShopLink(`${SHOP_BASE}/shop`, "nav-shop")}
               className="bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm px-2 sm:px-4 shrink-0"
               data-testid="purchase-checklist-btn"
             >
@@ -316,6 +368,114 @@ export default function ResultsPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Fix What the Quiz Found — pillar checklist CTAs */}
+        {weakAreas.length > 0 ? (
+          <Card className="border-slate-300 mb-8 shadow-md" data-testid="fix-it-section">
+            <CardHeader className="pb-2">
+              <CardTitle className="font-heading text-xl font-semibold text-slate-900 flex items-center gap-2">
+                <ShoppingCart className="w-6 h-6 text-orange-500" />
+                Your Next Step: Fix What This Quiz Found
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-2">
+              <p className="text-slate-600 text-sm mb-4">
+                Each pillar below has a step-by-step self-assessment checklist that shows you
+                exactly what to fix and how, in plain English. Start with your weakest pillar.
+              </p>
+
+              {showBundleFirst && (
+                <div className="p-5 mb-4 bg-orange-50 rounded-lg border-2 border-orange-300">
+                  <h4 className="font-heading font-semibold text-slate-900 mb-1">
+                    {weakAreas.length} of your 6 pillars need work. Get all 6 checklists and save.
+                  </h4>
+                  <p className="text-sm text-slate-700 mb-3">
+                    The 6 Pillar Bundle covers every area of your business for $299 instead
+                    of $402 when purchased separately.
+                  </p>
+                  <Button
+                    className="w-full sm:w-auto bg-orange-500 hover:bg-orange-600 text-white font-semibold"
+                    onClick={() => openShopLink(BUNDLE_URL, "bundle")}
+                    data-testid="bundle-cta-btn"
+                  >
+                    <ShoppingCart className="w-4 h-4 mr-2" />
+                    Get the Complete Bundle ($299)
+                  </Button>
+                </div>
+              )}
+
+              <div className="space-y-3">
+                {weakAreas.map((area) => {
+                  const product = PILLAR_PRODUCTS[area.area_id];
+                  if (!product) return null;
+                  return (
+                    <div
+                      key={area.area_id}
+                      className={`flex flex-col sm:flex-row sm:items-center gap-3 p-4 bg-white rounded-lg border-2 ${getAreaBorderColor(area.risk_level)}`}
+                    >
+                      <div className={`w-10 h-10 ${getAreaRiskColor(area.risk_level)} rounded-lg flex items-center justify-center text-white flex-shrink-0`}>
+                        {AREA_ICONS[area.area_id] || <Shield className="w-5 h-5" />}
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-slate-900 text-sm">
+                          {area.area_name}
+                        </h4>
+                        <span className={`text-xs font-medium ${area.risk_level === "red" ? "text-red-600" : "text-amber-600"}`}>
+                          {area.risk_level === "red" ? "Urgent: address this first" : "At Risk: close these gaps soon"}
+                        </span>
+                      </div>
+                      <Button
+                        className="bg-slate-900 hover:bg-slate-800 text-white flex-shrink-0"
+                        onClick={() => openShopLink(product.url, `pillar-${product.pillar}`)}
+                        data-testid={`pillar-${product.pillar}-cta-btn`}
+                      >
+                        Get the Pillar {product.pillar} Checklist ($67)
+                        <ArrowRight className="w-4 h-4 ml-2" />
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {!showBundleFirst && weakAreas.length > 0 && (
+                <p className="text-slate-500 text-sm mt-4 text-center">
+                  Want to strengthen every pillar?{" "}
+                  <button
+                    type="button"
+                    onClick={() => openShopLink(BUNDLE_URL, "bundle-footer")}
+                    className="text-orange-600 hover:text-orange-700 font-medium underline"
+                    data-testid="bundle-footer-link"
+                  >
+                    Get all 6 checklists for $299
+                  </button>{" "}
+                  (a $402 value).
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        ) : (
+          (results?.area_scores?.length || 0) > 0 && (
+            <Card className="border-emerald-300 bg-emerald-50 mb-8" data-testid="all-green-section">
+              <CardContent className="p-6 text-center">
+                <h4 className="font-heading font-semibold text-slate-900 mb-2">
+                  Strong score. Keep it that way.
+                </h4>
+                <p className="text-sm text-slate-700 mb-3">
+                  Laws and businesses both change. The 6 Pillar Checklist Bundle gives you a
+                  repeatable annual checkup you can run yourself, for $299.
+                </p>
+                <Button
+                  className="bg-slate-900 hover:bg-slate-800 text-white"
+                  onClick={() => openShopLink(BUNDLE_URL, "bundle-green")}
+                  data-testid="bundle-green-cta-btn"
+                >
+                  <ShoppingCart className="w-4 h-4 mr-2" />
+                  Get the Bundle ($299)
+                </Button>
+              </CardContent>
+            </Card>
+          )
+        )}
 
         {/* Immediate Attention Required (RED) */}
         {results?.red_flag_details?.length > 0 && (
