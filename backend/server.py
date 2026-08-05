@@ -52,6 +52,24 @@ SMTP_SERVER = "outbound-us1.ppe-hosted.com"
 SMTP_PORT = 587
 
 
+# Squarespace shop products, keyed by the quiz's internal area IDs
+SHOP_BASE_URL = "https://www.cleanlegalbillofhealth.com"
+BUNDLE_PRODUCT_URL = f"{SHOP_BASE_URL}/shop/p/6-pillars-bundle"
+PILLAR_PRODUCTS = {
+    "contracts": {"pillar": 1, "url": f"{SHOP_BASE_URL}/shop/p/pillar-1-checklist-customer-contracts-project-risks"},
+    "ownership": {"pillar": 2, "url": f"{SHOP_BASE_URL}/shop/p/pillar-2-checklist-ownership-governance"},
+    "subcontractor": {"pillar": 3, "url": f"{SHOP_BASE_URL}/shop/p/pillar-3-checklist-vendor-risk"},
+    "employment": {"pillar": 4, "url": f"{SHOP_BASE_URL}/shop/p/pillar-4-checklist-employment-safety-compliance"},
+    "insurance": {"pillar": 5, "url": f"{SHOP_BASE_URL}/shop/p/pillar-5-checklist-insurance-claims-readiness"},
+    "systems": {"pillar": 6, "url": f"{SHOP_BASE_URL}/shop/p/pillar-6-checklist-systems-records-digital-risk"},
+}
+
+
+def email_shop_url(url: str, content: str) -> str:
+    """Add UTM tags so email-driven purchases show up in analytics."""
+    return f"{url}?utm_source=quiz&utm_medium=email&utm_campaign=clbh&utm_content={content}"
+
+
 def send_results_email(
     to_email: str,
     first_name: str,
@@ -135,6 +153,86 @@ def send_results_email(
     risk_sections = red_section + yellow_section + green_section
     if not risk_sections:
         risk_sections = '<p style="font-size:14px;color:#888;">No risk areas identified.</p>'
+
+    # ----- "Fix What This Quiz Found" section: pillar checklist CTAs -----
+    # Collect flagged pillars: red areas first, then yellow-only areas
+    red_area_ids: List[str] = []
+    for risk in red_risks:
+        aid = risk.get("area")
+        if aid in PILLAR_PRODUCTS and aid not in red_area_ids:
+            red_area_ids.append(aid)
+    weak_area_ids: List[str] = list(red_area_ids)
+    for risk in yellow_risks:
+        aid = risk.get("area")
+        if aid in PILLAR_PRODUCTS and aid not in weak_area_ids:
+            weak_area_ids.append(aid)
+
+    # Map area id -> display name from whatever risk carried it
+    area_display_names: Dict[str, str] = {}
+    for risk in list(red_risks) + list(yellow_risks):
+        aid = risk.get("area")
+        if aid and aid not in area_display_names:
+            area_display_names[aid] = risk.get("area_name", aid)
+
+    fix_it_rows = ""
+    for aid in weak_area_ids:
+        product = PILLAR_PRODUCTS[aid]
+        is_red = aid in red_area_ids
+        border_color = "#FECACA" if is_red else "#FDE68A"
+        tag_color = "#DC2626" if is_red else "#D97706"
+        tag_text = "Urgent: address this first" if is_red else "At Risk: close these gaps soon"
+        product_link = email_shop_url(product["url"], f"pillar-{product['pillar']}")
+        fix_it_rows += f'''<table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border:2px solid {border_color};border-radius:8px;margin-bottom:10px;">
+<tr>
+<td style="padding:14px 16px;">
+<span style="font-size:14px;font-weight:600;color:#333;display:block;margin-bottom:2px;word-break:normal;white-space:normal;">{area_display_names.get(aid, aid)}</span>
+<span style="font-size:12px;font-weight:600;color:{tag_color};display:block;margin-bottom:10px;word-break:normal;white-space:normal;">{tag_text}</span>
+<a href="{product_link}" style="display:inline-block;background:#1e2d4a;color:#ffffff;font-size:14px;font-weight:600;padding:10px 20px;border-radius:6px;text-decoration:none;word-break:normal;white-space:nowrap;">Get the Pillar {product["pillar"]} Checklist ($67) &rarr;</a>
+</td>
+</tr>
+</table>'''
+
+    if weak_area_ids:
+        bundle_block = ""
+        if len(weak_area_ids) >= 3:
+            bundle_link = email_shop_url(BUNDLE_PRODUCT_URL, "bundle-email")
+            bundle_block = f'''<table width="100%" cellpadding="0" cellspacing="0" style="background:#FFF7ED;border:2px solid #FDBA74;border-radius:8px;margin-bottom:12px;">
+<tr>
+<td style="padding:16px;">
+<span style="font-size:15px;font-weight:700;color:#333;display:block;margin-bottom:4px;word-break:normal;white-space:normal;">{len(weak_area_ids)} of your 6 pillars need work. Get all 6 checklists and save.</span>
+<span style="font-size:13px;color:#555;display:block;margin-bottom:12px;word-break:normal;white-space:normal;">The 6 Pillar Bundle covers every area of your business for $299 instead of $402 when purchased separately.</span>
+<a href="{bundle_link}" style="display:inline-block;background:#F97316;color:#ffffff;font-size:14px;font-weight:600;padding:12px 24px;border-radius:6px;text-decoration:none;word-break:normal;white-space:nowrap;">Get the Complete Bundle ($299)</a>
+</td>
+</tr>
+</table>'''
+        fix_it_section = f'''<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+<tr>
+<td style="font-size:16px;font-weight:700;color:#1e2d4a;padding-bottom:6px;word-break:normal;white-space:normal;">Your Next Step: Fix What This Quiz Found</td>
+</tr>
+<tr>
+<td style="font-size:13px;color:#555;padding-bottom:14px;word-break:normal;white-space:normal;">Each pillar below has a step-by-step self-assessment checklist that shows you exactly what to fix and how, in plain English. Start with your weakest pillar.</td>
+</tr>
+<tr>
+<td>
+{bundle_block}
+{fix_it_rows}
+</td>
+</tr>
+</table>'''
+    else:
+        # All green: position the bundle as an annual self-checkup
+        bundle_link = email_shop_url(BUNDLE_PRODUCT_URL, "bundle-email-green")
+        fix_it_section = f'''<table width="100%" cellpadding="0" cellspacing="0" style="background:#F0FDF4;border:2px solid #BBF7D0;border-radius:8px;margin-bottom:24px;">
+<tr>
+<td style="padding:16px;text-align:center;">
+<span style="font-size:15px;font-weight:700;color:#333;display:block;margin-bottom:4px;word-break:normal;white-space:normal;">Strong score. Keep it that way.</span>
+<span style="font-size:13px;color:#555;display:block;margin-bottom:12px;word-break:normal;white-space:normal;">Laws and businesses both change. The 6 Pillar Checklist Bundle gives you a repeatable annual checkup you can run yourself, for $299.</span>
+<a href="{bundle_link}" style="display:inline-block;background:#1e2d4a;color:#ffffff;font-size:14px;font-weight:600;padding:12px 24px;border-radius:6px;text-decoration:none;word-break:normal;white-space:nowrap;">Get the Bundle ($299)</a>
+</td>
+</tr>
+</table>'''
+
+    shop_cta_link = email_shop_url(f"{SHOP_BASE_URL}/shop", "email-shop")
 
     # Build the HTML email using tables for mobile compatibility
     html_body = f'''<!DOCTYPE html>
@@ -248,18 +346,21 @@ def send_results_email(
 </tr>
 </table>
 
+<!-- Fix What This Quiz Found -->
+{fix_it_section}
+
 <!-- CTA Buttons -->
 <table width="100%" cellpadding="0" cellspacing="0">
 <tr>
 <td align="center" style="padding-bottom:12px;">
 <a href="https://jeppsonlaw.cliogrow.com/book/5d7625ad3292b0e84db81965f80ee5f4"
-style="display:inline-block;background:#F97316;color:#ffffff;font-size:16px;font-weight:600;padding:14px 32px;border-radius:8px;text-decoration:none;word-break:normal;white-space:nowrap;"><img src="https://assessment.jeppsonlaw.com/email-calendar.png" width="18" height="18" alt="" style="vertical-align:middle;margin-right:8px;border:0;"><span style="vertical-align:middle;">Schedule Your Free Legal Risk Review</span></a>
+style="display:inline-block;background:#F97316;color:#ffffff;font-size:16px;font-weight:600;padding:14px 32px;border-radius:8px;text-decoration:none;word-break:normal;white-space:nowrap;"><img src="https://quiz.cleanlegalbillofhealth.com/email-calendar.png" width="18" height="18" alt="" style="vertical-align:middle;margin-right:8px;border:0;"><span style="vertical-align:middle;">Schedule Your Free Legal Risk Review</span></a>
 </td>
 </tr>
 <tr>
 <td align="center" style="padding-bottom:24px;">
-<a href="https://cleanlegalbillofhealth.com/shop"
-style="display:inline-block;background:#1e2d4a;color:#ffffff;font-size:16px;font-weight:600;padding:14px 32px;border-radius:8px;text-decoration:none;word-break:normal;white-space:nowrap;"><img src="https://assessment.jeppsonlaw.com/email-cart.png" width="18" height="18" alt="" style="vertical-align:middle;margin-right:8px;border:0;"><span style="vertical-align:middle;">Purchase a Checklist</span></a>
+<a href="{shop_cta_link}"
+style="display:inline-block;background:#1e2d4a;color:#ffffff;font-size:16px;font-weight:600;padding:14px 32px;border-radius:8px;text-decoration:none;word-break:normal;white-space:nowrap;"><img src="https://quiz.cleanlegalbillofhealth.com/email-cart.png" width="18" height="18" alt="" style="vertical-align:middle;margin-right:8px;border:0;"><span style="vertical-align:middle;">Purchase a Checklist</span></a>
 </td>
 </tr>
 </table>
