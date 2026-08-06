@@ -77,7 +77,8 @@ def send_results_email(
     score: str,
     red_risks: List[Dict[str, str]],
     yellow_risks: List[Dict[str, str]],
-    green_risks: List[Dict[str, str]]
+    green_risks: List[Dict[str, str]],
+    area_scores: Optional[List[Dict[str, Any]]] = None
 ) -> Dict[str, Any]:
     """
     Send assessment results email via SMTP.
@@ -155,24 +156,41 @@ def send_results_email(
         risk_sections = '<p style="font-size:14px;color:#888;">No risk areas identified.</p>'
 
     # ----- "Fix What This Quiz Found" section: pillar checklist CTAs -----
-    # Collect flagged pillars: red areas first, then yellow-only areas
+    # Uses the same pillar-level Red/Yellow/Green scores as the results page,
+    # so the email and the web dashboard always agree.
     red_area_ids: List[str] = []
-    for risk in red_risks:
-        aid = risk.get("area")
-        if aid in PILLAR_PRODUCTS and aid not in red_area_ids:
-            red_area_ids.append(aid)
-    weak_area_ids: List[str] = list(red_area_ids)
-    for risk in yellow_risks:
-        aid = risk.get("area")
-        if aid in PILLAR_PRODUCTS and aid not in weak_area_ids:
-            weak_area_ids.append(aid)
-
-    # Map area id -> display name from whatever risk carried it
+    weak_area_ids: List[str] = []
     area_display_names: Dict[str, str] = {}
-    for risk in list(red_risks) + list(yellow_risks):
-        aid = risk.get("area")
-        if aid and aid not in area_display_names:
-            area_display_names[aid] = risk.get("area_name", aid)
+
+    if area_scores:
+        # Authoritative: area risk_level decides the label (red first, worst score first)
+        sorted_areas = sorted(
+            [a for a in area_scores if a.get("risk_level") in ("red", "yellow")],
+            key=lambda a: (0 if a.get("risk_level") == "red" else 1, a.get("score", 0)),
+        )
+        for a in sorted_areas:
+            aid = a.get("area_id")
+            if aid in PILLAR_PRODUCTS and aid not in weak_area_ids:
+                weak_area_ids.append(aid)
+                area_display_names[aid] = a.get("area_name", aid)
+                if a.get("risk_level") == "red":
+                    red_area_ids.append(aid)
+    else:
+        # Fallback for older assessments without stored area_scores:
+        # derive from flagged questions (red first, then yellow)
+        for risk in red_risks:
+            aid = risk.get("area")
+            if aid in PILLAR_PRODUCTS and aid not in red_area_ids:
+                red_area_ids.append(aid)
+        weak_area_ids = list(red_area_ids)
+        for risk in yellow_risks:
+            aid = risk.get("area")
+            if aid in PILLAR_PRODUCTS and aid not in weak_area_ids:
+                weak_area_ids.append(aid)
+        for risk in list(red_risks) + list(yellow_risks):
+            aid = risk.get("area")
+            if aid and aid not in area_display_names:
+                area_display_names[aid] = risk.get("area_name", aid)
 
     fix_it_rows = ""
     for aid in weak_area_ids:
@@ -1410,6 +1428,7 @@ async def create_lead(data: LeadCreate):
     red_risks = []
     yellow_risks = []
     green_risks = []
+    area_scores_data = []
 
     # If assessment_id provided, get score info
     if data.assessment_id:
@@ -1436,6 +1455,9 @@ async def create_lead(data: LeadCreate):
             red_risks = [{'title': r.get('title', ''), 'description': r.get('description', ''), 'area': r.get('area', ''), 'area_name': r.get('area_name', '')} for r in assessment.get('red_flag_details', [])]
             yellow_risks = [{'title': r.get('title', ''), 'description': r.get('description', ''), 'area': r.get('area', ''), 'area_name': r.get('area_name', '')} for r in assessment.get('yellow_flag_details', [])]
             green_risks = [{'title': r.get('title', ''), 'description': r.get('description', ''), 'area': r.get('area', ''), 'area_name': r.get('area_name', '')} for r in assessment.get('green_flag_details', [])]
+
+            # Pillar-level scores so the email matches the results page exactly
+            area_scores_data = assessment.get('area_scores', []) or []
 
             # Prepare data for Kit API
             score_str = lead.score
@@ -1470,6 +1492,7 @@ async def create_lead(data: LeadCreate):
         email_red_risks = list(red_risks) if red_risks else []
         email_yellow_risks = list(yellow_risks) if yellow_risks else []
         email_green_risks = list(green_risks) if green_risks else []
+        email_area_scores = list(area_scores_data) if area_scores_data else []
 
         def send_email_thread():
             logger.info(f"Background: Sending email via {SMTP_SERVER} to {email_to}")
@@ -1481,7 +1504,8 @@ async def create_lead(data: LeadCreate):
                     score=email_score,
                     red_risks=email_red_risks,
                     yellow_risks=email_yellow_risks,
-                    green_risks=email_green_risks
+                    green_risks=email_green_risks,
+                    area_scores=email_area_scores
                 )
                 logger.info(f"Background: Email result: {result}")
             except Exception as e:
