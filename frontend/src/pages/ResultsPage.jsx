@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { track } from "../lib/analytics";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
@@ -51,11 +52,7 @@ const withUtm = (url, content) =>
   `${url}?utm_source=quiz&utm_medium=results&utm_campaign=clbh&utm_content=${content}`;
 
 const openShopLink = (url, content) => {
-  try {
-    window.posthog?.capture?.("results_cta_click", { target: content });
-  } catch (e) {
-    // analytics should never block the click
-  }
+  track("results_cta_click", { target: content });
   window.open(withUtm(url, content), "_blank");
 };
 

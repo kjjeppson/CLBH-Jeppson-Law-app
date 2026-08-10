@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { track } from "../lib/analytics";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
@@ -118,6 +119,7 @@ export default function AssessmentWizard() {
         answers: Object.values(answers)
       });
 
+      track("quiz_complete", { assessment_id: assessmentId });
       navigate(`/results/${assessmentId}`);
     } catch (error) {
       console.error("Error submitting assessment:", error);

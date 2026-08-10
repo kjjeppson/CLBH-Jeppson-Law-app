@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { track } from "../lib/analytics";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
@@ -70,6 +71,7 @@ export default function LandingPage() {
         modules: ["clbh"],
         selected_areas: selectedAreas
       });
+      track("quiz_start", { areas_selected: selectedAreas.length });
       navigate(`/assessment/${response.data.id}`);
     } catch (error) {
       console.error("Error creating assessment:", error);
