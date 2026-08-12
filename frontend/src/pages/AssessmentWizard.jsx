@@ -4,11 +4,12 @@ import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Shield, ArrowRight, ArrowLeft, Loader2 } from "lucide-react";
+import { Shield, ArrowRight, ArrowLeft, Loader2, Mail } from "lucide-react";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -34,6 +35,11 @@ export default function AssessmentWizard() {
   const [answers, setAnswers] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Final email capture step (shown after the last question is submitted)
+  const [showLeadCapture, setShowLeadCapture] = useState(false);
+  const [isSubmittingLead, setIsSubmittingLead] = useState(false);
+  const [leadForm, setLeadForm] = useState({ first_name: "", email: "" });
 
   useEffect(() => {
     const loadAssessment = async () => {
@@ -114,18 +120,55 @@ export default function AssessmentWizard() {
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      const response = await axios.post(`${API}/assessments/submit`, {
+      await axios.post(`${API}/assessments/submit`, {
         assessment_id: assessmentId,
         answers: Object.values(answers)
       });
 
       track("quiz_complete", { assessment_id: assessmentId });
-      navigate(`/results/${assessmentId}`);
+
+      // Scores are calculated — now ask for their email before showing results
+      setShowLeadCapture(true);
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (error) {
       console.error("Error submitting assessment:", error);
       toast.error("Failed to submit assessment. Please try again.");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleLeadSubmit = async (e) => {
+    e.preventDefault();
+
+    const firstName = leadForm.first_name.trim();
+    const email = leadForm.email.trim();
+
+    if (!firstName) {
+      toast.error("Please enter your first name");
+      return;
+    }
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+
+    setIsSubmittingLead(true);
+    try {
+      await axios.post(`${API}/leads`, {
+        first_name: firstName,
+        last_name: "",
+        email: email,
+        modules: assessment?.modules || ["clbh"],
+        assessment_id: assessmentId
+      });
+
+      track("lead_capture_submitted", { assessment_id: assessmentId });
+      navigate(`/results/${assessmentId}`);
+    } catch (error) {
+      console.error("Error submitting contact info:", error);
+      toast.error("Something went wrong. Please try again.");
+      setIsSubmittingLead(false);
     }
   };
 
@@ -154,6 +197,125 @@ export default function AssessmentWizard() {
   // Find questions in the current area and get position
   const questionsInCurrentArea = questions.filter(q => q.area === currentArea);
   const questionInArea = questionsInCurrentArea.findIndex(q => q.id === currentQuestion?.id) + 1;
+
+  // ----- Final step: email capture (required before results) -----
+  if (showLeadCapture) {
+    return (
+      <div className="min-h-screen bg-slate-50">
+        {/* Navigation */}
+        <nav className="bg-white border-b border-slate-200 sticky top-0 z-50 nav-grid">
+          <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center relative z-10">
+            <div className="flex items-center gap-2">
+              <img
+                src="/clbh-logo.png"
+                alt="Clean Legal Bill of Health — A Jeppson Law Product"
+                className="h-24 w-auto"
+              />
+            </div>
+            <span className="text-slate-500 text-sm hidden md:block">
+              Clean Legal Bill of Health Quiz
+            </span>
+          </div>
+        </nav>
+
+        <main className="max-w-2xl mx-auto px-6 py-12">
+          {/* Progress — quiz complete */}
+          <div className="mb-8">
+            <div className="flex justify-between text-sm text-slate-600 mb-2">
+              <span>Quiz complete!</span>
+              <span>One last step</span>
+            </div>
+            <Progress value={100} className="h-2" data-testid="progress-bar" />
+          </div>
+
+          <Card className="border-slate-200 mb-8">
+            <CardContent className="p-8">
+              <div className="w-14 h-14 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Mail className="w-7 h-7 text-orange-500" />
+              </div>
+              <h2 className="font-heading text-xl md:text-2xl font-semibold text-slate-900 mb-2 text-center" data-testid="lead-capture-heading">
+                Where should we send your results?
+              </h2>
+              <p className="text-slate-600 text-center mb-8">
+                Your Clean Legal Bill of Health score is ready. Enter your name and email to see your results and get a copy sent to your inbox.
+              </p>
+
+              <form onSubmit={handleLeadSubmit} className="space-y-4 max-w-md mx-auto">
+                <div>
+                  <Label htmlFor="first_name">First Name *</Label>
+                  <Input
+                    id="first_name"
+                    value={leadForm.first_name}
+                    onChange={(e) => setLeadForm(prev => ({ ...prev, first_name: e.target.value }))}
+                    placeholder="John"
+                    className="mt-1"
+                    autoFocus
+                    data-testid="lead-first-name-input"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="email">Email *</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={leadForm.email}
+                    onChange={(e) => setLeadForm(prev => ({ ...prev, email: e.target.value }))}
+                    placeholder="john@company.com"
+                    className="mt-1"
+                    data-testid="lead-email-input"
+                  />
+                </div>
+
+                <Button
+                  type="submit"
+                  className="w-full bg-orange-500 hover:bg-orange-600 text-white py-6 text-lg font-semibold"
+                  disabled={isSubmittingLead}
+                  data-testid="submit-lead-btn"
+                >
+                  {isSubmittingLead ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Preparing your results...
+                    </>
+                  ) : (
+                    <>
+                      Get My Results
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </>
+                  )}
+                </Button>
+
+                <p className="text-slate-400 text-xs text-center">
+                  We respect your inbox. Your results will be emailed to you along with helpful guidance from Jeppson Law.
+                </p>
+              </form>
+            </CardContent>
+          </Card>
+        </main>
+
+        {/* Footer */}
+        <footer className="py-6 bg-white border-t border-slate-200">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-3">
+              <div className="flex items-center gap-2">
+                <Shield className="w-6 h-6 text-blue-900" />
+                <span className="font-brand text-lg font-semibold text-slate-900">
+                  Jeppson Law<span className="text-slate-500">, LLP</span>
+                </span>
+              </div>
+              <p className="text-slate-500 text-sm">
+                © {new Date().getFullYear()} Jeppson Law, LLP. All rights reserved.
+              </p>
+            </div>
+            <p className="text-slate-400 text-xs text-center">
+              This tool is for educational purposes only and is not legal advice.
+            </p>
+          </div>
+        </footer>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -281,7 +443,7 @@ export default function AssessmentWizard() {
               </>
             ) : currentQuestionIndex === questions.length - 1 ? (
               <>
-                Get My Results
+                Finish Quiz
                 <ArrowRight className="w-4 h-4 ml-2" />
               </>
             ) : (

@@ -98,7 +98,7 @@ Auto-deploys from `main` branch. Config in `railway.json` (Nixpacks builder). Pu
 
 | Railway Service | Role | Domain |
 |----------------|------|--------|
-| **selfless-adaptation** | Frontend (React) | `assessment.jeppsonlaw.com` |
+| **selfless-adaptation** | Frontend (React) | `quiz.jeppsonlaw.com` |
 | **CLBH-Jeppson-Law-app** | Backend (FastAPI) | `clbh-jeppson-law-app-prod...railway.app` |
 
 Backend runs via `Procfile`: `uvicorn server:app --host 0.0.0.0 --port ${PORT:-8000}`
@@ -107,7 +107,7 @@ Backend runs via `Procfile`: `uvicorn server:app --host 0.0.0.0 --port ${PORT:-8
 
 - **Scoring**: GREEN=3pts, YELLOW=2pts, RED=1pt per question. Per area (4 questions, max 12): 10-12=GREEN, 7-9=YELLOW, 4-6=RED. Overall uses percentage thresholds.
 - **Risk data flow**: `calculate_score_and_risks()` produces `red_flag_details`, `yellow_flag_details`, `green_flag_details` — each item has `title`, `description`, `area`, `area_name`. These get stored in the assessment document and passed to the email template.
-- **Lead capture flow**: `POST /api/leads` saves to MongoDB, sends results email via SMTP in a background thread, and subscribes to ConvertKit.
+- **Lead capture flow**: Email capture is a required final step of the quiz (in `AssessmentWizard.jsx`): after the last question, the assessment is submitted (`POST /api/assessments/submit`), then a first name + email form is shown. Submitting it calls `POST /api/leads` (saves to MongoDB, sends results email via SMTP in a background thread, subscribes to ConvertKit which starts the Kit sequence) and then navigates to the results page. `last_name` is optional in `LeadCreate`.
 - **Admin auth**: `X-Admin-Key` header or `?admin_key=` query param, checked against `ADMIN_KEY` env var.
 
 ## Environment Variables

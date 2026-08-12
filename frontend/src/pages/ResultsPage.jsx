@@ -4,14 +4,11 @@ import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import {
   Shield, CheckCircle2, AlertTriangle, XCircle,
-  Mail, Calendar, ArrowRight, Loader2,
+  Calendar, ArrowRight, Loader2,
   Phone, FileText, Users, Briefcase, UserCheck, ShieldCheck, Database, ShoppingCart
 } from "lucide-react";
 
@@ -71,14 +68,6 @@ export default function ResultsPage() {
 
   const [results, setResults] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [showLeadCapture, setShowLeadCapture] = useState(false);
-  const [isSubmittingLead, setIsSubmittingLead] = useState(false);
-  const [leadSubmitted, setLeadSubmitted] = useState(false);
-  const [formData, setFormData] = useState({
-    first_name: "",
-    last_name: "",
-    email: ""
-  });
 
   useEffect(() => {
     const loadResults = async () => {
@@ -97,55 +86,8 @@ export default function ResultsPage() {
     loadResults();
   }, [assessmentId, navigate]);
 
-  const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleLeadSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!formData.first_name || !formData.last_name || !formData.email) {
-      toast.error("Please fill in all fields");
-      return;
-    }
-
-    setIsSubmittingLead(true);
-    try {
-      await axios.post(`${API}/leads`, {
-        ...formData,
-        modules: results.modules,
-        assessment_id: assessmentId
-      });
-
-      setLeadSubmitted(true);
-      toast.success("Information submitted successfully!");
-    } catch (error) {
-      console.error("Error submitting lead:", error);
-      toast.error("Failed to submit. Please try again.");
-    } finally {
-      setIsSubmittingLead(false);
-    }
-  };
-
-  const handleEmailResults = () => {
-    setShowLeadCapture(true);
-  };
-
   const handleScheduleCall = () => {
     window.open('https://jeppsonlaw.cliogrow.com/book/5d7625ad3292b0e84db81965f80ee5f4', '_blank');
-  };
-
-  const handleLeadDialogOpenChange = (open) => {
-    setShowLeadCapture(open);
-    if (!open) {
-      setLeadSubmitted(false);
-      setIsSubmittingLead(false);
-      setFormData({
-        first_name: "",
-        last_name: "",
-        email: ""
-      });
-    }
   };
 
   const getOverallScoreDisplay = () => {
@@ -257,13 +199,13 @@ export default function ResultsPage() {
               <span className="sm:hidden">Checklist</span>
             </Button>
             <Button
-              onClick={handleEmailResults}
+              onClick={handleScheduleCall}
               className="bg-orange-500 hover:bg-orange-600 text-white text-xs sm:text-sm px-2 sm:px-4 shrink-0"
-              data-testid="email-results-btn"
+              data-testid="schedule-call-nav-btn"
             >
-              <Mail className="w-4 h-4 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">Email Me My Results</span>
-              <span className="sm:hidden">Email Results</span>
+              <Calendar className="w-4 h-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Schedule a Free Review Call</span>
+              <span className="sm:hidden">Book a Call</span>
             </Button>
           </div>
         </div>
@@ -669,107 +611,6 @@ export default function ResultsPage() {
         </Button>
       </div>
 
-      {/* Lead Capture Dialog */}
-      <Dialog open={showLeadCapture} onOpenChange={handleLeadDialogOpenChange}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="font-heading text-xl">
-              {leadSubmitted ? "Thank You!" : "Get Your Results"}
-            </DialogTitle>
-            {!leadSubmitted && (
-              <DialogDescription>
-                Fill in your details to receive your results by email.
-              </DialogDescription>
-            )}
-          </DialogHeader>
-
-          {leadSubmitted ? (
-            <div className="py-8 text-center">
-              <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle2 className="w-8 h-8 text-emerald-500" />
-              </div>
-              <p className="text-slate-600 mb-4">
-                We have emailed you your results. If you have any questions, you can schedule a free 15-minute CLBH consultation.
-              </p>
-              <div className="flex flex-col gap-3">
-                <Button
-                  onClick={() => window.open('https://jeppsonlaw.cliogrow.com/book/5d7625ad3292b0e84db81965f80ee5f4', '_blank')}
-                  className="bg-orange-500 hover:bg-orange-600"
-                  data-testid="schedule-consultation-btn"
-                >
-                  <Calendar className="w-4 h-4 mr-2" />
-                  Schedule Free Consultation
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => setShowLeadCapture(false)}
-                  data-testid="close-success-btn"
-                >
-                  Close
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <form onSubmit={handleLeadSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="first_name">First Name *</Label>
-                <Input
-                  id="first_name"
-                  value={formData.first_name}
-                  onChange={(e) => handleInputChange("first_name", e.target.value)}
-                  placeholder="John"
-                  className="mt-1"
-                  data-testid="lead-first-name-input"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="last_name">Last Name *</Label>
-                <Input
-                  id="last_name"
-                  value={formData.last_name}
-                  onChange={(e) => handleInputChange("last_name", e.target.value)}
-                  placeholder="Smith"
-                  className="mt-1"
-                  data-testid="lead-last-name-input"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="email">Email *</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange("email", e.target.value)}
-                  placeholder="john@company.com"
-                  className="mt-1"
-                  data-testid="lead-email-input"
-                />
-              </div>
-
-              <Button
-                type="submit"
-                className="w-full bg-orange-500 hover:bg-orange-600"
-                disabled={isSubmittingLead}
-                data-testid="submit-lead-btn"
-              >
-                {isSubmittingLead ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Submitting...
-                  </>
-                ) : (
-                  <>
-                    Send My Results
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </>
-                )}
-              </Button>
-            </form>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

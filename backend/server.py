@@ -675,7 +675,7 @@ class AssessmentResult(BaseModel):
 
 class LeadCreate(BaseModel):
     first_name: str
-    last_name: str
+    last_name: str = ""
     email: EmailStr
     modules: List[str] = []
     assessment_id: Optional[str] = None
@@ -684,7 +684,7 @@ class Lead(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     first_name: str
-    last_name: str
+    last_name: str = ""
     email: str
     modules: List[str] = []
     assessment_id: Optional[str] = None
