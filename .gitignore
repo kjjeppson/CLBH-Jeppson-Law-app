@@ -88,3 +88,4 @@ android-sdk/ -e
 
 # Claude Code local tooling
 .claude/
+_to_delete/
