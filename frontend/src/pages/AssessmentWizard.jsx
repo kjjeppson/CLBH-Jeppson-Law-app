@@ -77,6 +77,15 @@ export default function AssessmentWizard() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [currentQuestionIndex]);
 
+  // Jump instantly to the top when the email capture screen appears,
+  // after it has rendered (reliable on mobile, unlike a pre-render scroll).
+  useEffect(() => {
+    if (showLeadCapture) {
+      window.scrollTo(0, 0);
+      requestAnimationFrame(() => window.scrollTo(0, 0));
+    }
+  }, [showLeadCapture]);
+
   const currentQuestion = questions[currentQuestionIndex];
   const progress = questions.length > 0
     ? ((currentQuestionIndex + 1) / questions.length) * 100
@@ -129,7 +138,6 @@ export default function AssessmentWizard() {
 
       // Scores are calculated — now ask for their email before showing results
       setShowLeadCapture(true);
-      window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (error) {
       console.error("Error submitting assessment:", error);
       toast.error("Failed to submit assessment. Please try again.");
@@ -249,7 +257,6 @@ export default function AssessmentWizard() {
                     onChange={(e) => setLeadForm(prev => ({ ...prev, first_name: e.target.value }))}
                     placeholder="John"
                     className="mt-1"
-                    autoFocus
                     data-testid="lead-first-name-input"
                   />
                 </div>
