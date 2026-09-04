@@ -15,8 +15,8 @@ export default function LandingPage() {
   const benefits = [
     {
       icon: <Clock className="w-6 h-6" />,
-      title: "5-10 Minute Assessment",
-      description: "24 focused questions across 6 critical areas of business legal health"
+      title: "About 5 Minutes",
+      description: "24 quick questions across 6 critical areas of business legal health"
     },
     {
       icon: <Shield className="w-6 h-6" />,
@@ -39,8 +39,9 @@ export default function LandingPage() {
     { id: "systems", icon: <Database className="w-5 h-5" />, name: "Systems, Records & Digital Risk" }
   ];
 
-  // No areas selected by default
-  const [selectedAreas, setSelectedAreas] = useState([]);
+  // All areas selected by default so the quiz can start immediately.
+  // Visitors can deselect areas to take a shorter quiz.
+  const [selectedAreas, setSelectedAreas] = useState(quizAreas.map(a => a.id));
   const [isStartingQuiz, setIsStartingQuiz] = useState(false);
 
   const toggleArea = (areaId) => {
@@ -106,7 +107,8 @@ export default function LandingPage() {
               Schedule a Free CLBH Call
             </Button>
             <Button
-              onClick={() => document.getElementById('quiz-section').scrollIntoView({ behavior: 'smooth' })}
+              onClick={handleBeginQuiz}
+              disabled={isStartingQuiz}
               className="bg-slate-900 hover:bg-slate-800"
               data-testid="nav-start-checkup-btn"
             >
@@ -130,16 +132,26 @@ export default function LandingPage() {
             <p className="text-slate-300 text-lg md:text-xl leading-relaxed mb-8 animate-fade-in-up animate-delay-200">
               Identify preventable legal risks across 6 critical areas of your business.
               Get clear scores for each area, see exactly where you're at risk, and receive
-              an actionable protection plan—in just 5-10 minutes.
+              an actionable protection plan, all in about 5 minutes.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 animate-fade-in-up animate-delay-300">
               <Button
-                onClick={() => document.getElementById('quiz-section').scrollIntoView({ behavior: 'smooth' })}
+                onClick={handleBeginQuiz}
+                disabled={isStartingQuiz}
                 className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-6 text-lg font-semibold"
                 data-testid="hero-start-checkup-btn"
               >
-                Start the Quick Checkup
-                <ArrowRight className="ml-2 w-5 h-5" />
+                {isStartingQuiz ? (
+                  <>
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    Starting...
+                  </>
+                ) : (
+                  <>
+                    Start the Quick Checkup
+                    <ArrowRight className="ml-2 w-5 h-5" />
+                  </>
+                )}
               </Button>
               <Button 
                 variant="outline"
@@ -193,7 +205,7 @@ export default function LandingPage() {
             Clean Legal Bill of Health Quiz
           </h2>
           <p className="text-slate-300 text-lg mb-6">
-            Select the areas you want to assess (4 questions each)
+            All six areas are selected for the full checkup. Tap any area to remove it and shorten your quiz (4 questions each).
           </p>
 
           {/* Select All / Deselect All Button */}
@@ -326,7 +338,8 @@ export default function LandingPage() {
             No commitment, completely confidential.
           </p>
           <Button
-            onClick={() => document.getElementById('quiz-section').scrollIntoView({ behavior: 'smooth' })}
+            onClick={handleBeginQuiz}
+            disabled={isStartingQuiz}
             className="bg-orange-500 hover:bg-orange-600 text-white px-10 py-6 text-lg font-semibold"
             data-testid="cta-start-checkup-btn"
           >
