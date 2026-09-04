@@ -745,45 +745,45 @@ QUESTIONS = {
         # AREA 1: Customer Contracts & Project Risks (Q1-Q4)
         {
             "id": "q1",
-            "text": "Do your customer contracts clearly define the scope of work, pricing structure, and payment terms, including when payment is due and what happens if a client pays late?",
+            "text": "Do your customer contracts spell out exactly what you deliver, what it costs, and when payment is due?",
             "why_it_matters": "Vague scope leads to scope creep. Unclear payment terms mean you have no legal leverage when a client delays payment for 60, 90, or 120 days. This is the number one source of cash flow problems and client disputes for growing businesses.",
             "options": [
-                {"value": "green", "label": "Yes. Every contract specifies exact scope, pricing, payment deadlines, and late payment consequences.", "points": 3, "trigger_flag": False},
-                {"value": "yellow", "label": "Most of my contracts cover this, but some clients are on informal or verbal agreements.", "points": 2, "trigger_flag": False},
-                {"value": "red", "label": "No. My contracts are vague on scope or payment terms, or I frequently work without a signed contract.", "points": 1, "trigger_flag": True}
+                {"value": "green", "label": "Yes, every contract covers all of this.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "Mostly, but some clients are informal or verbal.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No, my contracts are vague or often unsigned.", "points": 1, "trigger_flag": True}
             ],
             "area": "contracts"
         },
         {
             "id": "q2",
-            "text": "When a client requests changes to a project after work has started, do you have a documented change order process that requires written approval before the additional work is performed?",
+            "text": "When a client changes the plan mid-project, do you get written approval before doing the extra work?",
             "why_it_matters": "Change orders are where businesses lose money. Without a signed approval process, you end up doing extra work for free and have no documentation to support a billing dispute. This is especially damaging in construction, professional services, and any project-based industry.",
             "options": [
-                {"value": "green", "label": "Yes. All changes go through a formal change order process with written client approval and updated pricing before work begins.", "points": 3, "trigger_flag": False},
-                {"value": "yellow", "label": "Sometimes. We document major changes, but smaller requests often get handled informally.", "points": 2, "trigger_flag": False},
-                {"value": "red", "label": "No. We usually just handle changes as they come and figure out billing later.", "points": 1, "trigger_flag": True}
+                {"value": "green", "label": "Yes, always a written change order first.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "Big changes yes, small ones get handled informally.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No, we handle changes as they come and bill later.", "points": 1, "trigger_flag": True}
             ],
             "area": "contracts"
         },
         {
             "id": "q3",
-            "text": "Do your contracts include a limitation of liability clause that caps your maximum financial exposure if something goes wrong on a project?",
+            "text": "Do your contracts cap how much you could owe if something goes wrong on a project?",
             "why_it_matters": "Without a liability cap, a single bad project could result in a judgment that exceeds your total revenue. A limitation of liability clause is the difference between a manageable business setback and a company-ending lawsuit. Courts generally enforce these when they are properly drafted.",
             "options": [
-                {"value": "green", "label": "Yes. My contracts cap liability, typically to the amount paid under the contract or a defined dollar amount.", "points": 3, "trigger_flag": False},
-                {"value": "yellow", "label": "I think there is something about liability in my contract, but I have not reviewed it closely.", "points": 2, "trigger_flag": False},
-                {"value": "red", "label": "No. My contracts have no liability cap, or I am not sure.", "points": 1, "trigger_flag": True}
+                {"value": "green", "label": "Yes, my contracts cap my liability.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "Maybe, I have not reviewed them closely.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No cap, or I am not sure.", "points": 1, "trigger_flag": True}
             ],
             "area": "contracts"
         },
         {
             "id": "q4",
-            "text": "Are you currently relying on any handshake deals, verbal agreements, or contract templates you found online that have not been reviewed by an attorney?",
+            "text": "Are any of your client relationships running on handshake deals or templates no attorney has reviewed?",
             "why_it_matters": "Handshake deals offer zero legal protection in a dispute. Online templates are written for generic situations and almost never address your specific industry risks, state laws, or business model. They create a false sense of security that disappears the moment you need to enforce them.",
             "options": [
-                {"value": "green", "label": "No. All my client relationships are governed by written contracts that have been reviewed by an attorney.", "points": 3, "trigger_flag": False},
-                {"value": "yellow", "label": "Most clients are under contract, but I have a few relationships based on verbal agreements or generic templates.", "points": 2, "trigger_flag": False},
-                {"value": "red", "label": "Yes. I regularly work on handshake deals or use templates I have not had reviewed.", "points": 1, "trigger_flag": True}
+                {"value": "green", "label": "No, everything is in attorney-reviewed written contracts.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "A few are verbal or on generic templates.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "Yes, that describes most of my client work.", "points": 1, "trigger_flag": True}
             ],
             "area": "contracts"
         },
@@ -791,45 +791,45 @@ QUESTIONS = {
         # AREA 2: Ownership & Governance (Q5-Q8)
         {
             "id": "q5",
-            "text": "Does your business have a current, signed operating agreement (LLC) or shareholder agreement (corporation) that all owners have reviewed and agreed to?",
+            "text": "Do you have a current, signed operating or shareholder agreement that every owner has agreed to?",
             "why_it_matters": "Without a written agreement, your state's default rules govern your business. Those defaults were not written with your specific situation in mind. They can give a 1% owner blocking power, create ambiguity about profit splits, and leave you with no process for resolving disputes. This is the single most important legal document for any business with more than one owner.",
             "options": [
-                {"value": "green", "label": "Yes. We have a signed, current agreement that all owners understand and have reviewed.", "points": 3, "trigger_flag": False},
-                {"value": "yellow", "label": "We have an agreement, but it is outdated, or some owners have not reviewed it.", "points": 2, "trigger_flag": False},
-                {"value": "red", "label": "No. We have no written ownership agreement, or we are using a generic template we never customized.", "points": 1, "trigger_flag": True}
+                {"value": "green", "label": "Yes, signed, current, and reviewed by all owners.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "We have one, but it is outdated or unreviewed.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No, or it is a generic template we never customized.", "points": 1, "trigger_flag": True}
             ],
             "area": "ownership"
         },
         {
             "id": "q6",
-            "text": "Does your agreement include buy-sell provisions that define exactly what happens when an owner wants to leave, becomes disabled, goes through a divorce, or passes away?",
+            "text": "Does your agreement say what happens if an owner leaves, divorces, becomes disabled, or passes away?",
             "why_it_matters": "Without buy-sell provisions, an owner leaving the business can trigger a forced dissolution. An owner's death could mean you are suddenly in business with their spouse or heirs. An owner's divorce could give their ex-spouse a claim to part of the company. These are not hypothetical risks. They happen constantly, and businesses without buyout provisions rarely survive them.",
             "options": [
-                {"value": "green", "label": "Yes. Our agreement addresses voluntary departure, death, disability, divorce, and termination for cause with a clear valuation and transfer process.", "points": 3, "trigger_flag": False},
-                {"value": "yellow", "label": "We have some buyout language, but it does not cover all scenarios, or the valuation method is unclear.", "points": 2, "trigger_flag": False},
-                {"value": "red", "label": "No. We have no buy-sell provisions, or I do not know if we do.", "points": 1, "trigger_flag": True}
+                {"value": "green", "label": "Yes, every scenario, with a clear valuation process.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "Some buyout language, but gaps or unclear valuation.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No, or I do not know.", "points": 1, "trigger_flag": True}
             ],
             "area": "ownership"
         },
         {
             "id": "q7",
-            "text": "Is decision-making authority clearly defined in your agreement, including who can make day-to-day decisions, what requires a vote, and what happens if owners reach a deadlock?",
+            "text": "Is it written down who decides what, and how you break a tie between owners?",
             "why_it_matters": "When two 50/50 partners disagree and there is no deadlock resolution mechanism, the business can become paralyzed. No one can sign contracts, hire, fire, or make financial decisions. Without clear authority structure, a single disagreement can shut down operations and ultimately force a judicial dissolution of the entire company.",
             "options": [
-                {"value": "green", "label": "Yes. Our agreement defines day-to-day authority, major decision thresholds, and has a deadlock resolution process.", "points": 3, "trigger_flag": False},
-                {"value": "yellow", "label": "We have general roles, but major decision authority and deadlock resolution are not clearly documented.", "points": 2, "trigger_flag": False},
-                {"value": "red", "label": "No. Decision-making is informal, or we have no process for resolving disagreements between owners.", "points": 1, "trigger_flag": True}
+                {"value": "green", "label": "Yes, authority and deadlock resolution are documented.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "General roles only, big decisions are not documented.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No, decision-making is informal.", "points": 1, "trigger_flag": True}
             ],
             "area": "ownership"
         },
         {
             "id": "q8",
-            "text": "Does your current entity structure (LLC, S-Corp, C-Corp, partnership) still match the way your business operates today, including how income is distributed, and taxes are filed?",
+            "text": "Does your entity type (LLC, S-Corp, C-Corp, partnership) still fit how your business runs today?",
             "why_it_matters": "Businesses evolve. An entity structure that made sense at launch may be costing you tens of thousands in unnecessary taxes, creating personal liability exposure, or limiting your ability to bring on investors or sell the business. Mismatched entity structures are one of the most expensive and overlooked problems because the cost is invisible until you try to raise capital, sell, or get audited.",
             "options": [
-                {"value": "green", "label": "Yes. We have reviewed our entity structure with a tax and legal professional within the past two years and it still fits.", "points": 3, "trigger_flag": False},
-                {"value": "yellow", "label": "I think it still works, but we have not reviewed it since we set it up.", "points": 2, "trigger_flag": False},
-                {"value": "red", "label": "I am not sure if our entity structure is optimal, or our business has changed significantly since we formed.", "points": 1, "trigger_flag": True}
+                {"value": "green", "label": "Yes, reviewed with a professional in the past two years.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "Probably, but not reviewed since we set it up.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "Not sure, or the business has changed a lot.", "points": 1, "trigger_flag": True}
             ],
             "area": "ownership"
         },
@@ -837,45 +837,45 @@ QUESTIONS = {
         # AREA 3: Vendors (Q9-Q12)
         {
             "id": "q9",
-            "text": "Do you have a signed written agreement in place with every vendor or service provider before they begin delivering products or services to your business?",
+            "text": "Does every vendor sign a written agreement before starting work for your business?",
             "why_it_matters": "A vendor or service provider working without a signed agreement exposes you to disputes over scope, payment, quality, and timeline with zero documentation to protect your position. If that vendor fails to perform or causes harm, you may have no contractual recourse. This is one of the fastest ways to face unexpected liability.",
             "options": [
-                {"value": "green", "label": "Yes. Every vendor and service provider signs a written agreement before any work starts, no exceptions.", "points": 3, "trigger_flag": False},
-                {"value": "yellow", "label": "Most do, but we occasionally start work based on a verbal agreement or email and formalize it later.", "points": 2, "trigger_flag": False},
-                {"value": "red", "label": "No. We regularly use vendors or service providers without signed agreements.", "points": 1, "trigger_flag": True}
+                {"value": "green", "label": "Yes, every vendor signs first, no exceptions.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "Most do, some start on a verbal or an email.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No, we often use vendors without signed agreements.", "points": 1, "trigger_flag": True}
             ],
             "area": "subcontractor"
         },
         {
             "id": "q10",
-            "text": "Have you reviewed how your business engages independent contractors versus employees, and are you confident those classifications would withstand scrutiny from the IRS or your state labor agency?",
+            "text": "Would your independent contractor classifications hold up under an IRS or state labor audit?",
             "why_it_matters": "Misclassifying an employee as an independent contractor is one of the most aggressively enforced compliance areas by the IRS and state agencies. If you are found to have misclassified workers, you face back taxes, penalties, unpaid benefits, and potential class action exposure. A single misclassification audit can result in six-figure liability across all similarly classified workers.",
             "options": [
-                {"value": "green", "label": "Yes. We have reviewed our classifications with a legal or tax professional and they meet IRS and state tests.", "points": 3, "trigger_flag": False},
-                {"value": "yellow", "label": "I believe they are classified correctly, but we have not had it formally reviewed.", "points": 2, "trigger_flag": False},
-                {"value": "red", "label": "I am not sure if our independent contractors would pass a classification audit.", "points": 1, "trigger_flag": True}
+                {"value": "green", "label": "Yes, reviewed by a legal or tax professional.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "I believe so, but never formally reviewed.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "I am not sure they would pass.", "points": 1, "trigger_flag": True}
             ],
             "area": "subcontractor"
         },
         {
             "id": "q11",
-            "text": "Do your vendor and service provider agreements include indemnification and limitation-of-liability provisions that protect your business if their product, service, or conduct causes you loss or exposes you to a third-party claim?",
+            "text": "Do your vendor agreements protect you if a vendor's work causes you a loss or a claim?",
             "why_it_matters": "Without indemnification and liability limits, you absorb the financial consequences of someone else's mistakes. If a vendor's product or service causes you loss or exposes you to a third-party claim, you may have no contractual right to recover from the vendor who actually caused the problem.",
             "options": [
-                {"value": "green", "label": "Yes. All vendor and service provider agreements include indemnification and limitation-of-liability provisions.", "points": 3, "trigger_flag": False},
-                {"value": "yellow", "label": "Some agreements have these provisions, but it is not consistent across all vendors and service providers.", "points": 2, "trigger_flag": False},
-                {"value": "red", "label": "No. Our agreements do not include these provisions, or I do not know if they do.", "points": 1, "trigger_flag": True}
+                {"value": "green", "label": "Yes, all include indemnification and liability protections.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "Some do, but it is not consistent.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No, or I do not know.", "points": 1, "trigger_flag": True}
             ],
             "area": "subcontractor"
         },
         {
             "id": "q12",
-            "text": "Do you require current certificates of insurance from vendors and service providers whose work creates meaningful risk to your business, and do you have a process to track and renew those certificates before they expire?",
+            "text": "Do you collect and track current insurance certificates from your higher-risk vendors?",
             "why_it_matters": "A certificate of insurance that expired is worthless. If an uninsured vendor causes damage or exposes your business to liability, their lack of coverage becomes your financial responsibility. Many businesses collect certificates once and never check again, only to discover at the worst possible moment that coverage lapsed.",
             "options": [
-                {"value": "green", "label": "Yes. We collect current COIs from high-risk vendors, verify coverage meets our requirements, and track expiration dates.", "points": 3, "trigger_flag": False},
-                {"value": "yellow", "label": "We collect COIs at the start but do not consistently track renewals or verify coverage amounts.", "points": 2, "trigger_flag": False},
-                {"value": "red", "label": "No. We do not regularly collect or verify vendor insurance certificates.", "points": 1, "trigger_flag": True}
+                {"value": "green", "label": "Yes, we collect, verify, and track expirations.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "We collect at the start but do not track renewals.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No, we do not collect or verify them.", "points": 1, "trigger_flag": True}
             ],
             "area": "subcontractor"
         },
@@ -883,45 +883,45 @@ QUESTIONS = {
         # AREA 4: Employment & Safety Compliance (Q13-Q16)
         {
             "id": "q13",
-            "text": "Does your business have a current employee handbook that reflects your state's employment laws as they exist today, not when the handbook was first written?",
+            "text": "Is your employee handbook up to date with your state's employment laws as they are today?",
             "why_it_matters": "Employment law changes constantly. Paid leave requirements, anti-harassment rules, accommodation obligations, and termination procedures vary by state and update frequently. An outdated handbook can actually work against you in court because it shows you had policies but failed to keep them current. Plaintiff attorneys look for handbook gaps first.",
             "options": [
-                {"value": "green", "label": "Yes. Our handbook has been reviewed and updated within the past 12 months to reflect current state and federal law.", "points": 3, "trigger_flag": False},
-                {"value": "yellow", "label": "We have a handbook, but it has not been updated in over a year.", "points": 2, "trigger_flag": False},
-                {"value": "red", "label": "We do not have an employee handbook, or ours is significantly outdated.", "points": 1, "trigger_flag": True}
+                {"value": "green", "label": "Yes, reviewed and updated within the past year.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "We have one, but it is over a year old.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No handbook, or it is badly outdated.", "points": 1, "trigger_flag": True}
             ],
             "area": "employment"
         },
         {
             "id": "q14",
-            "text": "Are your wage, hour, and overtime practices fully compliant, including proper classification of exempt versus non-exempt employees, accurate time tracking, and correct overtime calculations?",
+            "text": "Are your pay practices compliant, including overtime and exempt versus non-exempt classifications?",
             "why_it_matters": "Wage and hour claims are the most common type of employment lawsuit in the United States. Misclassifying a salaried employee as exempt when they do not meet the legal test, failing to pay overtime correctly, or rounding time entries the wrong way can result in class action exposure that covers every similarly situated employee. These claims often include double damages and attorney fees.",
             "options": [
-                {"value": "green", "label": "Yes. We have had our classifications and pay practices reviewed by an employment attorney or HR professional and they are compliant.", "points": 3, "trigger_flag": False},
-                {"value": "yellow", "label": "I believe we are compliant, but we have not had a formal review.", "points": 2, "trigger_flag": False},
-                {"value": "red", "label": "I am not confident our classifications or overtime practices would survive an audit.", "points": 1, "trigger_flag": True}
+                {"value": "green", "label": "Yes, formally reviewed by an attorney or HR professional.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "I believe so, but never formally reviewed.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "I am not confident they would survive an audit.", "points": 1, "trigger_flag": True}
             ],
             "area": "employment"
         },
         {
             "id": "q15",
-            "text": "Does your business have a documented termination process that includes written performance records, consistent application, and a final review step before any employee is let go?",
+            "text": "Do you follow a documented process, with written records, before letting an employee go?",
             "why_it_matters": "Wrongful termination claims often succeed not because the termination was actually illegal, but because the employer cannot prove it was justified. Without a documented process, consistent application, and a paper trail, a terminated employee's attorney only needs to show inconsistency or missing records to build a case. The cost of defending even a weak wrongful termination claim averages $75,000 to $250,000.",
             "options": [
-                {"value": "green", "label": "Yes. We have a documented process with written warnings, performance records, and a final review before termination.", "points": 3, "trigger_flag": False},
-                {"value": "yellow", "label": "We try to document things, but the process is not consistent or some terminations happen without full records.", "points": 2, "trigger_flag": False},
-                {"value": "red", "label": "No. We do not have a formal termination process, or decisions are made without documentation.", "points": 1, "trigger_flag": True}
+                {"value": "green", "label": "Yes, documented warnings, records, and a final review.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "We try, but it is not consistent.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No formal process or documentation.", "points": 1, "trigger_flag": True}
             ],
             "area": "employment"
         },
         {
             "id": "q16",
-            "text": "Do your key employees have signed confidentiality and non-solicitation agreements that protect your client relationships, proprietary information, and trade secrets?",
+            "text": "Have your key employees signed confidentiality and non-solicitation agreements?",
             "why_it_matters": "When a key employee leaves and takes your client list, your pricing data, or your best employees with them, the damage is immediate and often irreversible. Without a signed confidentiality and non-solicitation agreement, you have very limited legal ability to stop them. These agreements need to be in place before the information is shared, not after someone gives notice.",
             "options": [
-                {"value": "green", "label": "Yes. All key employees have signed enforceable confidentiality and non-solicitation agreements.", "points": 3, "trigger_flag": False},
-                {"value": "yellow", "label": "Some employees have signed agreements, but coverage is not consistent across all key roles.", "points": 2, "trigger_flag": False},
-                {"value": "red", "label": "No. We do not have confidentiality or non-solicitation agreements in place.", "points": 1, "trigger_flag": True}
+                {"value": "green", "label": "Yes, all key employees have signed.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "Some have, but coverage is spotty.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No, we do not have these agreements.", "points": 1, "trigger_flag": True}
             ],
             "area": "employment"
         },
@@ -929,45 +929,45 @@ QUESTIONS = {
         # AREA 5: Insurance and Risk Management (Q17-Q20)
         {
             "id": "q17",
-            "text": "Has your business insurance coverage been reviewed in the past 12 months to verify it matches your current operations, revenue level, and actual risk exposure?",
+            "text": "Has your business insurance been reviewed in the past 12 months against how you operate now?",
             "why_it_matters": "Most businesses buy insurance when they launch and never update it. If your revenue has doubled, you have added services, hired employees, or expanded locations, your original policy may not cover your current exposure. Discovering a coverage gap after a claim is filed is the most expensive way to find out your policy is outdated.",
             "options": [
-                {"value": "green", "label": "Yes. Our coverage has been reviewed within the past 12 months and adjusted to match current operations.", "points": 3, "trigger_flag": False},
-                {"value": "yellow", "label": "We have insurance, but it has not been reviewed against our current operations recently.", "points": 2, "trigger_flag": False},
-                {"value": "red", "label": "No. Our coverage has not been reviewed since we purchased it, or our business has changed significantly since then.", "points": 1, "trigger_flag": True}
+                {"value": "green", "label": "Yes, reviewed and adjusted within the past year.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "We have insurance, but no recent review.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "Never reviewed, or the business has changed a lot.", "points": 1, "trigger_flag": True}
             ],
             "area": "insurance"
         },
         {
             "id": "q18",
-            "text": "Do your customer and vendor contracts align with what your insurance covers? For example, if your contract promises to indemnify a client, does your insurance cover that obligation?",
+            "text": "Does your insurance actually cover the promises your contracts make, like indemnifying a client?",
             "why_it_matters": "It is common for businesses to sign contracts with indemnification or insurance requirements that exceed what their policy covers. You are contractually promising protection that does not exist. When a claim arises and the insurance company denies it because the obligation was outside your coverage terms, you pay the full amount out of pocket.",
             "options": [
-                {"value": "green", "label": "Yes. Our attorney and insurance broker have reviewed our contracts together to ensure alignment.", "points": 3, "trigger_flag": False},
-                {"value": "yellow", "label": "I think they align, but no one has formally compared our contract obligations to our policy.", "points": 2, "trigger_flag": False},
-                {"value": "red", "label": "No. I have never compared my contract obligations to my actual insurance coverage.", "points": 1, "trigger_flag": True}
+                {"value": "green", "label": "Yes, my attorney and broker have compared them.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "I think so, but no one has checked.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "I have never compared them.", "points": 1, "trigger_flag": True}
             ],
             "area": "insurance"
         },
         {
             "id": "q19",
-            "text": "Does your business have a documented incident response procedure so that your team knows exactly what to do in the first 24 hours after an accident, injury, property damage, or client complaint?",
+            "text": "Does your team know exactly what to do in the 24 hours after an accident or serious complaint?",
             "why_it_matters": "The first 24 hours after an incident determine whether your insurance claim succeeds or fails and whether your legal exposure grows or shrinks. Delayed reporting, destroyed evidence, inconsistent statements, and social media posts by employees can all undermine your defense. A documented procedure ensures the right steps happen immediately, not after the damage is done.",
             "options": [
-                {"value": "green", "label": "Yes. We have a written incident response procedure that employees have been trained on.", "points": 3, "trigger_flag": False},
-                {"value": "yellow", "label": "We have an informal understanding of what to do, but nothing documented or trained.", "points": 2, "trigger_flag": False},
-                {"value": "red", "label": "No. We have no incident response procedure.", "points": 1, "trigger_flag": True}
+                {"value": "green", "label": "Yes, written procedure, and the team is trained.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "Informal understanding only, nothing written.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No procedure at all.", "points": 1, "trigger_flag": True}
             ],
             "area": "insurance"
         },
         {
             "id": "q20",
-            "text": "Have you identified any gaps in your insurance coverage before an emergency, such as exclusions for specific types of work, geographic limitations, or coverage caps that are too low for your actual exposure?",
+            "text": "Do you know where your insurance has gaps, like exclusions or limits that are too low?",
             "why_it_matters": "Every insurance policy has exclusions, caps, and limitations. The businesses that get hurt are the ones who discover those gaps when filing a claim. A proactive coverage gap analysis costs very little compared to discovering after a $500,000 claim that your policy caps out at $250,000 or excludes the specific type of work that caused the loss.",
             "options": [
-                {"value": "green", "label": "Yes. We have done a coverage gap analysis and addressed identified limitations.", "points": 3, "trigger_flag": False},
-                {"value": "yellow", "label": "I am aware of some limitations but have not done a comprehensive review.", "points": 2, "trigger_flag": False},
-                {"value": "red", "label": "No. I do not know what my policy excludes or where my coverage gaps are.", "points": 1, "trigger_flag": True}
+                {"value": "green", "label": "Yes, we did a gap analysis and addressed them.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "Aware of some limits, but no full review.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No idea what my policy excludes.", "points": 1, "trigger_flag": True}
             ],
             "area": "insurance"
         },
@@ -975,45 +975,45 @@ QUESTIONS = {
         # AREA 6: Systems, Records & Digital Risk (Q21-Q24)
         {
             "id": "q21",
-            "text": "Are your critical business records (contracts, financial documents, employee files, corporate filings) organized, centrally stored, and accessible if you needed to produce them within 48 hours for an audit, lawsuit, or due diligence request?",
+            "text": "Could you produce your key business records within 48 hours for an audit or lawsuit?",
             "why_it_matters": "When a lawsuit, audit, or buyer due diligence request arrives, you do not get weeks to organize your records. Businesses that cannot produce clean documentation quickly lose leverage in negotiations, face sanctions in litigation, and kill potential deals. Record disorganization is also a red flag in any legal proceeding that suggests broader operational problems.",
             "options": [
-                {"value": "green", "label": "Yes. Our records are organized, digitized, and accessible. We could produce key documents within 48 hours.", "points": 3, "trigger_flag": False},
-                {"value": "yellow", "label": "Most records exist, but they are scattered across locations, people, or systems and would take time to compile.", "points": 2, "trigger_flag": False},
-                {"value": "red", "label": "No. Our records are disorganized, incomplete, or I am not confident we could locate key documents quickly.", "points": 1, "trigger_flag": True}
+                {"value": "green", "label": "Yes, organized, digitized, and accessible.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "Most exist, but scattered and slow to compile.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No, disorganized or incomplete.", "points": 1, "trigger_flag": True}
             ],
             "area": "systems"
         },
         {
             "id": "q22",
-            "text": "Does your business have data security and privacy practices in place that meet the standards for your industry, including how you collect, store, and protect customer and employee personal information?",
+            "text": "Do your data security and privacy practices meet the standards for your industry?",
             "why_it_matters": "Data breach notification laws now exist in all 50 states, and many industries have specific compliance requirements (HIPAA, PCI, state consumer privacy acts). A single data breach can trigger mandatory notifications, regulatory investigations, class action lawsuits, and reputational damage. The average cost of a data breach for a small business is enough to close the doors permanently.",
             "options": [
-                {"value": "green", "label": "Yes. We have documented data security practices, and they have been reviewed for compliance with applicable laws and industry standards.", "points": 3, "trigger_flag": False},
-                {"value": "yellow", "label": "We have some security measures in place, but they have not been formally reviewed for compliance.", "points": 2, "trigger_flag": False},
-                {"value": "red", "label": "No. We do not have documented data security practices, or I am not sure what our obligations are.", "points": 1, "trigger_flag": True}
+                {"value": "green", "label": "Yes, documented and reviewed for compliance.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "Some measures, but never formally reviewed.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No, or I do not know our obligations.", "points": 1, "trigger_flag": True}
             ],
             "area": "systems"
         },
         {
             "id": "q23",
-            "text": "Does your business have access controls that restrict who can view, edit, or download sensitive information like financial records, client data, employee files, and proprietary business information?",
+            "text": "Is access to sensitive information limited to the people who actually need it?",
             "why_it_matters": "Most internal data breaches and information theft happen because everyone has access to everything. When a disgruntled employee, departing partner, or compromised account can access all of your sensitive information without restriction, the damage potential is unlimited. Access controls are the difference between a contained problem and a catastrophic one.",
             "options": [
-                {"value": "green", "label": "Yes. We have role-based access controls that limit who can view and download sensitive data.", "points": 3, "trigger_flag": False},
-                {"value": "yellow", "label": "We have some access restrictions, but most people can access most systems.", "points": 2, "trigger_flag": False},
-                {"value": "red", "label": "No. Everyone in the company has access to essentially everything.", "points": 1, "trigger_flag": True}
+                {"value": "green", "label": "Yes, role-based access controls are in place.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "Some restrictions, but most people can access most things.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No, everyone can access essentially everything.", "points": 1, "trigger_flag": True}
             ],
             "area": "systems"
         },
         {
             "id": "q24",
-            "text": "If your business were to be sold, acquired, or face a legal dispute tomorrow, could you produce a complete set of corporate records, executed contracts, financial statements, and compliance documentation within two weeks?",
+            "text": "If you sold the business or faced a lawsuit tomorrow, could you produce complete records within two weeks?",
             "why_it_matters": "Whether you are selling the business, defending a lawsuit, or responding to a regulatory inquiry, your ability to produce organized documentation determines your outcome. Buyers walk away from deals when records are incomplete. Judges penalize parties that cannot produce evidence. Regulators assume the worst when documentation is missing. This question tests the overall health of your entire records system.",
             "options": [
-                {"value": "green", "label": "Yes. Our records are complete and organized enough that we could be due diligence ready within two weeks.", "points": 3, "trigger_flag": False},
-                {"value": "yellow", "label": "We could pull most of it together, but it would be a scramble, and some items might be missing.", "points": 2, "trigger_flag": False},
-                {"value": "red", "label": "No. We are not close to being prepared for due diligence or a major document production request.", "points": 1, "trigger_flag": True}
+                {"value": "green", "label": "Yes, we could be due diligence ready in two weeks.", "points": 3, "trigger_flag": False},
+                {"value": "yellow", "label": "Most of it, but it would be a scramble.", "points": 2, "trigger_flag": False},
+                {"value": "red", "label": "No, we are not close to ready.", "points": 1, "trigger_flag": True}
             ],
             "area": "systems"
         }
