@@ -101,6 +101,22 @@ export default function AssessmentWizard() {
         trigger_flag: option.trigger_flag || false
       }
     }));
+
+    // Auto-advance to the next question after a short pause so the
+    // selection is visible. The last question keeps the explicit
+    // "Finish Quiz" button so nothing is submitted by surprise.
+    if (currentQuestionIndex < questions.length - 1) {
+      setTimeout(() => {
+        setCurrentQuestionIndex(prev => {
+          // Only advance if we are still on the question that was answered
+          // (prevents double-jumps from rapid taps).
+          if (questions[prev]?.id === questionId) {
+            return prev + 1;
+          }
+          return prev;
+        });
+      }, 350);
+    }
   };
 
   const handleNext = () => {
