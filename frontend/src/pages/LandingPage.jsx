@@ -201,11 +201,57 @@ export default function LandingPage() {
               Get clear scores for each area, see exactly where you're at risk, and receive
               an actionable protection plan, all in about 5 minutes.
             </p>
+            {/* Area selection, merged into the hero */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 animate-fade-in-up animate-delay-300">
+              <p className="text-slate-300">
+                All six areas are included. Tap an area to remove it.
+              </p>
+              <Button
+                variant="outline"
+                onClick={toggleAllAreas}
+                className="border-orange-500 text-orange-400 hover:bg-orange-500/10 text-sm self-start sm:self-auto"
+                data-testid="toggle-all-areas-btn"
+              >
+                {selectedAreas.length === quizAreas.length ? "Deselect All" : "Select All"}
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mb-4 animate-fade-in-up animate-delay-300">
+              {quizAreas.map((area) => {
+                const isSelected = selectedAreas.includes(area.id);
+                return (
+                  <div
+                    key={area.id}
+                    onClick={() => toggleArea(area.id)}
+                    className={`flex items-center gap-3 p-3 sm:p-4 rounded-lg text-left border-2 cursor-pointer transition-all duration-200 bg-slate-800 ${
+                      isSelected
+                        ? "border-orange-500 shadow-lg shadow-orange-500/30"
+                        : "border-orange-500/50 hover:border-orange-500"
+                    }`}
+                    data-testid={`area-card-${area.id}`}
+                  >
+                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors ${
+                      isSelected ? "bg-orange-500 text-white" : "bg-slate-700 text-slate-400"
+                    }`}>
+                      {isSelected ? <Check className="w-5 h-5" /> : area.icon}
+                    </div>
+                    <span className="text-sm font-medium text-slate-200">
+                      {area.name}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+
+            <p className="text-slate-400 text-sm mb-8">
+              {selectedAreas.length} of 6 areas selected • {selectedAreas.length * 4} questions • confidential • instant results
+            </p>
+
             <div className="flex flex-col sm:flex-row gap-4 animate-fade-in-up animate-delay-300">
               <Button
                 onClick={handleBeginQuiz}
-                disabled={isStartingQuiz}
-                className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-6 text-lg font-semibold"
+                disabled={isStartingQuiz || selectedAreas.length === 0}
+                className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-6 text-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                 data-testid="hero-start-checkup-btn"
               >
                 {isStartingQuiz ? (
@@ -220,7 +266,7 @@ export default function LandingPage() {
                   </>
                 )}
               </Button>
-              <Button 
+              <Button
                 variant="outline"
                 className="border-slate-500 text-white hover:bg-slate-800 px-8 py-6 text-lg"
                 onClick={() => document.getElementById('how-it-works').scrollIntoView({ behavior: 'smooth' })}
@@ -230,86 +276,6 @@ export default function LandingPage() {
               </Button>
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* Checkup Section (moved up so Begin is one short scroll away) */}
-      <section className="hero-section py-20" id="quiz-section">
-        <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
-          <h2 className="font-heading text-4xl md:text-5xl font-bold text-white mb-4">
-            Clean Legal Bill of Health Quick Checkup
-          </h2>
-          <p className="text-slate-300 text-lg mb-6">
-            All six areas are selected for the full checkup. Tap any area to remove it and shorten your checkup (4 questions each).
-          </p>
-
-          {/* Select All / Deselect All Button */}
-          <div className="flex justify-center mb-4">
-            <Button
-              variant="outline"
-              onClick={toggleAllAreas}
-              className="border-orange-500 text-orange-400 hover:bg-orange-500/10 text-sm"
-              data-testid="toggle-all-areas-btn"
-            >
-              {selectedAreas.length === quizAreas.length ? "Deselect All" : "Select All"}
-            </Button>
-          </div>
-
-          {/* 6 Selectable Areas */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mb-10 max-w-3xl mx-auto">
-            {quizAreas.map((area) => {
-              const isSelected = selectedAreas.includes(area.id);
-              return (
-                <div
-                  key={area.id}
-                  onClick={() => toggleArea(area.id)}
-                  className={`flex items-center gap-3 p-3 sm:p-4 rounded-lg text-left border-2 cursor-pointer transition-all duration-200 bg-slate-800 ${
-                    isSelected
-                      ? "border-orange-500 shadow-lg shadow-orange-500/30"
-                      : "border-orange-500/50 hover:border-orange-500"
-                  }`}
-                  data-testid={`area-card-${area.id}`}
-                >
-                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors ${
-                    isSelected ? "bg-orange-500 text-white" : "bg-slate-700 text-slate-400"
-                  }`}>
-                    {isSelected ? <Check className="w-5 h-5" /> : area.icon}
-                  </div>
-                  <span className="text-sm font-medium text-slate-200">
-                    {area.name}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Selected count indicator */}
-          <p className="text-slate-400 text-sm mb-6">
-            {selectedAreas.length} of 6 areas selected • {selectedAreas.length * 4} questions
-          </p>
-
-          <Button
-            onClick={handleBeginQuiz}
-            disabled={isStartingQuiz || selectedAreas.length === 0}
-            className="bg-orange-500 hover:bg-orange-600 text-white px-10 py-6 text-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-            data-testid="quiz-begin-btn"
-          >
-            {isStartingQuiz ? (
-              <>
-                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                Starting...
-              </>
-            ) : (
-              <>
-                Begin My Checkup
-                <ArrowRight className="ml-2 w-5 h-5" />
-              </>
-            )}
-          </Button>
-
-          <p className="text-slate-400 text-sm mt-6">
-            Confidential • Instant results
-          </p>
         </div>
       </section>
 
