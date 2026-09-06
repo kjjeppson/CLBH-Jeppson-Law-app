@@ -9,6 +9,29 @@ import { Shield, FileCheck, AlertTriangle, CheckCircle2, Clock, ArrowRight, Cale
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
+// Decide BEFORE first paint whether this visit should skip the landing page
+// and start the checkup immediately: links carrying ?start=1, or visitors
+// arriving from our own websites. sessionStorage-guarded so Back from
+// question 1 shows the landing page normally.
+const shouldAutoStart = () => {
+  try {
+    if (sessionStorage.getItem("clbh_autostart_done") === "1") return false;
+  } catch (e) { /* private mode; continue */ }
+  const params = new URLSearchParams(window.location.search);
+  const startParam = params.get("start");
+  if (startParam === "1" || startParam === "true") return true;
+  try {
+    if (document.referrer) {
+      const refHost = new URL(document.referrer).hostname;
+      return (
+        refHost !== window.location.hostname &&
+        (refHost.endsWith("cleanlegalbillofhealth.com") || refHost.endsWith("jeppsonlaw.com"))
+      );
+    }
+  } catch (e) { /* unparseable referrer */ }
+  return false;
+};
+
 export default function LandingPage() {
   const navigate = useNavigate();
 
@@ -43,6 +66,9 @@ export default function LandingPage() {
   // Visitors can deselect areas to take a shorter quiz.
   const [selectedAreas, setSelectedAreas] = useState(quizAreas.map(a => a.id));
   const [isStartingQuiz, setIsStartingQuiz] = useState(false);
+  // When true, we render a branded "starting" screen instead of the landing
+  // page, so auto-started visitors never see a confusing flash of content.
+  const [autoStarting, setAutoStarting] = useState(shouldAutoStart);
 
   const toggleArea = (areaId) => {
     setSelectedAreas(prev =>
@@ -74,53 +100,54 @@ export default function LandingPage() {
       });
       track("quiz_start", { areas_selected: selectedAreas.length });
       navigate(`/assessment/${response.data.id}`);
+      return true;
     } catch (error) {
       console.error("Error creating assessment:", error);
-      toast.error("Failed to start quiz. Please try again.");
+      toast.error("Failed to start the checkup. Please try again.");
+      return false;
     } finally {
       setIsStartingQuiz(false);
     }
   };
 
-  // One-click flow from our own websites: when a visitor arrives from
-  // cleanlegalbillofhealth.com or jeppsonlaw.com (or any link carrying
-  // ?start=1), begin the quiz for them automatically so the button they
-  // already clicked was the only click needed. Guarded by sessionStorage
-  // so pressing Back from question 1 returns to this page normally
-  // instead of restarting the quiz in a loop.
+  // Run the auto-start decided above. If starting fails (network hiccup),
+  // fall back to showing the normal landing page.
   const autoStartAttempted = useRef(false);
   useEffect(() => {
-    if (autoStartAttempted.current) return;
+    if (!autoStarting || autoStartAttempted.current) return;
     autoStartAttempted.current = true;
-
-    let alreadyDone = false;
     try {
-      alreadyDone = sessionStorage.getItem("clbh_autostart_done") === "1";
-    } catch (e) { /* private mode; treat as not done */ }
-    if (alreadyDone) return;
-
-    const params = new URLSearchParams(window.location.search);
-    const startParam = params.get("start");
-    const wantsStart = startParam === "1" || startParam === "true";
-
-    let fromOurSites = false;
-    try {
-      if (document.referrer) {
-        const refHost = new URL(document.referrer).hostname;
-        fromOurSites =
-          refHost !== window.location.hostname &&
-          (refHost.endsWith("cleanlegalbillofhealth.com") || refHost.endsWith("jeppsonlaw.com"));
-      }
-    } catch (e) { /* unparseable referrer; ignore */ }
-
-    if (wantsStart || fromOurSites) {
-      try {
-        sessionStorage.setItem("clbh_autostart_done", "1");
-      } catch (e) { /* private mode; worst case is no auto-start next time */ }
-      handleBeginQuiz();
-    }
+      sessionStorage.setItem("clbh_autostart_done", "1");
+    } catch (e) { /* private mode; worst case is no auto-start next time */ }
+    (async () => {
+      const started = await handleBeginQuiz();
+      if (!started) setAutoStarting(false);
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [autoStarting]);
+
+  // Branded starting screen for auto-started visitors: no landing-page
+  // flash, and the key trust facts ride along while their checkup loads.
+  if (autoStarting) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center px-6">
+        <div className="text-center">
+          <img
+            src="/clbh-logo.png"
+            alt="Clean Legal Bill of Health — A Jeppson Law Product"
+            className="h-20 w-auto mx-auto mb-8"
+          />
+          <Loader2 className="w-10 h-10 text-orange-500 animate-spin mx-auto mb-6" />
+          <h1 className="font-heading text-2xl md:text-3xl font-bold text-slate-900 mb-3">
+            Starting your checkup...
+          </h1>
+          <p className="text-slate-600 text-lg">
+            24 quick questions. About 5 minutes. Confidential.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -134,7 +161,7 @@ export default function LandingPage() {
             <img
               src="/clbh-logo.png"
               alt="Clean Legal Bill of Health — A Jeppson Law Product"
-              className="h-24 w-auto"
+              className="h-14 w-auto"
             />
           </div>
           <div className="flex gap-2">
@@ -159,7 +186,7 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero Section */}
-      <section className="hero-section text-white py-24 md:py-32">
+      <section className="hero-section text-white py-14 md:py-20">
         <div className="max-w-7xl mx-auto px-6 relative z-10">
           <div className="max-w-3xl">
             <p className="text-orange-400 font-semibold tracking-wider uppercase text-sm mb-4 animate-fade-in-up">
@@ -206,46 +233,14 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* What You'll Get Section */}
-      <section className="py-20 bg-white grid-pattern-light" id="how-it-works">
-        <div className="max-w-7xl mx-auto px-6 relative z-10">
-          <div className="text-center mb-16">
-            <h2 className="font-heading text-3xl md:text-4xl font-bold text-slate-900 mb-4">
-              What You'll Get
-            </h2>
-            <p className="text-slate-600 text-lg max-w-2xl mx-auto">
-              A comprehensive snapshot of your legal risk exposure with clear next steps
-            </p>
-          </div>
-          
-          <div className="grid md:grid-cols-3 gap-8">
-            {benefits.map((benefit, index) => (
-              <Card key={index} className="border-slate-100 shadow-sm hover:shadow-md transition-shadow" data-testid={`benefit-card-${index}`}>
-                <CardContent className="p-8">
-                  <div className="w-12 h-12 bg-slate-900 rounded-lg flex items-center justify-center text-white mb-6">
-                    {benefit.icon}
-                  </div>
-                  <h3 className="font-heading text-xl font-semibold text-slate-900 mb-3">
-                    {benefit.title}
-                  </h3>
-                  <p className="text-slate-600">
-                    {benefit.description}
-                  </p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Quiz Overview Section */}
+      {/* Checkup Section (moved up so Begin is one short scroll away) */}
       <section className="hero-section py-20" id="quiz-section">
         <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
           <h2 className="font-heading text-4xl md:text-5xl font-bold text-white mb-4">
-            Clean Legal Bill of Health Quiz
+            Clean Legal Bill of Health Quick Checkup
           </h2>
           <p className="text-slate-300 text-lg mb-6">
-            All six areas are selected for the full checkup. Tap any area to remove it and shorten your quiz (4 questions each).
+            All six areas are selected for the full checkup. Tap any area to remove it and shorten your checkup (4 questions each).
           </p>
 
           {/* Select All / Deselect All Button */}
@@ -306,7 +301,7 @@ export default function LandingPage() {
               </>
             ) : (
               <>
-                Begin Quiz
+                Begin My Checkup
                 <ArrowRight className="ml-2 w-5 h-5" />
               </>
             )}
@@ -315,6 +310,38 @@ export default function LandingPage() {
           <p className="text-slate-400 text-sm mt-6">
             Confidential • Instant results
           </p>
+        </div>
+      </section>
+
+      {/* What You'll Get Section */}
+      <section className="py-20 bg-white grid-pattern-light" id="how-it-works">
+        <div className="max-w-7xl mx-auto px-6 relative z-10">
+          <div className="text-center mb-16">
+            <h2 className="font-heading text-3xl md:text-4xl font-bold text-slate-900 mb-4">
+              What You'll Get
+            </h2>
+            <p className="text-slate-600 text-lg max-w-2xl mx-auto">
+              A comprehensive snapshot of your legal risk exposure with clear next steps
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-8">
+            {benefits.map((benefit, index) => (
+              <Card key={index} className="border-slate-100 shadow-sm hover:shadow-md transition-shadow" data-testid={`benefit-card-${index}`}>
+                <CardContent className="p-8">
+                  <div className="w-12 h-12 bg-slate-900 rounded-lg flex items-center justify-center text-white mb-6">
+                    {benefit.icon}
+                  </div>
+                  <h3 className="font-heading text-xl font-semibold text-slate-900 mb-3">
+                    {benefit.title}
+                  </h3>
+                  <p className="text-slate-600">
+                    {benefit.description}
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -374,7 +401,7 @@ export default function LandingPage() {
             Ready to Check Your Business Health?
           </h2>
           <p className="text-slate-300 text-lg mb-8 max-w-2xl mx-auto">
-            Our comprehensive 24-question quiz covers 6 critical areas of business legal health.
+            Our comprehensive 24-question checkup covers 6 critical areas of business legal health.
             No commitment, completely confidential.
           </p>
           <Button
