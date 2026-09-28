@@ -46,6 +46,43 @@ export default function AdminDashboard() {
     loadLeads();
   }, [loadLeads]);
 
+  // Checkup funnel: starts, how far people get, completions and emails
+  const [funnel, setFunnel] = useState(null);
+  const [funnelDays, setFunnelDays] = useState(30);
+  const [funnelLoading, setFunnelLoading] = useState(false);
+  const loadFunnel = useCallback(async () => {
+    setFunnelLoading(true);
+    try {
+      const response = await axios.get(`${API}/admin/funnel`, {
+        params: { days: funnelDays },
+        headers: adminHeaders
+      });
+      setFunnel(response.data);
+    } catch (error) {
+      console.error("Error loading funnel:", error);
+      setFunnel(null);
+    } finally {
+      setFunnelLoading(false);
+    }
+  }, [adminHeaders, funnelDays]);
+
+  useEffect(() => {
+    loadFunnel();
+  }, [loadFunnel]);
+
+  const pct = (part, whole) => (whole > 0 ? Math.round((part / whole) * 100) : 0);
+  const funnelQuestions = funnel?.questions || [];
+  const trackedStarted = funnel?.tracked_started || 0;
+  const biggestDrop = funnelQuestions.reduce(
+    (best, q) => (q.stopped_here > (best?.stopped_here || 0) ? q : best),
+    null
+  );
+  const trackingStartLabel = funnel?.tracking_start
+    ? new Date(funnel.tracking_start).toLocaleString("en-US", {
+        month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit"
+      })
+    : "";
+
   const handleExport = async () => {
     setIsExporting(true);
     try {
@@ -79,11 +116,11 @@ export default function AdminDashboard() {
   const getRiskBadge = (riskLevel) => {
     switch (riskLevel) {
       case "green":
-        return <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">Green</Badge>;
+        return <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">Green (Healthy)</Badge>;
       case "yellow":
-        return <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">Yellow</Badge>;
+        return <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">Yellow (Worth a look)</Badge>;
       case "red":
-        return <Badge className="bg-red-100 text-red-700 hover:bg-red-100">Red</Badge>;
+        return <Badge className="bg-red-100 text-red-700 hover:bg-red-100">Red (Fix now)</Badge>;
       default:
         return <Badge variant="outline">Unknown</Badge>;
     }
@@ -165,6 +202,7 @@ export default function AdminDashboard() {
                     sessionStorage.setItem(ADMIN_KEY_STORAGE, adminKey);
                     toast.success("Admin key saved for this session");
                     loadLeads();
+                    loadFunnel();
                   }}
                   data-testid="save-admin-key-btn"
                 >
@@ -195,13 +233,13 @@ export default function AdminDashboard() {
               Lead Dashboard
             </h1>
             <p className="text-slate-600">
-              Manage and export your CLBH assessment leads
+              Manage and export your CLBH checkup leads
             </p>
           </div>
           <div className="flex gap-2">
             <Button 
               variant="outline"
-              onClick={loadLeads}
+              onClick={() => { loadLeads(); loadFunnel(); }}
               disabled={isLoading}
               data-testid="refresh-btn"
             >
@@ -282,6 +320,122 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Checkup Funnel */}
+        <Card className="border-slate-200 mb-8" data-testid="funnel-panel">
+          <CardHeader className="pb-2">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+              <div>
+                <CardTitle className="font-heading text-xl font-bold text-slate-900">Checkup funnel</CardTitle>
+                <p className="text-sm text-slate-500 mt-1">How many people start the checkup, how far they get, and how many finish.</p>
+              </div>
+              <div className="flex items-center gap-2">
+                {[7, 30, 90].map((d) => (
+                  <Button
+                    key={d}
+                    size="sm"
+                    variant={funnelDays === d ? "default" : "outline"}
+                    className={funnelDays === d ? "bg-slate-900 hover:bg-slate-800" : ""}
+                    onClick={() => setFunnelDays(d)}
+                    data-testid={`funnel-range-${d}`}
+                  >
+                    Last {d} days
+                  </Button>
+                ))}
+                <Button size="sm" variant="ghost" onClick={loadFunnel} disabled={funnelLoading} aria-label="Refresh funnel">
+                  <RefreshCw className={`w-4 h-4 ${funnelLoading ? "animate-spin" : ""}`} />
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {!funnel ? (
+              <p className="text-sm text-slate-500 py-6 text-center">
+                {funnelLoading ? "Loading funnel..." : "Funnel data is not available. Check the admin key above."}
+              </p>
+            ) : (
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div className="rounded-xl border border-slate-200 p-4">
+                    <p className="text-2xl font-bold text-slate-900" data-testid="funnel-started">{funnel.started}</p>
+                    <p className="text-sm text-slate-500">Started the checkup</p>
+                  </div>
+                  <div className="rounded-xl border border-slate-200 p-4">
+                    <p className="text-2xl font-bold text-slate-900">{funnel.completed}</p>
+                    <p className="text-sm text-slate-500">Finished all 24 questions</p>
+                    <p className="text-xs text-slate-400 mt-1">{pct(funnel.completed, funnel.started)}% of starts</p>
+                  </div>
+                  <div className="rounded-xl border border-slate-200 p-4">
+                    <p className="text-2xl font-bold text-slate-900">{funnel.emails}</p>
+                    <p className="text-sm text-slate-500">Gave their email</p>
+                    <p className="text-xs text-slate-400 mt-1">{pct(funnel.emails, funnel.started)}% of starts</p>
+                  </div>
+                  <div className="rounded-xl border border-slate-200 p-4">
+                    <p className="text-2xl font-bold text-slate-900">{Math.max(funnel.started - funnel.completed, 0)}</p>
+                    <p className="text-sm text-slate-500">Left before finishing</p>
+                    <p className="text-xs text-slate-400 mt-1">{pct(funnel.started - funnel.completed, funnel.started)}% of starts</p>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-1 mb-3">
+                    <h3 className="font-heading font-bold text-slate-900">Where people stop</h3>
+                    <p className="text-xs text-slate-400">
+                      Counts checkups started since {trackingStartLabel} ({trackedStarted} so far)
+                    </p>
+                  </div>
+
+                  {trackedStarted === 0 ? (
+                    <p className="text-sm text-slate-500 py-4">
+                      No checkups have been started since question tracking began. Numbers will appear here as people take the checkup.
+                    </p>
+                  ) : (
+                    <>
+                      {biggestDrop && biggestDrop.stopped_here > 0 && (
+                        <div className="mb-4 rounded-xl bg-orange-50 border border-orange-200 p-4 text-sm text-slate-700">
+                          <span className="font-semibold text-slate-900">Biggest drop-off: Question {biggestDrop.question_number} ({biggestDrop.area_name}).</span>{" "}
+                          {biggestDrop.stopped_here} {biggestDrop.stopped_here === 1 ? "person" : "people"} stopped here.
+                          <span className="block text-slate-500 mt-1">"{biggestDrop.text}"</span>
+                        </div>
+                      )}
+                      <div className="space-y-1.5">
+                        {funnelQuestions.map((q) => {
+                          const width = pct(q.reached, trackedStarted);
+                          const newArea = (q.question_number - 1) % 4 === 0;
+                          return (
+                            <div key={q.question_number}>
+                              {newArea && (
+                                <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase mt-3 mb-1">{q.area_name}</p>
+                              )}
+                              <div className="flex items-center gap-3 text-sm" title={q.text}>
+                                <span className="w-10 flex-shrink-0 text-slate-500">Q{q.question_number}</span>
+                                <div className="flex-1 h-5 bg-slate-100 rounded overflow-hidden">
+                                  <div className="h-full bg-blue-600 rounded" style={{ width: `${width}%` }} />
+                                </div>
+                                <span className="w-24 flex-shrink-0 text-right text-slate-700">{q.reached} <span className="text-slate-400">({width}%)</span></span>
+                                <span className={`w-28 flex-shrink-0 text-right ${q.stopped_here > 0 ? "text-red-600 font-medium" : "text-slate-300"}`}>
+                                  {q.stopped_here > 0 ? `${q.stopped_here} stopped here` : "none stopped"}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div className="flex items-center gap-3 text-sm mt-4 pt-3 border-t border-slate-100">
+                        <span className="flex-1 text-slate-600">Finished all 24 questions</span>
+                        <span className="text-slate-900 font-semibold">{funnel.tracked_completed} ({pct(funnel.tracked_completed, trackedStarted)}%)</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-sm mt-1">
+                        <span className="flex-1 text-slate-600">Gave their email and saw results</span>
+                        <span className="text-slate-900 font-semibold">{funnel.tracked_emails} ({pct(funnel.tracked_emails, trackedStarted)}%)</span>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Leads Table */}
         <Card className="border-slate-200">

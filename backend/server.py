@@ -10,7 +10,7 @@ from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict, EmailStr
 from typing import List, Optional, Dict, Any
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import io
 import csv
 import httpx
@@ -1346,6 +1346,28 @@ async def create_assessment(data: AssessmentCreate):
     await db.assessments.insert_one(doc)
     return {"id": assessment.id, "modules": assessment.modules, "selected_areas": assessment.selected_areas}
 
+class ProgressUpdate(BaseModel):
+    question_number: int = Field(ge=1, le=24)
+    area: str = ""
+
+# Question-by-question progress tracking went live at this time. Checkups started
+# earlier have no progress data, so the per-question funnel only counts newer ones.
+PROGRESS_TRACKING_START = "2026-09-28T23:00:00+00:00"
+
+@api_router.post("/assessments/{assessment_id}/progress")
+async def record_progress(assessment_id: str, data: ProgressUpdate):
+    """Record the furthest question a visitor has reached (no personal data)."""
+    db = require_db()
+    area = data.area if data.area in AREA_NAMES else ""
+    await db.assessments.update_one(
+        {"id": assessment_id, "completed": {"$ne": True}},
+        {
+            "$max": {"max_question_reached": data.question_number},
+            "$set": {"last_activity": datetime.now(timezone.utc).isoformat(), "last_area": area},
+        },
+    )
+    return {"ok": True}
+
 @api_router.post("/assessments/submit")
 async def submit_assessment(data: AssessmentSubmit):
     """Submit answers and get results"""
@@ -1541,6 +1563,68 @@ async def get_leads(request: Request):
     db = require_db()
     leads = await db.leads.find({}, {"_id": 0}).sort("timestamp", -1).to_list(1000)
     return {"leads": leads}
+
+@api_router.get("/admin/funnel")
+async def get_funnel(request: Request, days: int = 30):
+    """Checkup funnel: starts, how far people got, completions and emails."""
+    require_admin(request)
+    db = require_db()
+    days = max(1, min(days, 365))
+    since = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+    docs = await db.assessments.find(
+        {"timestamp": {"$gte": since}},
+        {"_id": 0, "id": 1, "completed": 1, "max_question_reached": 1, "timestamp": 1},
+    ).to_list(50000)
+
+    ids = [d["id"] for d in docs]
+    lead_ids = set()
+    if ids:
+        async for lead in db.leads.find({"assessment_id": {"$in": ids}}, {"_id": 0, "assessment_id": 1}):
+            lead_ids.add(lead.get("assessment_id"))
+
+    started = len(docs)
+    completed = sum(1 for d in docs if d.get("completed"))
+    emails = sum(1 for d in docs if d["id"] in lead_ids)
+
+    # Per-question funnel, only for checkups started after progress tracking began
+    tracked = [d for d in docs if (d.get("timestamp") or "") >= PROGRESS_TRACKING_START]
+    total_q = 24
+    area_order = list(AREA_NAMES.keys())
+    question_list = QUESTIONS.get("clbh", [])
+    reached = []
+    stopped = []
+    for n in range(1, total_q + 1):
+        count = 0
+        stop = 0
+        for d in tracked:
+            furthest = total_q if d.get("completed") else int(d.get("max_question_reached") or 1)
+            if furthest >= n:
+                count += 1
+            if not d.get("completed") and furthest == n:
+                stop += 1
+        area_id = area_order[(n - 1) // 4] if (n - 1) // 4 < len(area_order) else ""
+        q = question_list[n - 1] if n - 1 < len(question_list) else {}
+        reached.append({
+            "question_number": n,
+            "area": area_id,
+            "area_name": AREA_NAMES.get(area_id, ""),
+            "text": q.get("text", ""),
+            "reached": count,
+            "stopped_here": stop,
+        })
+
+    tracked_completed = sum(1 for d in tracked if d.get("completed"))
+    return {
+        "days": days,
+        "started": started,
+        "completed": completed,
+        "emails": emails,
+        "tracking_start": PROGRESS_TRACKING_START,
+        "tracked_started": len(tracked),
+        "tracked_completed": tracked_completed,
+        "tracked_emails": sum(1 for d in tracked if d["id"] in lead_ids),
+        "questions": reached,
+    }
 
 @api_router.get("/admin/leads/export")
 async def export_leads(request: Request):

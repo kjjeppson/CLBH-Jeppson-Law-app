@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { track } from "../lib/analytics";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -76,6 +76,21 @@ export default function AssessmentWizard() {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [currentQuestionIndex]);
+
+  // Record how far each visitor gets, once per question, so the admin funnel
+  // and Google Analytics can show exactly where people stop.
+  const reportedQuestions = useRef(new Set());
+  useEffect(() => {
+    if (!assessmentId || questions.length === 0) return;
+    const number = currentQuestionIndex + 1;
+    if (reportedQuestions.current.has(number)) return;
+    reportedQuestions.current.add(number);
+    const area = questions[currentQuestionIndex]?.area || "";
+    track("question_view", { question_number: number, area });
+    axios
+      .post(`${API}/assessments/${assessmentId}/progress`, { question_number: number, area })
+      .catch(() => {});
+  }, [currentQuestionIndex, questions, assessmentId]);
 
   // Jump instantly to the top when the email capture screen appears,
   // after it has rendered (reliable on mobile, unlike a pre-render scroll).
