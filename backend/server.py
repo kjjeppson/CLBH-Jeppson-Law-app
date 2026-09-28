@@ -1029,7 +1029,7 @@ RISK_DESCRIPTIONS = {
         "q4": {"title": "Relying on Handshake Deals", "description": "Verbal agreements and unreviewed templates offer zero legal protection in disputes."}
     },
     "ownership": {
-        "q5": {"title": "No Ownership Agreement", "description": "Without a written agreement, state default rules govern your business—often unfavorably."},
+        "q5": {"title": "No Ownership Agreement", "description": "Without a written agreement, state default rules govern your business, often unfavorably."},
         "q6": {"title": "No Buy-Sell Provisions", "description": "Missing buyout provisions for death, disability, or departure can force dissolution."},
         "q7": {"title": "No Deadlock Resolution", "description": "Without clear decision-making rules, partner disagreements can paralyze the business."},
         "q8": {"title": "Mismatched Entity Structure", "description": "Your entity structure may be costing you money or creating liability exposure."}
@@ -1042,7 +1042,7 @@ RISK_DESCRIPTIONS = {
     },
     "employment": {
         "q13": {"title": "Outdated Employee Handbook", "description": "An outdated or missing handbook can work against you in employment lawsuits."},
-        "q14": {"title": "Wage & Hour Compliance Risk", "description": "Wage misclassification is the most common employment lawsuit—with double damages."},
+        "q14": {"title": "Wage & Hour Compliance Risk", "description": "Wage misclassification is the most common employment lawsuit, with double damages."},
         "q15": {"title": "No Termination Documentation", "description": "Missing documentation makes wrongful termination claims easier to pursue."},
         "q16": {"title": "No Employee Protections", "description": "Missing confidentiality agreements leave you vulnerable when key employees leave."}
     },
