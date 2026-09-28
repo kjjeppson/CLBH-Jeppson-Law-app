@@ -118,7 +118,7 @@ export default function ResultsPage() {
           icon: <Shield className="w-12 h-12 text-white" />,
           bgColor: "bg-slate-500",
           label: "Complete",
-          description: "Your assessment is complete."
+          description: "Your checkup is complete."
         };
     }
   };
@@ -314,7 +314,7 @@ export default function ResultsPage() {
             <CardHeader className="pb-2">
               <CardTitle className="font-heading text-xl font-semibold text-slate-900 flex items-center gap-2">
                 <ShoppingCart className="w-6 h-6 text-orange-500" />
-                Your Next Step: Fix What This Quiz Found
+                Your Next Step: Fix What Your Checkup Found
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-2">
@@ -518,7 +518,7 @@ export default function ResultsPage() {
             <ul className="space-y-3 mb-6">
               <li className="flex items-start gap-3">
                 <CheckCircle2 className="w-5 h-5 text-orange-500 mt-0.5 flex-shrink-0" />
-                <span className="text-slate-700">Review your specific situation and assessment results in detail</span>
+                <span className="text-slate-700">Review your specific situation and checkup results in detail</span>
               </li>
               <li className="flex items-start gap-3">
                 <CheckCircle2 className="w-5 h-5 text-orange-500 mt-0.5 flex-shrink-0" />
@@ -544,7 +544,7 @@ export default function ResultsPage() {
         <Card className="border-slate-200 mb-8 bg-slate-50">
           <CardContent className="p-6">
             <p className="text-slate-600 text-base leading-relaxed text-center">
-              <strong>DISCLAIMER:</strong> This assessment is for educational purposes only and does not constitute legal advice.
+              <strong>DISCLAIMER:</strong> This checkup is for educational purposes only and does not constitute legal advice.
               The results are intended to help you identify potential areas of concern in your business.
               For specific legal guidance tailored to your situation, please consult with a licensed attorney.
               You may take this checklist to your own attorney, or schedule a consultation with Jeppson Law.
@@ -568,7 +568,7 @@ export default function ResultsPage() {
             className="bg-slate-900 hover:bg-slate-800 flex items-center justify-center"
             data-testid="new-assessment-btn"
           >
-            Take Another Assessment
+            Take Another Checkup
             <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
         </div>
