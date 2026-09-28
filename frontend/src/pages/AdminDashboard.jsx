@@ -30,6 +30,9 @@ export default function AdminDashboard() {
         headers: adminHeaders
       });
       setLeads(response.data.leads || []);
+      if (adminKey) {
+        try { window.localStorage.setItem("clbh_internal", "1"); } catch (e) { /* ignore */ }
+      }
     } catch (error) {
       console.error("Error loading leads:", error);
       if (error?.response?.status === 401) {
@@ -40,11 +43,26 @@ export default function AdminDashboard() {
     } finally {
       setIsLoading(false);
     }
-  }, [adminHeaders]);
+  }, [adminHeaders, adminKey]);
 
   useEffect(() => {
     loadLeads();
   }, [loadLeads]);
+
+  // Team test entries: hidden by default, never deleted
+  const [hideTests, setHideTests] = useState(true);
+  const toggleTest = async (lead) => {
+    if (!lead.id) return;
+    const next = !lead.is_test;
+    try {
+      await axios.post(`${API}/admin/leads/${lead.id}/test`, { is_test: next }, { headers: adminHeaders });
+      setLeads((prev) => prev.map((l) => (l.id === lead.id ? { ...l, is_test: next } : l)));
+      toast.success(next ? "Marked as a test entry" : "Marked as a real lead");
+      loadFunnel();
+    } catch (error) {
+      toast.error("Could not update that lead");
+    }
+  };
 
   // Checkup funnel: starts, how far people get, completions and emails
   const [funnel, setFunnel] = useState(null);
@@ -139,10 +157,12 @@ export default function AdminDashboard() {
   };
 
   // Calculate stats
-  const totalLeads = leads.length;
-  const redLeads = leads.filter(l => l.risk_level === "red").length;
-  const yellowLeads = leads.filter(l => l.risk_level === "yellow").length;
-  const greenLeads = leads.filter(l => l.risk_level === "green").length;
+  const testCount = leads.filter(l => l.is_test).length;
+  const visibleLeads = hideTests ? leads.filter(l => !l.is_test) : leads;
+  const totalLeads = visibleLeads.length;
+  const redLeads = visibleLeads.filter(l => l.risk_level === "red").length;
+  const yellowLeads = visibleLeads.filter(l => l.risk_level === "yellow").length;
+  const greenLeads = visibleLeads.filter(l => l.risk_level === "green").length;
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -327,7 +347,10 @@ export default function AdminDashboard() {
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
               <div>
                 <CardTitle className="font-heading text-xl font-bold text-slate-900">Checkup funnel</CardTitle>
-                <p className="text-sm text-slate-500 mt-1">How many people start the checkup, how far they get, and how many finish.</p>
+                <p className="text-sm text-slate-500 mt-1">
+                  How many people start the checkup, how far they get, and how many finish.
+                  {funnel?.excluded_tests > 0 && ` ${funnel.excluded_tests} team test ${funnel.excluded_tests === 1 ? "run is" : "runs are"} left out.`}
+                </p>
               </div>
               <div className="flex items-center gap-2">
                 {[7, 30, 90].map((d) => (
@@ -440,9 +463,25 @@ export default function AdminDashboard() {
         {/* Leads Table */}
         <Card className="border-slate-200">
           <CardHeader>
-            <CardTitle className="font-heading text-lg font-semibold text-slate-900">
-              All Leads
-            </CardTitle>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <CardTitle className="font-heading text-lg font-semibold text-slate-900">
+                All Leads
+              </CardTitle>
+              <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={hideTests}
+                  onChange={(e) => setHideTests(e.target.checked)}
+                  className="w-4 h-4"
+                  data-testid="hide-tests-toggle"
+                />
+                Hide test entries ({testCount})
+              </label>
+            </div>
+            <p className="text-xs text-slate-400 mt-1">
+              Mark your own practice runs as tests. They are hidden and left out of the funnel, never deleted.
+              Checkups you take in this browser are marked as tests automatically.
+            </p>
           </CardHeader>
           <CardContent className="p-0">
             {isLoading ? (
@@ -468,12 +507,16 @@ export default function AdminDashboard() {
                       <TableHead>Modules</TableHead>
                       <TableHead>Situation</TableHead>
                       <TableHead>Date</TableHead>
+                      <TableHead></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {leads.map((lead, index) => (
+                    {visibleLeads.map((lead, index) => (
                       <TableRow key={lead.id || index} data-testid={`lead-row-${index}`}>
-                        <TableCell className="font-medium">{lead.name}</TableCell>
+                        <TableCell className="font-medium">
+                          {lead.name || [lead.first_name, lead.last_name].filter(Boolean).join(" ")}
+                          {lead.is_test && <Badge variant="outline" className="ml-2 text-xs">Test</Badge>}
+                        </TableCell>
                         <TableCell>
                           <div>
                             <p className="font-medium">{lead.business_name}</p>
@@ -498,6 +541,19 @@ export default function AdminDashboard() {
                         </TableCell>
                         <TableCell className="max-w-[200px] truncate">{lead.situation}</TableCell>
                         <TableCell className="text-slate-500 text-sm">{formatDate(lead.timestamp)}</TableCell>
+                        <TableCell>
+                          {lead.id && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-xs text-slate-500"
+                              onClick={() => toggleTest(lead)}
+                              data-testid={`toggle-test-${index}`}
+                            >
+                              {lead.is_test ? "Not a test" : "Mark as test"}
+                            </Button>
+                          )}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

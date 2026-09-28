@@ -10,6 +10,16 @@ const BOOKING_URL = "https://jeppsonlaw.cliogrow.com/book/5d7625ad3292b0e84db819
 
 // Every visitor takes all six areas. The old "tap to remove an area" picker
 // was removed from the landing page in the Sep 2026 redesign.
+// Browsers that have opened the admin page are marked as team test browsers,
+// so checkups taken there stay out of the funnel counts.
+const isInternalBrowser = () => {
+  try {
+    return window.localStorage.getItem("clbh_internal") === "1";
+  } catch (e) {
+    return false;
+  }
+};
+
 const ALL_AREAS = ["contracts", "ownership", "subcontractor", "employment", "insurance", "systems"];
 
 // Decide BEFORE first paint whether this visit should skip the landing page
@@ -80,7 +90,8 @@ export default function LandingPage() {
     try {
       const response = await axios.post(`${API}/assessments`, {
         modules: ["clbh"],
-        selected_areas: ALL_AREAS
+        selected_areas: ALL_AREAS,
+        internal: isInternalBrowser()
       });
       track("quiz_start", { areas_selected: ALL_AREAS.length });
       navigate(`/assessment/${response.data.id}`);

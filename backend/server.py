@@ -600,7 +600,8 @@ def require_admin(request: Request) -> None:
     """
     admin_key = os.getenv("ADMIN_KEY")
     if not admin_key:
-        return
+        # Fail closed: without an ADMIN_KEY the admin area stays locked.
+        raise HTTPException(status_code=503, detail="Admin access is not configured")
 
     provided = request.headers.get("X-Admin-Key") or request.query_params.get("admin_key")
     if not provided or not secrets.compare_digest(provided, admin_key):
@@ -641,6 +642,7 @@ class AssessmentAnswer(BaseModel):
 class AssessmentCreate(BaseModel):
     modules: List[str]  # Will just be ["clbh"] for the unified quiz
     selected_areas: Optional[List[str]] = None  # If None, defaults to all 6 areas
+    internal: bool = False  # True when taken in a browser used for the admin page (team testing)
 
 class AssessmentSubmit(BaseModel):
     assessment_id: str
@@ -1343,6 +1345,7 @@ async def create_assessment(data: AssessmentCreate):
     assessment = AssessmentResult(modules=data.modules, selected_areas=selected_areas)
     doc = assessment.model_dump()
     doc['timestamp'] = doc['timestamp'].isoformat()
+    doc['internal'] = bool(data.internal)
     await db.assessments.insert_one(doc)
     return {"id": assessment.id, "modules": assessment.modules, "selected_areas": assessment.selected_areas}
 
@@ -1556,13 +1559,41 @@ async def create_lead(data: LeadCreate):
         "kit_result": kit_result
     }
 
+async def _internal_assessment_ids(db, ids):
+    """Assessment ids marked as internal (team testing)."""
+    if not ids:
+        return set()
+    found = set()
+    async for d in db.assessments.find({"id": {"$in": ids}, "internal": True}, {"_id": 0, "id": 1}):
+        found.add(d["id"])
+    return found
+
 @api_router.get("/admin/leads")
 async def get_leads(request: Request):
     """Get all leads for admin dashboard"""
     require_admin(request)
     db = require_db()
     leads = await db.leads.find({}, {"_id": 0}).sort("timestamp", -1).to_list(1000)
+    internal_ids = await _internal_assessment_ids(db, [l.get("assessment_id") for l in leads if l.get("assessment_id")])
+    for lead in leads:
+        lead["is_test"] = bool(lead.get("is_test")) or (lead.get("assessment_id") in internal_ids)
     return {"leads": leads}
+
+class TestFlag(BaseModel):
+    is_test: bool
+
+@api_router.post("/admin/leads/{lead_id}/test")
+async def set_lead_test(lead_id: str, data: TestFlag, request: Request):
+    """Mark or unmark a lead as a team test entry (hidden from counts, never deleted)."""
+    require_admin(request)
+    db = require_db()
+    lead = await db.leads.find_one({"id": lead_id}, {"_id": 0, "assessment_id": 1})
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    await db.leads.update_one({"id": lead_id}, {"$set": {"is_test": data.is_test}})
+    if lead.get("assessment_id"):
+        await db.assessments.update_one({"id": lead["assessment_id"]}, {"$set": {"internal": data.is_test}})
+    return {"ok": True, "is_test": data.is_test}
 
 @api_router.get("/admin/funnel")
 async def get_funnel(request: Request, days: int = 30):
@@ -1573,14 +1604,20 @@ async def get_funnel(request: Request, days: int = 30):
     since = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
     docs = await db.assessments.find(
         {"timestamp": {"$gte": since}},
-        {"_id": 0, "id": 1, "completed": 1, "max_question_reached": 1, "timestamp": 1},
+        {"_id": 0, "id": 1, "completed": 1, "max_question_reached": 1, "timestamp": 1, "internal": 1},
     ).to_list(50000)
 
     ids = [d["id"] for d in docs]
     lead_ids = set()
+    test_ids = set()
     if ids:
-        async for lead in db.leads.find({"assessment_id": {"$in": ids}}, {"_id": 0, "assessment_id": 1}):
+        async for lead in db.leads.find({"assessment_id": {"$in": ids}}, {"_id": 0, "assessment_id": 1, "is_test": 1}):
             lead_ids.add(lead.get("assessment_id"))
+            if lead.get("is_test"):
+                test_ids.add(lead.get("assessment_id"))
+    # Leave team test checkups out of every count
+    excluded = sum(1 for d in docs if d.get("internal") or d["id"] in test_ids)
+    docs = [d for d in docs if not d.get("internal") and d["id"] not in test_ids]
 
     started = len(docs)
     completed = sum(1 for d in docs if d.get("completed"))
@@ -1616,6 +1653,7 @@ async def get_funnel(request: Request, days: int = 30):
     tracked_completed = sum(1 for d in tracked if d.get("completed"))
     return {
         "days": days,
+        "excluded_tests": excluded,
         "started": started,
         "completed": completed,
         "emails": emails,
