@@ -61,11 +61,12 @@ const AREA_ICONS = {
 };
 
 
-// Status styling for each area card (colors follow the area's own score)
+// Status colors for each area's label, icon and bar. Cards share one neutral
+// light blue background so the card color never suggests a grade by itself.
 const STATUS = {
-  green: { bg: "bg-emerald-50", border: "border-emerald-200", solid: "bg-emerald-500", text: "text-emerald-700", label: "Healthy" },
-  yellow: { bg: "bg-amber-50", border: "border-amber-200", solid: "bg-amber-500", text: "text-amber-700", label: "Worth a look" },
-  red: { bg: "bg-red-50", border: "border-red-200", solid: "bg-red-500", text: "text-red-700", label: "Fix now" }
+  green: { solid: "bg-emerald-500", text: "text-emerald-700", label: "Healthy" },
+  yellow: { solid: "bg-amber-500", text: "text-amber-700", label: "Worth a look" },
+  red: { solid: "bg-red-500", text: "text-red-700", label: "Fix now" }
 };
 
 // What a Healthy answer means, phrased as good news (the risk titles name the problem)
@@ -373,7 +374,7 @@ export default function ResultsPage() {
             return (
               <div
                 key={area.area_id}
-                className={`rounded-2xl border-2 p-4 sm:p-6 space-y-3 sm:space-y-4 ${st.bg} ${st.border}`}
+                className={`rounded-2xl border-2 p-4 sm:p-6 space-y-3 sm:space-y-4 bg-[#F4F8FD] border-[#D6E3F3]`}
                 data-testid={`area-card-${area.area_id}`}
               >
                 <div className="flex items-center gap-3 sm:gap-4">
@@ -390,7 +391,7 @@ export default function ResultsPage() {
                   </div>
                 </div>
 
-                <div className="w-full bg-white rounded-full h-2 overflow-hidden">
+                <div className="w-full bg-[#E3ECF7] rounded-full h-2 overflow-hidden">
                   <div
                     className={`h-full ${st.solid} transition-all duration-500`}
                     style={{ width: `${(area.score / area.max_score) * 100}%` }}
@@ -435,7 +436,7 @@ export default function ResultsPage() {
                 </div>
 
                 {isOpen && (
-                  <div className={`bg-white rounded-xl border ${st.border} p-4 sm:p-6 space-y-5`}>
+                  <div className={"bg-white rounded-xl border border-[#D6E3F3] p-4 sm:p-6 space-y-5"}>
                     {fix.length > 0 && (
                       <div className="space-y-2.5">
                         <p className="flex items-center gap-2 text-xs font-bold tracking-[0.12em] text-red-700">
@@ -489,7 +490,7 @@ export default function ResultsPage() {
                     type="button"
                     onClick={() => toggleArea(area.area_id)}
                     aria-expanded={isOpen}
-                    className={`flex items-center justify-center gap-1.5 py-3 text-sm font-semibold text-slate-900 rounded-lg border ${st.border}`}
+                    className={`flex items-center justify-center gap-1.5 py-3 text-sm font-semibold text-slate-900 rounded-lg border border-[#D6E3F3] bg-white`}
                   >
                     {isOpen ? "Hide details" : "See what we found"}
                     <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? "rotate-180" : ""}`} />
