@@ -103,15 +103,15 @@ export default function ResultsPage() {
         return {
           icon: <AlertTriangle className="w-12 h-12 text-white" />,
           bgColor: "bg-amber-500",
-          label: "At Risk",
+          label: "Worth a look",
           description: "Meaningful gaps need attention. You have exposure in several areas that should be addressed."
         };
       case "red":
         return {
           icon: <XCircle className="w-12 h-12 text-white" />,
           bgColor: "bg-red-500",
-          label: "Urgent",
-          description: "Urgent action needed across multiple areas. Schedule a review call to address critical risks."
+          label: "Fix now",
+          description: "Several areas need attention now. These gaps are fixable, and the list below shows where to start. A review call can help you prioritize."
         };
       default:
         return {
@@ -265,7 +265,7 @@ export default function ResultsPage() {
                           area.risk_level === 'yellow' ? 'text-amber-600' : 'text-red-600'
                         }`}>
                           {area.risk_level === 'green' ? 'Healthy' :
-                           area.risk_level === 'yellow' ? 'At Risk' : 'Urgent'}
+                           area.risk_level === 'yellow' ? 'Worth a look' : 'Fix now'}
                         </span>
                       </div>
                     </div>
@@ -298,11 +298,11 @@ export default function ResultsPage() {
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-amber-500"></div>
-                <span className="text-slate-600">7-9: At Risk</span>
+                <span className="text-slate-600">7-9: Worth a look</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                <span className="text-slate-600">4-6: Urgent</span>
+                <span className="text-slate-600">4-6: Fix now</span>
               </div>
             </div>
           </CardContent>
@@ -360,7 +360,7 @@ export default function ResultsPage() {
                           {area.area_name}
                         </h4>
                         <span className={`text-xs font-medium ${area.risk_level === "red" ? "text-red-600" : "text-amber-600"}`}>
-                          {area.risk_level === "red" ? "Urgent: address this first" : "At Risk: close these gaps soon"}
+                          {area.risk_level === "red" ? "Fix now: start here" : "Worth a look: close these gaps soon"}
                         </span>
                       </div>
                       <Button
@@ -416,18 +416,18 @@ export default function ResultsPage() {
           )
         )}
 
-        {/* Immediate Attention Required (RED) */}
+        {/* Fix now (RED) */}
         {results?.red_flag_details?.length > 0 && (
           <Card className="border-red-300 bg-red-50 mb-8 shadow-md">
             <CardHeader className="pb-2">
               <CardTitle className="font-heading text-xl font-semibold text-red-900 flex items-center gap-2">
                 <XCircle className="w-6 h-6 text-red-500" />
-                Immediate Attention Required
+                Fix now
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-2">
               <p className="text-red-800 text-sm mb-4">
-                The following items require immediate attention. A single unprotected area can create catastrophic risk regardless of your overall score.
+                Start here. These are the gaps most worth closing first, and each one is fixable with the right paperwork.
               </p>
               <div className="space-y-3">
                 {results.red_flag_details.map((flag, index) => (
@@ -453,7 +453,7 @@ export default function ResultsPage() {
             <CardHeader className="pb-2">
               <CardTitle className="font-heading text-xl font-semibold text-amber-900 flex items-center gap-2">
                 <AlertTriangle className="w-6 h-6 text-amber-500" />
-                At Risk
+                Worth a look
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-2">

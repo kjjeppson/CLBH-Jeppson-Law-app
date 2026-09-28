@@ -103,11 +103,11 @@ def send_results_email(
     if risk_level == "red":
         risk_bg = "#FEF2F2"
         risk_color = "#DC2626"
-        risk_label = "IMMEDIATE ATTENTION REQUIRED"
+        risk_label = "FIX NOW"
     elif risk_level == "yellow":
         risk_bg = "#FFFBEB"
         risk_color = "#D97706"
-        risk_label = "AT RISK"
+        risk_label = "WORTH A LOOK"
     else:  # green
         risk_bg = "#F0FDF4"
         risk_color = "#16A34A"
@@ -147,8 +147,8 @@ def send_results_email(
 </tr>
 </table>'''
 
-    red_section = build_risk_section("Immediate Attention", red_risks, "#DC2626", "#FEF2F2")
-    yellow_section = build_risk_section("At Risk", yellow_risks, "#D97706", "#FFFBEB")
+    red_section = build_risk_section("Fix now", red_risks, "#DC2626", "#FEF2F2")
+    yellow_section = build_risk_section("Worth a look", yellow_risks, "#D97706", "#FFFBEB")
     green_section = build_risk_section("Healthy", green_risks, "#16A34A", "#F0FDF4")
 
     risk_sections = red_section + yellow_section + green_section
@@ -198,7 +198,7 @@ def send_results_email(
         is_red = aid in red_area_ids
         border_color = "#FECACA" if is_red else "#FDE68A"
         tag_color = "#DC2626" if is_red else "#D97706"
-        tag_text = "Urgent: address this first" if is_red else "At Risk: close these gaps soon"
+        tag_text = "Fix now: start here" if is_red else "Worth a look: close these gaps soon"
         product_link = email_shop_url(product["url"], f"pillar-{product['pillar']}")
         fix_it_rows += f'''<table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border:2px solid {border_color};border-radius:8px;margin-bottom:10px;">
 <tr>
