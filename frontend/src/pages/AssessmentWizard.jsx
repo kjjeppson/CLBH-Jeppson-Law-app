@@ -344,12 +344,12 @@ export default function AssessmentWizard() {
     <div className="min-h-screen bg-slate-50">
       {/* Navigation */}
       <nav className="bg-white border-b border-slate-200 sticky top-0 z-50 nav-grid">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center relative z-10">
+        <div className="max-w-7xl mx-auto px-6 py-2 flex justify-between items-center relative z-10">
           <div className="flex items-center gap-2">
             <img
               src="/clbh-logo.png"
               alt="Clean Legal Bill of Health — A Jeppson Law Product"
-              className="h-14 w-auto"
+              className="h-10 md:h-12 w-auto"
             />
           </div>
           <span className="text-slate-500 text-sm hidden md:block">
@@ -358,23 +358,23 @@ export default function AssessmentWizard() {
         </div>
       </nav>
 
-      <main className="max-w-2xl mx-auto px-6 py-12">
+      <main className="max-w-2xl mx-auto px-4 sm:px-6 py-3 md:py-5 min-h-[calc(100dvh-65px)] flex flex-col">
         {/* Progress */}
-        <div className="mb-8">
+        <div className="mb-4">
           <div className="flex justify-between text-sm text-slate-600 mb-2">
             <span>Question {currentQuestionIndex + 1} of {questions.length}</span>
             <span>{Math.round(progress)}% complete</span>
           </div>
           <Progress value={progress} className="h-2" data-testid="progress-bar" />
           {currentQuestionIndex === 0 && (
-            <p className="text-slate-400 text-xs text-center mt-3">
+            <p className="text-slate-400 text-xs text-center mt-2">
               {questions.length} quick questions • 5 to 10 minutes • confidential • instant results
             </p>
           )}
         </div>
 
         {/* Area Badge */}
-        <div className="mb-6 flex items-center gap-3">
+        <div className="mb-2.5 flex items-center gap-3">
           <span className="inline-flex items-center justify-center w-7 h-7 bg-blue-600 text-white text-sm font-bold rounded-full">
             {currentAreaNumber}
           </span>
@@ -394,9 +394,9 @@ export default function AssessmentWizard() {
         </div>
 
         {/* Question Card */}
-        <Card className="border-slate-200 mb-8">
-          <CardContent className="p-8">
-            <h2 className="font-heading text-xl md:text-2xl font-semibold text-slate-900 mb-8" data-testid="question-text">
+        <Card className="border-slate-200 mb-3">
+          <CardContent className="p-4 md:p-6">
+            <h2 className="font-heading text-lg md:text-xl font-semibold text-slate-900 mb-4 md:mb-5" data-testid="question-text">
               {currentQuestion?.text}
             </h2>
 
@@ -406,7 +406,7 @@ export default function AssessmentWizard() {
                 const option = currentQuestion.options.find(o => o.value === value);
                 if (option) handleAnswerSelect(currentQuestion.id, option);
               }}
-              className="space-y-3"
+              className="space-y-2"
             >
               {currentQuestion?.options.map((option, index) => {
                 const isSelected = answers[currentQuestion.id]?.answer_value === option.value;
@@ -430,7 +430,7 @@ export default function AssessmentWizard() {
                   <div key={option.value}>
                     <Label
                       htmlFor={option.value}
-                      className={`flex items-start gap-4 p-4 rounded-lg border cursor-pointer transition-all ${borderColor} ${bgColor}`}
+                      className={`flex items-start gap-3 px-4 py-3 rounded-lg border cursor-pointer transition-all ${borderColor} ${bgColor}`}
                       data-testid={`option-${index}`}
                     >
                       <RadioGroupItem
@@ -484,7 +484,7 @@ export default function AssessmentWizard() {
         </div>
 
         {/* Area Progress Dots */}
-        <div className="flex justify-center mt-8 gap-2 flex-wrap">
+        <div className="flex justify-center mt-3 gap-2.5 sm:gap-2 flex-wrap">
           {selectedAreas.map((areaKey, areaIndex) => {
             // Get questions for this area from the filtered questions list
             const areaQuestions = questions.filter(q => q.area === areaKey);
@@ -520,7 +520,7 @@ export default function AssessmentWizard() {
                     />
                   );
                 })}
-                {areaIndex < selectedAreas.length - 1 && <div className="w-2" />}
+                {areaIndex < selectedAreas.length - 1 && <div className="hidden sm:block w-2" />}
               </div>
             );
           })}
