@@ -2,12 +2,15 @@ import { useState, useEffect, useRef } from "react";
 import { track } from "../lib/analytics";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Shield, FileCheck, AlertTriangle, CheckCircle2, Clock, ArrowRight, Calendar, Loader2, Phone, Users, Briefcase, UserCheck, ShieldCheck, Database, Check } from "lucide-react";
+import { FileCheck, Loader2, Phone, Users, Truck, HardHat, ShieldCheck, FolderOpen } from "lucide-react";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const BOOKING_URL = "https://jeppsonlaw.cliogrow.com/book/5d7625ad3292b0e84db81965f80ee5f4";
+
+// Every visitor takes all six areas. The old "tap to remove an area" picker
+// was removed from the landing page in the Sep 2026 redesign.
+const ALL_AREAS = ["contracts", "ownership", "subcontractor", "employment", "insurance", "systems"];
 
 // Decide BEFORE first paint whether this visit should skip the landing page
 // and start the checkup immediately: links carrying ?start=1, or visitors
@@ -32,73 +35,54 @@ const shouldAutoStart = () => {
   return false;
 };
 
+const TM = () => <span className="align-super text-[0.4em] font-normal">™</span>;
+
+const sampleReport = [
+  { area: "Customer contracts", label: "Healthy", dot: "bg-emerald-600" },
+  { area: "Ownership and governance", label: "Worth a look", dot: "bg-amber-500" },
+  { area: "Vendors and subcontractors", label: "Fix now", dot: "bg-red-600" },
+  { area: "Employment and safety", label: "Worth a look", dot: "bg-amber-500" },
+  { area: "Insurance", label: "Healthy", dot: "bg-emerald-600" },
+  { area: "Records and digital", label: "Worth a look", dot: "bg-amber-500" },
+];
+
+const readers = [
+  { who: "A buyer", what: "Their attorney reads every contract before the sale closes." },
+  { who: "A lender", what: "Your bank reviews ownership and records before it renews a line of credit." },
+  { who: "An unhappy customer", what: "A payment dispute turns on what your contract actually says." },
+  { who: "A partner who wants out", what: "Your operating agreement decides what happens next." },
+];
+
+const areas = [
+  { icon: FileCheck, name: "Customer contracts" },
+  { icon: Users, name: "Ownership and governance" },
+  { icon: Truck, name: "Vendors and subcontractors" },
+  { icon: HardHat, name: "Employment and safety" },
+  { icon: ShieldCheck, name: "Insurance" },
+  { icon: FolderOpen, name: "Records and digital" },
+];
+
+const steps = [
+  { title: "Answer 24 questions", text: "Plain English, multiple choice. About 5 to 10 minutes." },
+  { title: "Get your Legal Health Report", text: "A healthy, worth a look, or fix now score for each of the six areas." },
+  { title: "Fix what matters most", text: "Start with your lowest score. Most gaps are ordinary paperwork, and paperwork is fixable." },
+];
+
 export default function LandingPage() {
   const navigate = useNavigate();
-
-  const benefits = [
-    {
-      icon: <Clock className="w-6 h-6" />,
-      title: "About 5 Minutes",
-      description: "24 quick questions across 6 critical areas of business legal health"
-    },
-    {
-      icon: <Shield className="w-6 h-6" />,
-      title: "Clear Risk Scores",
-      description: "Easy-to-understand Green/Yellow/Red ratings for each area and overall"
-    },
-    {
-      icon: <FileCheck className="w-6 h-6" />,
-      title: "Action Plan",
-      description: "Prioritized steps to protect your business with RED flags highlighted"
-    }
-  ];
-
-  const quizAreas = [
-    { id: "contracts", icon: <FileCheck className="w-5 h-5" />, name: "Customer Contracts & Project Risks" },
-    { id: "ownership", icon: <Users className="w-5 h-5" />, name: "Ownership & Governance" },
-    { id: "subcontractor", icon: <Briefcase className="w-5 h-5" />, name: "Vendors" },
-    { id: "employment", icon: <UserCheck className="w-5 h-5" />, name: "Employment & Safety Compliance" },
-    { id: "insurance", icon: <ShieldCheck className="w-5 h-5" />, name: "Insurance and Risk Management" },
-    { id: "systems", icon: <Database className="w-5 h-5" />, name: "Systems, Records & Digital Risk" }
-  ];
-
-  // All areas selected by default so the quiz can start immediately.
-  // Visitors can deselect areas to take a shorter quiz.
-  const [selectedAreas, setSelectedAreas] = useState(quizAreas.map(a => a.id));
   const [isStartingQuiz, setIsStartingQuiz] = useState(false);
   // When true, we render a branded "starting" screen instead of the landing
   // page, so auto-started visitors never see a confusing flash of content.
   const [autoStarting, setAutoStarting] = useState(shouldAutoStart);
 
-  const toggleArea = (areaId) => {
-    setSelectedAreas(prev =>
-      prev.includes(areaId)
-        ? prev.filter(id => id !== areaId)
-        : [...prev, areaId]
-    );
-  };
-
-  const toggleAllAreas = () => {
-    if (selectedAreas.length === quizAreas.length) {
-      setSelectedAreas([]);
-    } else {
-      setSelectedAreas(quizAreas.map(a => a.id));
-    }
-  };
-
   const handleBeginQuiz = async () => {
-    if (selectedAreas.length === 0) {
-      toast.error("Please select at least one area to assess");
-      return;
-    }
-
     setIsStartingQuiz(true);
     try {
       const response = await axios.post(`${API}/assessments`, {
         modules: ["clbh"],
-        selected_areas: selectedAreas
+        selected_areas: ALL_AREAS
       });
-      track("quiz_start", { areas_selected: selectedAreas.length });
+      track("quiz_start", { areas_selected: ALL_AREAS.length });
       navigate(`/assessment/${response.data.id}`);
       return true;
     } catch (error) {
@@ -142,286 +126,208 @@ export default function LandingPage() {
             Starting your checkup...
           </h1>
           <p className="text-slate-600 text-lg">
-            24 quick questions. About 5 minutes. Confidential.
+            24 quick questions. 5 to 10 minutes. Confidential.
           </p>
         </div>
       </div>
     );
   }
 
+  const StartButton = ({ testId, className = "" }) => (
+    <button
+      type="button"
+      onClick={handleBeginQuiz}
+      disabled={isStartingQuiz}
+      className={`inline-flex items-center justify-center rounded-xl bg-orange-500 hover:bg-orange-400 text-slate-900 font-bold text-lg md:text-xl px-8 py-4 transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${className}`}
+      data-testid={testId}
+    >
+      {isStartingQuiz ? (
+        <>
+          <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+          Starting...
+        </>
+      ) : (
+        "Get my free Legal Health Report"
+      )}
+    </button>
+  );
+
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Navigation */}
+    <div className="min-h-screen bg-stone-50 text-slate-900">
+      {/* Navigation: one quiet booking link, no competing buttons */}
       <nav className="bg-white border-b border-slate-200 sticky top-0 z-50 nav-grid">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center relative z-10">
-          <div
-            className="flex items-center gap-2 cursor-pointer"
-            onClick={() => navigate("/")}
-          >
+          <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/")}>
             <img
               src="/clbh-logo.png"
               alt="Clean Legal Bill of Health — A Jeppson Law Product"
               className="h-14 w-auto"
             />
           </div>
-          <div className="flex gap-2">
-            <Button
-              onClick={() => window.open('https://jeppsonlaw.cliogrow.com/book/5d7625ad3292b0e84db81965f80ee5f4', '_blank')}
-              className="hidden sm:flex bg-orange-500 hover:bg-orange-600"
-              data-testid="nav-schedule-btn"
-            >
-              <Calendar className="w-4 h-4 mr-2" />
-              Schedule a Free CLBH Call
-            </Button>
-            <Button
-              onClick={handleBeginQuiz}
-              disabled={isStartingQuiz}
-              className="bg-slate-900 hover:bg-slate-800"
-              data-testid="nav-start-checkup-btn"
-            >
-              Start Checkup
-            </Button>
-          </div>
+          <a
+            href={BOOKING_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm md:text-base font-semibold text-slate-900 underline underline-offset-4 hover:text-orange-600"
+            data-testid="nav-schedule-btn"
+          >
+            <span className="hidden sm:inline">Prefer to talk? </span>Book a free call
+          </a>
         </div>
       </nav>
 
-      {/* Hero Section */}
+      {/* Hero */}
       <section className="hero-section text-white py-14 md:py-20">
-        <div className="max-w-7xl mx-auto px-6 relative z-10">
-          <div className="max-w-3xl">
-            <p className="text-orange-400 font-semibold tracking-wider uppercase text-sm mb-4 animate-fade-in-up">
-              Legal Preventive Maintenance
+        <div className="max-w-7xl mx-auto px-6 relative z-10 grid lg:grid-cols-[minmax(0,1fr)_440px] gap-12 lg:gap-16 items-center">
+          <div className="max-w-2xl">
+            <p className="text-orange-400 font-semibold tracking-[0.2em] uppercase text-sm mb-5 animate-fade-in-up">
+              Free Legal Health Checkup
             </p>
-            <h1 className="font-heading text-4xl md:text-6xl font-bold tracking-tight mb-6 animate-fade-in-up animate-delay-100">
-              Clean Legal Bill of Health
-              <span className="block text-slate-400 text-3xl md:text-4xl mt-2">Quick Checkup</span>
+            <h1 className="font-brand text-5xl md:text-7xl font-bold leading-[1.05] mb-6 animate-fade-in-up animate-delay-100">
+              Find it before it finds you<TM />
             </h1>
             <p className="text-slate-300 text-lg md:text-xl leading-relaxed mb-8 animate-fade-in-up animate-delay-200">
-              Identify preventable legal risks across 6 critical areas of your business.
-              Get clear scores for each area, see exactly where you're at risk, and receive
-              an actionable protection plan, all in about 5 minutes.
+              Every business has a few legal gaps hiding in its paperwork. This free checkup shows you
+              where yours are, before a buyer, a lender, or an unhappy customer finds them first.
             </p>
-            {/* Area selection, merged into the hero */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 animate-fade-in-up animate-delay-300">
-              <p className="text-slate-300">
-                All six areas are included. Tap an area to remove it.
+            <div className="flex flex-col items-stretch sm:items-center sm:self-start sm:inline-flex gap-3 animate-fade-in-up animate-delay-300">
+              <StartButton testId="hero-start-checkup-btn" />
+              <p className="text-slate-400 text-sm text-center">
+                24 questions · 5 to 10 minutes · confidential
               </p>
-              <Button
-                variant="outline"
-                onClick={toggleAllAreas}
-                className="border-orange-500 text-orange-400 hover:bg-orange-500/10 text-sm self-start sm:self-auto"
-                data-testid="toggle-all-areas-btn"
-              >
-                {selectedAreas.length === quizAreas.length ? "Deselect All" : "Select All"}
-              </Button>
             </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mb-4 animate-fade-in-up animate-delay-300">
-              {quizAreas.map((area) => {
-                const isSelected = selectedAreas.includes(area.id);
-                return (
-                  <div
-                    key={area.id}
-                    onClick={() => toggleArea(area.id)}
-                    className={`flex items-center gap-3 p-3 sm:p-4 rounded-lg text-left border-2 cursor-pointer transition-all duration-200 bg-slate-800 ${
-                      isSelected
-                        ? "border-orange-500 shadow-lg shadow-orange-500/30"
-                        : "border-orange-500/50 hover:border-orange-500"
-                    }`}
-                    data-testid={`area-card-${area.id}`}
-                  >
-                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors ${
-                      isSelected ? "bg-orange-500 text-white" : "bg-slate-700 text-slate-400"
-                    }`}>
-                      {isSelected ? <Check className="w-5 h-5" /> : area.icon}
-                    </div>
-                    <span className="text-sm font-medium text-slate-200">
-                      {area.name}
-                    </span>
-                  </div>
-                );
-              })}
+            <div className="mt-8 pt-6 border-t border-slate-700 flex items-center gap-4">
+              <img
+                src="/eric-headshot.jpg"
+                alt="Eric Jeppson"
+                className="w-16 h-16 rounded-full border-2 border-orange-500 object-cover flex-shrink-0"
+              />
+              <div>
+                <p className="font-brand italic text-lg md:text-xl leading-snug text-white">
+                  "Most of what I find is ordinary and fixable. The trick is finding it early."
+                </p>
+                <p className="text-slate-400 text-sm mt-1">Eric Jeppson, Business Attorney</p>
+              </div>
             </div>
+          </div>
 
-            <p className="text-slate-400 text-sm mb-8">
-              {selectedAreas.length} of 6 areas selected • {selectedAreas.length * 4} questions • confidential • instant results
+          {/* Sample report: shows the payoff before anyone commits */}
+          <div className="bg-white text-slate-900 rounded-2xl p-6 md:p-7 shadow-xl">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-xs font-bold tracking-[0.2em] text-orange-700 uppercase">Sample report</span>
+              <span className="text-xs text-slate-500">What you'll get</span>
+            </div>
+            <h2 className="font-brand text-2xl md:text-3xl font-bold mb-3">Your Legal Health Report</h2>
+            <ul>
+              {sampleReport.map((row, i) => (
+                <li
+                  key={row.area}
+                  className={`flex justify-between items-center py-3 text-[15px] ${i < sampleReport.length - 1 ? "border-b border-stone-200" : ""}`}
+                >
+                  <span>{row.area}</span>
+                  <span className="flex items-center gap-2 font-semibold">
+                    <span className={`w-3 h-3 rounded-full ${row.dot}`} />
+                    {row.label}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-4 bg-stone-50 rounded-lg p-4 text-sm leading-relaxed">
+              <span className="font-bold">Your first step:</span> Vendors and subcontractors. Start with a
+              signed agreement and current insurance certificate for each sub.
             </p>
-
-            <div className="flex flex-col sm:flex-row gap-4 animate-fade-in-up animate-delay-300">
-              <Button
-                onClick={handleBeginQuiz}
-                disabled={isStartingQuiz || selectedAreas.length === 0}
-                className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-6 text-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-                data-testid="hero-start-checkup-btn"
-              >
-                {isStartingQuiz ? (
-                  <>
-                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    Starting...
-                  </>
-                ) : (
-                  <>
-                    Start the Quick Checkup
-                    <ArrowRight className="ml-2 w-5 h-5" />
-                  </>
-                )}
-              </Button>
-              <Button
-                variant="outline"
-                className="border-slate-500 text-white hover:bg-slate-800 px-8 py-6 text-lg"
-                onClick={() => document.getElementById('how-it-works').scrollIntoView({ behavior: 'smooth' })}
-                data-testid="learn-more-btn"
-              >
-                Learn More
-              </Button>
-            </div>
           </div>
         </div>
       </section>
 
-      {/* What You'll Get Section */}
-      <section className="py-20 bg-white grid-pattern-light" id="how-it-works">
-        <div className="max-w-7xl mx-auto px-6 relative z-10">
-          <div className="text-center mb-16">
-            <h2 className="font-heading text-3xl md:text-4xl font-bold text-slate-900 mb-4">
-              What You'll Get
-            </h2>
-            <p className="text-slate-600 text-lg max-w-2xl mx-auto">
-              A comprehensive snapshot of your legal risk exposure with clear next steps
-            </p>
-          </div>
-          
-          <div className="grid md:grid-cols-3 gap-8">
-            {benefits.map((benefit, index) => (
-              <Card key={index} className="border-slate-100 shadow-sm hover:shadow-md transition-shadow" data-testid={`benefit-card-${index}`}>
-                <CardContent className="p-8">
-                  <div className="w-12 h-12 bg-slate-900 rounded-lg flex items-center justify-center text-white mb-6">
-                    {benefit.icon}
-                  </div>
-                  <h3 className="font-heading text-xl font-semibold text-slate-900 mb-3">
-                    {benefit.title}
-                  </h3>
-                  <p className="text-slate-600">
-                    {benefit.description}
-                  </p>
-                </CardContent>
-              </Card>
+      {/* Who reads your paperwork */}
+      <section className="bg-slate-400 py-16 md:py-20">
+        <div className="max-w-7xl mx-auto px-6">
+          <h2 className="font-brand text-3xl md:text-5xl font-bold leading-tight mb-3">
+            Someone will read your paperwork one day.
+          </h2>
+          <p className="text-slate-900 text-lg md:text-xl mb-10 max-w-3xl">
+            Selling or not, these moments come for every business. The checkup shows you what they would see, first.
+          </p>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {readers.map((r) => (
+              <div key={r.who} className="bg-white border border-stone-200 rounded-2xl p-6">
+                <h3 className="text-xl font-bold mb-2">{r.who}</h3>
+                <p className="text-slate-600 leading-relaxed">{r.what}</p>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Risk Score Explanation */}
-      <section className="py-20 bg-white grid-pattern-light">
+      {/* Six areas on the brand grid */}
+      <section className="bg-white grid-pattern-light border-y border-stone-200 py-16 md:py-20" id="how-it-works">
         <div className="max-w-7xl mx-auto px-6 relative z-10">
-          <div className="text-center mb-16">
-            <h2 className="font-heading text-3xl md:text-4xl font-bold text-slate-900 mb-4">
-              Your Risk Score Explained
+          <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-3 mb-9">
+            <h2 className="font-brand text-3xl md:text-5xl font-bold leading-tight">
+              Six areas. One clear picture.
             </h2>
+            <p className="text-slate-600 text-lg">Four quick questions in each area. No legal knowledge needed.</p>
           </div>
-          
-          <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-            <Card className="border-emerald-200 bg-emerald-50" data-testid="score-green-card">
-              <CardContent className="p-6 text-center">
-                <div className="w-16 h-16 bg-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <CheckCircle2 className="w-8 h-8 text-white" />
-                </div>
-                <h3 className="font-heading text-lg font-semibold text-emerald-900 mb-2">Green</h3>
-                <p className="text-emerald-700 text-sm">
-                  Likely stable. Confirm with a brief review.
-                </p>
-              </CardContent>
-            </Card>
-            
-            <Card className="border-amber-200 bg-amber-50" data-testid="score-yellow-card">
-              <CardContent className="p-6 text-center">
-                <div className="w-16 h-16 bg-amber-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <AlertTriangle className="w-8 h-8 text-white" />
-                </div>
-                <h3 className="font-heading text-lg font-semibold text-amber-900 mb-2">Yellow</h3>
-                <p className="text-amber-700 text-sm">
-                  Common gaps found. Recommend review soon.
-                </p>
-              </CardContent>
-            </Card>
-            
-            <Card className="border-red-200 bg-red-50" data-testid="score-red-card">
-              <CardContent className="p-6 text-center">
-                <div className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <AlertTriangle className="w-8 h-8 text-white" />
-                </div>
-                <h3 className="font-heading text-lg font-semibold text-red-900 mb-2">Red</h3>
-                <p className="text-red-700 text-sm">
-                  High-risk flags. Priority review recommended.
-                </p>
-              </CardContent>
-            </Card>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {areas.map(({ icon: Icon, name }) => (
+              <div key={name} className="flex items-center gap-4 bg-white border border-stone-200 rounded-2xl px-6 py-5">
+                <Icon className="w-7 h-7 text-slate-900 flex-shrink-0" strokeWidth={1.8} />
+                <span className="text-lg font-semibold">{name}</span>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-20 bg-slate-900 text-white">
-        <div className="max-w-4xl mx-auto px-6 text-center">
-          <h2 className="font-heading text-3xl md:text-4xl font-bold mb-6">
-            Ready to Check Your Business Health?
-          </h2>
-          <p className="text-slate-300 text-lg mb-8 max-w-2xl mx-auto">
-            Our comprehensive 24-question checkup covers 6 critical areas of business legal health.
-            No commitment, completely confidential.
-          </p>
-          <Button
-            onClick={handleBeginQuiz}
-            disabled={isStartingQuiz}
-            className="bg-orange-500 hover:bg-orange-600 text-white px-10 py-6 text-lg font-semibold"
-            data-testid="cta-start-checkup-btn"
-          >
-            Start the Quick Checkup
-            <ArrowRight className="ml-2 w-5 h-5" />
-          </Button>
+      {/* How it works */}
+      <section className="bg-slate-400 py-16 md:py-20">
+        <div className="max-w-7xl mx-auto px-6">
+          <h2 className="font-brand text-3xl md:text-5xl font-bold leading-tight mb-9">How it works</h2>
+          <div className="grid md:grid-cols-3 gap-6">
+            {steps.map((s, i) => (
+              <div key={s.title} className="bg-white border border-stone-200 rounded-2xl p-7">
+                <span className="w-11 h-11 rounded-full bg-orange-500 text-slate-900 text-xl font-bold flex items-center justify-center mb-4">
+                  {i + 1}
+                </span>
+                <h3 className="text-xl md:text-2xl font-bold mb-2">{s.title}</h3>
+                <p className="text-slate-600 text-lg leading-relaxed">{s.text}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* Disclaimer */}
-      <section className="py-8 bg-slate-100 border-t border-slate-200">
-        <div className="max-w-4xl mx-auto px-6">
-          <p className="text-slate-600 text-sm text-center leading-relaxed mb-6">
-            <strong>DISCLAIMER:</strong> This assessment is for educational purposes only and does not constitute legal advice, and no attorney-client relationship is formed by using this tool or receiving its output. The results are intended to help you identify potential areas of concern in your business — they are not a legal assessment of your specific contracts, obligations, or exposure. For specific legal guidance tailored to your situation, please consult with a licensed attorney. You may take this checklist to your own attorney or schedule a consultation with Jeppson Law.
-          </p>
-          <div className="text-center">
-            <Button
-              onClick={() => window.open('https://jeppsonlaw.cliogrow.com/book/5d7625ad3292b0e84db81965f80ee5f4', '_blank')}
-              className="bg-orange-500 hover:bg-orange-600 text-white"
-              data-testid="disclaimer-book-consultation-btn"
-            >
-              <Calendar className="w-4 h-4 mr-2" />
-              Book a Free Consultation
-            </Button>
+      {/* Closing call to action */}
+      <section className="px-6 pt-16">
+        <div className="max-w-7xl mx-auto bg-slate-900 rounded-3xl px-8 md:px-16 py-12 flex flex-col md:flex-row md:justify-between md:items-center gap-8">
+          <div>
+            <h2 className="font-brand text-3xl md:text-5xl font-bold text-white leading-tight">
+              Find it before it finds you<TM />
+            </h2>
+            <p className="text-slate-300 text-lg mt-2">Free. Confidential. 5 to 10 minutes.</p>
           </div>
+          <StartButton testId="cta-start-checkup-btn" className="flex-shrink-0" />
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="py-8 bg-white border-t border-slate-200 grid-pattern-light">
-        <div className="max-w-7xl mx-auto px-6 relative z-10">
-          <div className="flex flex-col md:flex-row md:justify-between items-center gap-4 mb-4">
-            <a href="https://cleanlegalbillofhealth.com" target="_blank" rel="noopener noreferrer" className="md:flex-1 flex items-center gap-2 hover:opacity-80 transition-opacity">
-              <img
-                src="/clbh-logo.png"
-                alt="Clean Legal Bill of Health — A Jeppson Law Product"
-                className="h-20 w-auto"
-              />
+      <footer className="py-10">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
+            <a href="https://cleanlegalbillofhealth.com" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity">
+              <img src="/clbh-logo.png" alt="Clean Legal Bill of Health — A Jeppson Law Product" className="h-16 w-auto" />
             </a>
-            <a href="tel:916-780-7008" className="md:flex-1 flex items-center justify-center gap-2 text-slate-600 hover:text-blue-900 transition-colors">
+            <a href="tel:916-780-7008" className="flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-colors">
               <Phone className="w-4 h-4" />
               <span className="text-sm font-medium">916-780-7008</span>
             </a>
-            <p className="md:flex-1 text-slate-500 text-sm md:text-right">
-              © {new Date().getFullYear()} Jeppson Law, LLP. All rights reserved.
-            </p>
+            <p className="font-brand italic text-lg text-slate-900">Find it before it finds you™</p>
           </div>
-          <p className="text-slate-400 text-xs text-center">
-            This tool is for educational purposes only and is not legal advice.
+          <p className="text-slate-500 text-xs leading-relaxed max-w-4xl">
+            This checkup is for educational purposes only and is not legal advice. No attorney-client relationship is
+            formed by using it or receiving its results. The results help you spot potential areas of concern; they are
+            not a legal assessment of your specific contracts, obligations, or exposure. © {new Date().getFullYear()} Jeppson Law, LLP.
           </p>
         </div>
       </footer>

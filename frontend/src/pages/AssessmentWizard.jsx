@@ -368,7 +368,7 @@ export default function AssessmentWizard() {
           <Progress value={progress} className="h-2" data-testid="progress-bar" />
           {currentQuestionIndex === 0 && (
             <p className="text-slate-400 text-xs text-center mt-3">
-              {questions.length} quick questions • about 5 minutes • confidential • instant results
+              {questions.length} quick questions • 5 to 10 minutes • confidential • instant results
             </p>
           )}
         </div>
