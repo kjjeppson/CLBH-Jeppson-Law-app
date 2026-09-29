@@ -158,7 +158,7 @@ export default function LandingPage() {
           Starting...
         </>
       ) : (
-        "Get my free Legal Health Report"
+        "Start my free checkup"
       )}
     </button>
   );
