@@ -36,6 +36,9 @@ const shouldAutoStart = () => {
   try {
     if (document.referrer) {
       const refHost = new URL(document.referrer).hostname;
+      // Old checkup addresses redirect here; those visitors came from a DM,
+      // email or bio link, not from our site, so show them the landing page.
+      if (/^(quiz|assessment)\./.test(refHost)) return false;
       return (
         refHost !== window.location.hostname &&
         (refHost.endsWith("cleanlegalbillofhealth.com") || refHost.endsWith("jeppsonlaw.com"))
