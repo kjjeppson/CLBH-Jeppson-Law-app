@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-CLBH Quick Checkup — a legal risk assessment tool for business owners. Users answer 24 questions across 6 legal risk areas, get a Green/Yellow/Red risk score, and optionally submit contact info to receive results via email.
+CLBH Quick Checkup — a legal risk assessment tool for business owners. Since Oct 2026 it is taken after an audit is booked and doubles as audit intake. Users answer 4 unscored "About your business" questions, 12 scored questions across 6 legal risk areas, and a documents-on-hand checklist, then get a Green/Yellow/Red risk score and submit contact info to receive results via email.
 
 ## Commands
 
@@ -47,18 +47,21 @@ mypy backend/
 
 ## CLBH Pillars (6 Assessment Areas)
 
-Each pillar has 4 questions (24 total). The `area` ID is used in code; the `area_name` is user-facing.
+Each pillar has 2 scored questions (12 total). The `area` ID is used in code; the `area_name` is user-facing. Older assessments in MongoDB used q1–q24 (4 per pillar); `get_area_for_question()` still maps those.
 
 | ID | Area Name | Questions |
 |----|-----------|-----------|
-| `contracts` | Customer Contracts & Project Risks | q1–q4 |
-| `ownership` | Ownership & Governance | q5–q8 |
-| `subcontractor` | Vendors | q9–q12 |
-| `employment` | Employment & Safety Compliance | q13–q16 |
-| `insurance` | Insurance and Risk Management | q17–q20 |
-| `systems` | Systems, Records & Digital Risk | q21–q24 |
+| `contracts` | Customer Contracts & Project Risks | c1, c2 |
+| `ownership` | Ownership & Governance | o1, o2 |
+| `subcontractor` | Vendors | v1, v2 |
+| `employment` | Employment & Safety Compliance | e1, e2 |
+| `insurance` | Insurance and Risk Management | i1, i2 |
+| `systems` | Systems, Records & Digital Risk | r1, r2 |
 
 Defined in `AREAS` and `AREA_NAMES` dicts in `backend/server.py`. Each question maps to one pillar via its `area` field.
+
+### About your business (unscored audit intake)
+`PROFILE_QUESTIONS` (industry, revenue, team, ownership), `PROFILE_DOCUMENTS` (documents on hand) and an optional open question, served with `/api/questions/{module}` under `profile`. The wizard sends them as `profile` on `/api/assessments/submit`; they are stored as `business_profile` on the assessment and copied to the lead. On lead capture they go to Kit as custom fields (`industry`, `revenue_range`, `team_type`, `ownership_type`, `documents_on_hand`, `documents_missing`, `biggest_concern`) and to Eric in a plain-text intake email (`send_intake_email`). Revenue maps to the audit tier in `audit_tier()`. New assessments carry `version: 2`; the admin per-question funnel only counts version 2.
 
 ## Architecture
 
@@ -105,7 +108,7 @@ Backend runs via `Procfile`: `uvicorn server:app --host 0.0.0.0 --port ${PORT:-8
 
 ## Key Patterns
 
-- **Scoring**: GREEN=3pts, YELLOW=2pts, RED=1pt per question. Per area (4 questions, max 12): 10-12=GREEN, 7-9=YELLOW, 4-6=RED. Overall uses percentage thresholds.
+- **Scoring**: GREEN=3pts, YELLOW=2pts, RED=1pt per question. Per area (2 questions, max 6): 5-6=GREEN, 4=YELLOW, 2-3=RED (percentage cut points of 80% and 58%, same as the old 12-point bands). Overall uses percentage thresholds (max 36).
 - **Risk data flow**: `calculate_score_and_risks()` produces `red_flag_details`, `yellow_flag_details`, `green_flag_details` — each item has `title`, `description`, `area`, `area_name`. These get stored in the assessment document and passed to the email template.
 - **Lead capture flow**: Email capture is a required final step of the quiz (in `AssessmentWizard.jsx`): after the last question, the assessment is submitted (`POST /api/assessments/submit`), then a first name + email form is shown. Submitting it calls `POST /api/leads` (saves to MongoDB, sends results email via SMTP in a background thread, subscribes to ConvertKit which starts the Kit sequence) and then navigates to the results page. `last_name` is optional in `LeadCreate`.
 - **Admin auth**: `X-Admin-Key` header or `?admin_key=` query param, checked against `ADMIN_KEY` env var.

@@ -76,7 +76,14 @@ const HEALTHY_LABELS = {
   q9: "Signed vendor agreements", q10: "Workers classified correctly", q11: "Indemnification in vendor contracts", q12: "Vendor insurance verified",
   q13: "Current employee handbook", q14: "Pay practices reviewed", q15: "Termination documentation", q16: "Employee confidentiality agreements",
   q17: "Coverage fits your current operations", q18: "Contracts match your insurance", q19: "Incident response plan", q20: "Known policy limits and exclusions",
-  q21: "Organized records", q22: "Data security in place", q23: "Access controls in place", q24: "Due diligence ready"
+  q21: "Organized records", q22: "Data security in place", q23: "Access controls in place", q24: "Due diligence ready",
+  // Current 12-question checkup
+  c1: "Signed, clear customer contracts", c2: "Change order process in place",
+  o1: "Owner exit plan in writing", o2: "Company records current",
+  v1: "Signed, protective vendor agreements", v2: "Workers classified correctly",
+  e1: "Current employee handbook", e2: "Pay practices reviewed",
+  i1: "Insurance reviewed and gaps addressed", i2: "Contracts match your insurance",
+  r1: "Records ready for a buyer or lender", r2: "Sensitive data secured"
 };
 
 const flagsFor = (list, areaId) => (list || []).filter((f) => f.area === areaId);
@@ -168,6 +175,12 @@ export default function ResultsPage() {
       return a.score - b.score;
     });
   const areaCount = results?.area_scores?.length || 0;
+  // Score bands for the legend: 2 questions per area now (max 6),
+  // older checkups had 4 per area (max 12).
+  const areaMax = results?.area_scores?.[0]?.max_score || 6;
+  const scoreBands = areaMax === 12
+    ? { green: "10 to 12", yellow: "7 to 9", red: "4 to 6" }
+    : { green: "5 to 6", yellow: "4", red: "2 to 3" };
 
   // Areas lowest score first (ties keep the pillar order)
   const sortedAreas = [...(results?.area_scores || [])]
@@ -358,9 +371,9 @@ export default function ResultsPage() {
               </p>
             </div>
             <div className="flex flex-wrap md:flex-nowrap md:flex-shrink-0 gap-x-4 gap-y-1 text-xs sm:text-sm text-slate-600">
-              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />10 to 12: Healthy</span>
-              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-amber-500" />7 to 9: Worth a look</span>
-              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-red-500" />4 to 6: Fix now</span>
+              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />{scoreBands.green}: Healthy</span>
+              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-amber-500" />{scoreBands.yellow}: Worth a look</span>
+              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-red-500" />{scoreBands.red}: Fix now</span>
             </div>
           </div>
 

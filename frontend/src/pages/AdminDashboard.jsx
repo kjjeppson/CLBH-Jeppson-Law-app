@@ -385,7 +385,7 @@ export default function AdminDashboard() {
                   </div>
                   <div className="rounded-xl border border-slate-200 p-4">
                     <p className="text-2xl font-bold text-slate-900">{funnel.completed}</p>
-                    <p className="text-sm text-slate-500">Finished all 24 questions</p>
+                    <p className="text-sm text-slate-500">Finished all questions</p>
                     <p className="text-xs text-slate-400 mt-1">{pct(funnel.completed, funnel.started)}% of starts</p>
                   </div>
                   <div className="rounded-xl border border-slate-200 p-4">
@@ -445,7 +445,7 @@ export default function AdminDashboard() {
                         })}
                       </div>
                       <div className="flex items-center gap-3 text-sm mt-4 pt-3 border-t border-slate-100">
-                        <span className="flex-1 text-slate-600">Finished all 24 questions</span>
+                        <span className="flex-1 text-slate-600">Finished all questions</span>
                         <span className="text-slate-900 font-semibold">{funnel.tracked_completed} ({pct(funnel.tracked_completed, trackedStarted)}%)</span>
                       </div>
                       <div className="flex items-center gap-3 text-sm mt-1">
@@ -519,8 +519,10 @@ export default function AdminDashboard() {
                         </TableCell>
                         <TableCell>
                           <div>
-                            <p className="font-medium">{lead.business_name}</p>
-                            <p className="text-sm text-slate-500">{lead.state}</p>
+                            <p className="font-medium">{lead.business_name || lead.profile_labels?.industry}</p>
+                            <p className="text-sm text-slate-500">
+                              {lead.state || [lead.profile_labels?.revenue, lead.profile_labels?.ownership].filter(Boolean).join(" · ")}
+                            </p>
                           </div>
                         </TableCell>
                         <TableCell>
@@ -539,7 +541,9 @@ export default function AdminDashboard() {
                             ))}
                           </div>
                         </TableCell>
-                        <TableCell className="max-w-[200px] truncate">{lead.situation}</TableCell>
+                        <TableCell className="max-w-[200px] truncate" title={lead.situation || lead.profile_labels?.concern || ""}>
+                          {lead.situation || lead.profile_labels?.concern}
+                        </TableCell>
                         <TableCell className="text-slate-500 text-sm">{formatDate(lead.timestamp)}</TableCell>
                         <TableCell>
                           {lead.id && (

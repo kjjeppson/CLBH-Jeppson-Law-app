@@ -465,13 +465,81 @@ style="display:inline-block;background:#1e2d4a;color:#ffffff;font-size:16px;font
     logger.error(f"EMAIL FAILED after {max_retries} attempts. Last error: {last_error}")
     return {"success": False, "error": f"Failed after {max_retries} attempts: {last_error}"}
 
+def send_intake_email(
+    first_name: str,
+    last_name: str,
+    email: str,
+    risk_level: str,
+    score: str,
+    area_scores: List[Dict[str, Any]],
+    profile: Dict[str, Any],
+) -> Dict[str, Any]:
+    """Send Eric a plain-text audit prep summary for a completed checkup."""
+    if not ERIC_EMAIL or not ERIC_EMAIL_PASSWORD:
+        return {"success": False, "error": "SMTP credentials not configured"}
+
+    labels = profile_labels(profile)
+    level_words = {"green": "Healthy", "yellow": "Worth a look", "red": "Fix now"}
+    name = f"{first_name} {last_name}".strip() or email
+    lines = [
+        f"{name} finished the CLBH checkup.",
+        f"Email: {email}",
+        "",
+        f"Overall: {level_words.get(risk_level, risk_level)} ({score})",
+        "",
+        "Pillars:",
+    ]
+    for a in area_scores or []:
+        lines.append(
+            f"  {a.get('area_name', '')}: {level_words.get(a.get('risk_level', ''), '')} "
+            f"({a.get('score', 0)}/{a.get('max_score', 6)})"
+        )
+    if labels:
+        tier = audit_tier(profile.get("revenue", ""))
+        lines += [
+            "",
+            "About the business:",
+            f"  Industry: {labels.get('industry') or 'Not answered'}",
+            f"  Revenue: {labels.get('revenue') or 'Not answered'}" + (f" (audit tier {tier})" if tier else ""),
+            f"  Team: {labels.get('team') or 'Not answered'}",
+            f"  Ownership: {labels.get('ownership') or 'Not answered'}",
+            "",
+            f"Documents on hand: {labels.get('documents_on_hand') or 'None checked'}",
+            f"Not on hand: {labels.get('documents_missing') or 'None'}",
+            "",
+            f"Keeps them up at night: {labels.get('concern') or 'Left blank'}",
+        ]
+
+    msg = MIMEText("\n".join(lines), "plain")
+    msg["Subject"] = f"Checkup completed: {name}"
+    msg["From"] = f"CLBH Checkup <{ERIC_EMAIL}>"
+    msg["To"] = ERIC_EMAIL
+
+    for attempt in range(1, 4):
+        try:
+            with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=30) as server:
+                server.starttls()
+                server.login(ERIC_EMAIL, ERIC_EMAIL_PASSWORD)
+                server.sendmail(ERIC_EMAIL, ERIC_EMAIL, msg.as_string())
+                logger.info("Intake email sent to Eric")
+                return {"success": True}
+        except smtplib.SMTPAuthenticationError as e:
+            return {"success": False, "error": f"Authentication failed: {e}"}
+        except Exception as e:
+            logger.warning(f"Intake email attempt {attempt} failed: {e}")
+            if attempt < 3:
+                time.sleep(5)
+    return {"success": False, "error": "Intake email failed after 3 attempts"}
+
+
 async def subscribe_to_kit(
     email: str,
     first_name: str = "",
     last_name: str = "",
     risk_level: str = "",
     score: str = "",
-    top_risks: str = ""
+    top_risks: str = "",
+    extra_fields: Optional[Dict[str, str]] = None
 ) -> Dict[str, Any]:
     """
     Subscribe a user to Kit (ConvertKit) for marketing list purposes.
@@ -510,7 +578,8 @@ async def subscribe_to_kit(
                     "last_name": last_name,
                     "risk_level": risk_level,
                     "score": score,
-                    "top_risks": top_risks
+                    "top_risks": top_risks,
+                    **{k: v for k, v in (extra_fields or {}).items() if v}
                 }
             }
 
@@ -647,12 +716,13 @@ class AssessmentCreate(BaseModel):
 class AssessmentSubmit(BaseModel):
     assessment_id: str
     answers: List[AssessmentAnswer]
+    profile: Optional["BusinessProfile"] = None
 
 class AreaScore(BaseModel):
     area_id: str
     area_name: str
     score: int
-    max_score: int = 12
+    max_score: int = 6
     risk_level: str  # green, yellow, red
     red_flags: List[str] = []  # Question IDs with RED answers
 
@@ -663,7 +733,7 @@ class AssessmentResult(BaseModel):
     selected_areas: List[str] = []  # Which areas were selected for this assessment
     answers: List[Dict[str, Any]] = []
     total_score: int = 0
-    max_possible_score: int = 72
+    max_possible_score: int = 36
     score_percentage: float = 0.0
     risk_level: str = "green"  # green, yellow, red
     area_scores: List[Dict[str, Any]] = []  # Per-area breakdown
@@ -693,372 +763,365 @@ class Lead(BaseModel):
     score: Optional[str] = None
     risk_level: Optional[str] = None
     top_risks: List[str] = []
+    business_profile: Dict[str, Any] = {}
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+# ----- ABOUT YOUR BUSINESS (unscored audit intake) -----
+# Asked before the scored questions (single choice) and after them
+# (documents on hand + an optional open question). Not part of the score;
+# it tells Eric what to prepare for the audit and which tier applies.
+
+PROFILE_QUESTIONS = [
+    {
+        "id": "industry",
+        "text": "What kind of business do you run?",
+        "options": [
+            {"value": "home_services", "label": "Home services or trades"},
+            {"value": "construction", "label": "Construction"},
+            {"value": "professional_services", "label": "Professional services"},
+            {"value": "retail_restaurant", "label": "Retail or restaurant"},
+            {"value": "other", "label": "Other"},
+        ],
+    },
+    {
+        "id": "revenue",
+        "text": "Roughly what is your annual revenue?",
+        "options": [
+            {"value": "under_5m", "label": "Under $5M"},
+            {"value": "5m_20m", "label": "$5M to $20M"},
+            {"value": "over_20m", "label": "Over $20M"},
+        ],
+    },
+    {
+        "id": "team",
+        "text": "Who works in the business?",
+        "options": [
+            {"value": "w2_only", "label": "W-2 employees only"},
+            {"value": "mixed", "label": "Employees and 1099 contractors or subs"},
+            {"value": "mostly_1099", "label": "Mostly 1099 contractors or subs"},
+            {"value": "owners_only", "label": "Just the owners"},
+        ],
+    },
+    {
+        "id": "ownership",
+        "text": "How is the business owned?",
+        "options": [
+            {"value": "single_owner", "label": "One owner"},
+            {"value": "multi_llc", "label": "Two or more owners, LLC"},
+            {"value": "multi_corp", "label": "Two or more owners, corporation"},
+            {"value": "not_sure", "label": "Not sure"},
+        ],
+    },
+]
+
+PROFILE_DOCUMENTS = [
+    {"value": "operating_agreement", "label": "Operating agreement or shareholder agreement"},
+    {"value": "customer_contract", "label": "Customer contract or proposal template"},
+    {"value": "vendor_agreement", "label": "Subcontractor or vendor agreement"},
+    {"value": "handbook", "label": "Employee handbook"},
+    {"value": "insurance_policies", "label": "Current insurance policies"},
+    {"value": "minutes_records", "label": "Meeting minutes or annual company records"},
+    {"value": "leases", "label": "Leases (building or major equipment)"},
+]
+
+PROFILE_CONCERN_PROMPT = "Is there one legal thing about your business that keeps you up at night?"
+
+_PROFILE_LABELS = {q["id"]: {o["value"]: o["label"] for o in q["options"]} for q in PROFILE_QUESTIONS}
+_DOCUMENT_LABELS = {d["value"]: d["label"] for d in PROFILE_DOCUMENTS}
+
+
+class BusinessProfile(BaseModel):
+    industry: str = ""
+    revenue: str = ""
+    team: str = ""
+    ownership: str = ""
+    documents: List[str] = []
+    concern: str = Field(default="", max_length=1000)
+
+
+AssessmentSubmit.model_rebuild()
+
+
+def clean_profile(profile: Optional["BusinessProfile"]) -> Dict[str, Any]:
+    """Keep only known option values so stored data stays clean."""
+    if not profile:
+        return {}
+    out: Dict[str, Any] = {}
+    for qid, labels in _PROFILE_LABELS.items():
+        value = getattr(profile, qid, "")
+        if value in labels:
+            out[qid] = value
+    out["documents"] = [d for d in profile.documents if d in _DOCUMENT_LABELS]
+    out["concern"] = (profile.concern or "").strip()
+    return out
+
+
+def profile_labels(profile: Dict[str, Any]) -> Dict[str, str]:
+    """Readable labels for a stored profile (for Kit, email, and export)."""
+    if not profile:
+        return {}
+    labels = {qid: _PROFILE_LABELS[qid].get(profile.get(qid, ""), "") for qid in _PROFILE_LABELS}
+    have = [d for d in profile.get("documents", [])]
+    labels["documents_on_hand"] = ", ".join(_DOCUMENT_LABELS[d] for d in have if d in _DOCUMENT_LABELS)
+    labels["documents_missing"] = ", ".join(lbl for v, lbl in _DOCUMENT_LABELS.items() if v not in have)
+    labels["concern"] = profile.get("concern", "")
+    return labels
+
+
+def audit_tier(revenue: str) -> str:
+    return {
+        "under_5m": "$3,500",
+        "5m_20m": "$5,000",
+        "over_20m": "$7,500",
+    }.get(revenue, "")
+
+
+def kit_profile_fields(profile: Dict[str, Any]) -> Dict[str, str]:
+    """Kit custom fields for the business profile (empty values are skipped)."""
+    labels = profile_labels(profile)
+    if not labels:
+        return {}
+    return {
+        "industry": labels.get("industry", ""),
+        "revenue_range": labels.get("revenue", ""),
+        "team_type": labels.get("team", ""),
+        "ownership_type": labels.get("ownership", ""),
+        "documents_on_hand": labels.get("documents_on_hand", ""),
+        "documents_missing": labels.get("documents_missing", ""),
+        "biggest_concern": labels.get("concern", "")[:250],
+    }
+
+
 # ----- QUIZ AREAS -----
-# 6 areas with 4 questions each = 24 total questions
+# 6 areas with 2 questions each = 12 scored questions (shortened Oct 2026).
+# The checkup now comes after an audit is booked, so it doubles as audit intake.
 
 AREAS = {
     "contracts": {
         "id": "contracts",
         "name": "Customer Contracts & Project Risks",
-        "description": "4 questions that reveal whether your client agreements protect you",
-        "questions": [1, 2, 3, 4]
+        "description": "2 questions on whether your customer agreements protect you",
+        "questions": ["c1", "c2"]
     },
     "ownership": {
         "id": "ownership",
         "name": "Ownership & Governance",
-        "description": "4 questions that determine if your business can survive a partner dispute, exit, or crisis",
-        "questions": [5, 6, 7, 8]
+        "description": "2 questions on whether your business can survive a partner dispute, exit, or crisis",
+        "questions": ["o1", "o2"]
     },
     "subcontractor": {
         "id": "subcontractor",
         "name": "Vendors",
-        "description": "4 questions that expose whether your supply chain and contractor relationships are a liability",
-        "questions": [9, 10, 11, 12]
+        "description": "2 questions on whether your subcontractor and vendor relationships are a liability",
+        "questions": ["v1", "v2"]
     },
     "employment": {
         "id": "employment",
         "name": "Employment & Safety Compliance",
-        "description": "4 questions that reveal whether your employment practices are a lawsuit waiting to happen",
-        "questions": [13, 14, 15, 16]
+        "description": "2 questions on whether your employment practices hold up",
+        "questions": ["e1", "e2"]
     },
     "insurance": {
         "id": "insurance",
         "name": "Insurance and Risk Management",
-        "description": "4 questions that determine whether your insurance will protect you when it matters",
-        "questions": [17, 18, 19, 20]
+        "description": "2 questions on whether your insurance will protect you when it matters",
+        "questions": ["i1", "i2"]
     },
     "systems": {
         "id": "systems",
         "name": "Systems, Records & Digital Risk",
-        "description": "4 questions that reveal whether your business can survive a data breach, audit, or sale",
-        "questions": [21, 22, 23, 24]
+        "description": "2 questions on whether your records are ready for a buyer, a lender, or a lawsuit",
+        "questions": ["r1", "r2"]
     }
 }
 
 # ----- QUESTIONS DATA -----
 # Scoring: GREEN = 3 points, YELLOW = 2 points, RED = 1 point
-# Per area (4 questions, max 12): 10-12 = GREEN, 7-9 = YELLOW, 4-6 = RED
-# Overall (24 questions, max 72): 58-72 = GREEN, 40-57 = YELLOW, 24-39 = RED
+# Per area (2 questions, max 6): 5-6 = GREEN, 4 = YELLOW, 2-3 = RED
+# Overall (12 questions, max 36): percentage thresholds (81%+ GREEN, 56-80% YELLOW)
+
+def _opts(green: str, yellow: str, red: str) -> List[Dict[str, Any]]:
+    return [
+        {"value": "green", "label": green, "points": 3, "trigger_flag": False},
+        {"value": "yellow", "label": yellow, "points": 2, "trigger_flag": False},
+        {"value": "red", "label": red, "points": 1, "trigger_flag": True},
+    ]
 
 QUESTIONS = {
     "clbh": [
-        # AREA 1: Customer Contracts & Project Risks (Q1-Q4)
+        # AREA 1: Customer Contracts & Project Risks
         {
-            "id": "q1",
-            "text": "Do your customer contracts spell out exactly what you deliver, what it costs, and when payment is due?",
-            "why_it_matters": "Vague scope leads to scope creep. Unclear payment terms mean you have no legal leverage when a client delays payment for 60, 90, or 120 days. This is the number one source of cash flow problems and client disputes for growing businesses.",
-            "options": [
-                {"value": "green", "label": "Yes, every contract covers all of this.", "points": 3, "trigger_flag": False},
-                {"value": "yellow", "label": "Mostly, but some clients are informal or verbal.", "points": 2, "trigger_flag": False},
-                {"value": "red", "label": "No, my contracts are vague or often unsigned.", "points": 1, "trigger_flag": True}
-            ],
+            "id": "c1",
+            "text": "Is every customer job under a signed contract that spells out the work, the price, and when payment is due?",
+            "why_it_matters": "Vague scope leads to scope creep, and unclear payment terms leave you with no leverage when a client pays 60, 90, or 120 days late. Handshake deals and generic online templates rarely hold up when you need to enforce them.",
+            "options": _opts(
+                "Yes, every job, on a contract an attorney has reviewed.",
+                "Mostly, but some jobs run on a verbal or an online template.",
+                "No, many jobs start without a signed contract.",
+            ),
             "area": "contracts"
         },
         {
-            "id": "q2",
-            "text": "When a client changes the plan mid-project, do you get written approval before doing the extra work?",
-            "why_it_matters": "Change orders are where businesses lose money. Without a signed approval process, you end up doing extra work for free and have no documentation to support a billing dispute. This is especially damaging in construction, professional services, and any project-based industry.",
-            "options": [
-                {"value": "green", "label": "Yes, always a written change order first.", "points": 3, "trigger_flag": False},
-                {"value": "yellow", "label": "Big changes yes, small ones get handled informally.", "points": 2, "trigger_flag": False},
-                {"value": "red", "label": "No, we handle changes as they come and bill later.", "points": 1, "trigger_flag": True}
-            ],
-            "area": "contracts"
-        },
-        {
-            "id": "q3",
-            "text": "Do your contracts cap how much you could owe if something goes wrong on a project?",
-            "why_it_matters": "Without a liability cap, a single bad project could result in a judgment that exceeds your total revenue. A limitation of liability clause is the difference between a manageable business setback and a company-ending lawsuit. Courts generally enforce these when they are properly drafted.",
-            "options": [
-                {"value": "green", "label": "Yes, my contracts cap my liability.", "points": 3, "trigger_flag": False},
-                {"value": "yellow", "label": "Maybe, I have not reviewed them closely.", "points": 2, "trigger_flag": False},
-                {"value": "red", "label": "No cap, or I am not sure.", "points": 1, "trigger_flag": True}
-            ],
-            "area": "contracts"
-        },
-        {
-            "id": "q4",
-            "text": "Are any of your client relationships running on handshake deals or templates no attorney has reviewed?",
-            "why_it_matters": "Handshake deals offer zero legal protection in a dispute. Online templates are written for generic situations and almost never address your specific industry risks, state laws, or business model. They create a false sense of security that disappears the moment you need to enforce them.",
-            "options": [
-                {"value": "green", "label": "No, everything is in attorney-reviewed written contracts.", "points": 3, "trigger_flag": False},
-                {"value": "yellow", "label": "A few are verbal or on generic templates.", "points": 2, "trigger_flag": False},
-                {"value": "red", "label": "Yes, that describes most of my client work.", "points": 1, "trigger_flag": True}
-            ],
+            "id": "c2",
+            "text": "When a customer changes the plan mid-job, do you get written approval before doing the extra work?",
+            "why_it_matters": "Change orders are where businesses quietly lose money. Without a signed approval, you end up doing extra work for free with nothing in writing to support the bill.",
+            "options": _opts(
+                "Yes, always a written change order first.",
+                "Big changes yes, small ones get handled informally.",
+                "No, we handle changes as they come and bill later.",
+            ),
             "area": "contracts"
         },
 
-        # AREA 2: Ownership & Governance (Q5-Q8)
+        # AREA 2: Ownership & Governance
         {
-            "id": "q5",
-            "text": "Do you have a current, signed operating or shareholder agreement that every owner has agreed to?",
-            "why_it_matters": "Without a written agreement, your state's default rules govern your business. Those defaults were not written with your specific situation in mind. They can give a 1% owner blocking power, create ambiguity about profit splits, and leave you with no process for resolving disputes. This is the single most important legal document for any business with more than one owner.",
-            "options": [
-                {"value": "green", "label": "Yes, signed, current, and reviewed by all owners.", "points": 3, "trigger_flag": False},
-                {"value": "yellow", "label": "We have one, but it is outdated or unreviewed.", "points": 2, "trigger_flag": False},
-                {"value": "red", "label": "No, or it is a generic template we never customized.", "points": 1, "trigger_flag": True}
-            ],
+            "id": "o1",
+            "text": "Do you have a signed operating or shareholder agreement that says what happens if an owner leaves, divorces, becomes disabled, or passes away?",
+            "why_it_matters": "Without a written agreement, your state's default rules run your business. An owner's death could leave you in business with their heirs, and a divorce could give an ex-spouse a claim to part of the company. A clear buyout plan protects everyone.",
+            "options": _opts(
+                "Yes, current and it covers every scenario.",
+                "We have one, but it is outdated or has gaps.",
+                "No, a generic template, or I do not know.",
+            ),
             "area": "ownership"
         },
         {
-            "id": "q6",
-            "text": "Does your agreement say what happens if an owner leaves, divorces, becomes disabled, or passes away?",
-            "why_it_matters": "Without buy-sell provisions, an owner leaving the business can trigger a forced dissolution. An owner's death could mean you are suddenly in business with their spouse or heirs. An owner's divorce could give their ex-spouse a claim to part of the company. These are not hypothetical risks. They happen constantly, and businesses without buyout provisions rarely survive them.",
-            "options": [
-                {"value": "green", "label": "Yes, every scenario, with a clear valuation process.", "points": 3, "trigger_flag": False},
-                {"value": "yellow", "label": "Some buyout language, but gaps or unclear valuation.", "points": 2, "trigger_flag": False},
-                {"value": "red", "label": "No, or I do not know.", "points": 1, "trigger_flag": True}
-            ],
-            "area": "ownership"
-        },
-        {
-            "id": "q7",
-            "text": "Is it written down who decides what, and how you break a tie between owners?",
-            "why_it_matters": "When two 50/50 partners disagree and there is no deadlock resolution mechanism, the business can become paralyzed. No one can sign contracts, hire, fire, or make financial decisions. Without clear authority structure, a single disagreement can shut down operations and ultimately force a judicial dissolution of the entire company.",
-            "options": [
-                {"value": "green", "label": "Yes, authority and deadlock resolution are documented.", "points": 3, "trigger_flag": False},
-                {"value": "yellow", "label": "General roles only, big decisions are not documented.", "points": 2, "trigger_flag": False},
-                {"value": "red", "label": "No, decision-making is informal.", "points": 1, "trigger_flag": True}
-            ],
-            "area": "ownership"
-        },
-        {
-            "id": "q8",
-            "text": "Does your entity type (LLC, S-Corp, C-Corp, partnership) still fit how your business runs today?",
-            "why_it_matters": "Businesses evolve. An entity structure that made sense at launch may be costing you tens of thousands in unnecessary taxes, creating personal liability exposure, or limiting your ability to bring on investors or sell the business. Mismatched entity structures are one of the most expensive and overlooked problems because the cost is invisible until you try to raise capital, sell, or get audited.",
-            "options": [
-                {"value": "green", "label": "Yes, reviewed with a professional in the past two years.", "points": 3, "trigger_flag": False},
-                {"value": "yellow", "label": "Probably, but not reviewed since we set it up.", "points": 2, "trigger_flag": False},
-                {"value": "red", "label": "Not sure, or the business has changed a lot.", "points": 1, "trigger_flag": True}
-            ],
+            "id": "o2",
+            "text": "Are your company records current: annual filings, meeting minutes, and a record of who owns what?",
+            "why_it_matters": "Lapsed filings and missing minutes can weaken the liability protection your entity gives you. They are also one of the first things a buyer or lender asks to see.",
+            "options": _opts(
+                "Yes, all current and in one place.",
+                "Some are current, some have lapsed.",
+                "No, or I am not sure what we have.",
+            ),
             "area": "ownership"
         },
 
-        # AREA 3: Vendors (Q9-Q12)
+        # AREA 3: Vendors
         {
-            "id": "q9",
-            "text": "Does every vendor sign a written agreement before starting work for your business?",
-            "why_it_matters": "A vendor or service provider working without a signed agreement exposes you to disputes over scope, payment, quality, and timeline with zero documentation to protect your position. If that vendor fails to perform or causes harm, you may have no contractual recourse. This is one of the fastest ways to face unexpected liability.",
-            "options": [
-                {"value": "green", "label": "Yes, every vendor signs first, no exceptions.", "points": 3, "trigger_flag": False},
-                {"value": "yellow", "label": "Most do, some start on a verbal or an email.", "points": 2, "trigger_flag": False},
-                {"value": "red", "label": "No, we often use vendors without signed agreements.", "points": 1, "trigger_flag": True}
-            ],
+            "id": "v1",
+            "text": "Does every subcontractor and vendor sign a written agreement before starting, including terms that cover you if their work causes a loss?",
+            "why_it_matters": "When a sub or vendor works without a signed agreement, you can end up paying for their mistakes with no way to recover. Indemnification terms put the cost back where it belongs.",
+            "options": _opts(
+                "Yes, every one, with those terms.",
+                "Most sign, but terms vary or some start on a handshake.",
+                "No, we often work without signed agreements.",
+            ),
             "area": "subcontractor"
         },
         {
-            "id": "q10",
+            "id": "v2",
             "text": "Would your independent contractor classifications hold up under an IRS or state labor audit?",
-            "why_it_matters": "Misclassifying an employee as an independent contractor is one of the most aggressively enforced compliance areas by the IRS and state agencies. If you are found to have misclassified workers, you face back taxes, penalties, unpaid benefits, and potential class action exposure. A single misclassification audit can result in six-figure liability across all similarly classified workers.",
-            "options": [
-                {"value": "green", "label": "Yes, reviewed by a legal or tax professional.", "points": 3, "trigger_flag": False},
-                {"value": "yellow", "label": "I believe so, but never formally reviewed.", "points": 2, "trigger_flag": False},
-                {"value": "red", "label": "I am not sure they would pass.", "points": 1, "trigger_flag": True}
-            ],
-            "area": "subcontractor"
-        },
-        {
-            "id": "q11",
-            "text": "Do your vendor agreements protect you if a vendor's work causes you a loss or a claim?",
-            "why_it_matters": "Without indemnification and liability limits, you absorb the financial consequences of someone else's mistakes. If a vendor's product or service causes you loss or exposes you to a third-party claim, you may have no contractual right to recover from the vendor who actually caused the problem.",
-            "options": [
-                {"value": "green", "label": "Yes, all include indemnification and liability protections.", "points": 3, "trigger_flag": False},
-                {"value": "yellow", "label": "Some do, but it is not consistent.", "points": 2, "trigger_flag": False},
-                {"value": "red", "label": "No, or I do not know.", "points": 1, "trigger_flag": True}
-            ],
-            "area": "subcontractor"
-        },
-        {
-            "id": "q12",
-            "text": "Do you collect and track current insurance certificates from your higher-risk vendors?",
-            "why_it_matters": "A certificate of insurance that expired is worthless. If an uninsured vendor causes damage or exposes your business to liability, their lack of coverage becomes your financial responsibility. Many businesses collect certificates once and never check again, only to discover at the worst possible moment that coverage lapsed.",
-            "options": [
-                {"value": "green", "label": "Yes, we collect, verify, and track expirations.", "points": 3, "trigger_flag": False},
-                {"value": "yellow", "label": "We collect at the start but do not track renewals.", "points": 2, "trigger_flag": False},
-                {"value": "red", "label": "No, we do not collect or verify them.", "points": 1, "trigger_flag": True}
-            ],
+            "why_it_matters": "Worker misclassification is heavily enforced by the IRS and state agencies. One audit can bring back taxes, penalties, and unpaid benefits across every worker classified the same way.",
+            "options": _opts(
+                "Yes, reviewed by a legal or tax professional.",
+                "I believe so, but never formally reviewed.",
+                "I am not sure they would pass.",
+            ),
             "area": "subcontractor"
         },
 
-        # AREA 4: Employment & Safety Compliance (Q13-Q16)
+        # AREA 4: Employment & Safety Compliance
         {
-            "id": "q13",
-            "text": "Is your employee handbook up to date with your state's employment laws as they are today?",
-            "why_it_matters": "Employment law changes constantly. Paid leave requirements, anti-harassment rules, accommodation obligations, and termination procedures vary by state and update frequently. An outdated handbook can actually work against you in court because it shows you had policies but failed to keep them current. Plaintiff attorneys look for handbook gaps first.",
-            "options": [
-                {"value": "green", "label": "Yes, reviewed and updated within the past year.", "points": 3, "trigger_flag": False},
-                {"value": "yellow", "label": "We have one, but it is over a year old.", "points": 2, "trigger_flag": False},
-                {"value": "red", "label": "No handbook, or it is badly outdated.", "points": 1, "trigger_flag": True}
-            ],
+            "id": "e1",
+            "text": "Is your employee handbook up to date with today's employment laws?",
+            "why_it_matters": "Employment law changes every year. An outdated handbook can work against you, because it shows you had policies but did not keep them current.",
+            "options": _opts(
+                "Yes, updated within the past year.",
+                "We have one, but it is over a year old.",
+                "No handbook, or it is badly outdated.",
+            ),
             "area": "employment"
         },
         {
-            "id": "q14",
-            "text": "Are your pay practices compliant, including overtime and exempt versus non-exempt classifications?",
-            "why_it_matters": "Wage and hour claims are the most common type of employment lawsuit in the United States. Misclassifying a salaried employee as exempt when they do not meet the legal test, failing to pay overtime correctly, or rounding time entries the wrong way can result in class action exposure that covers every similarly situated employee. These claims often include double damages and attorney fees.",
-            "options": [
-                {"value": "green", "label": "Yes, formally reviewed by an attorney or HR professional.", "points": 3, "trigger_flag": False},
-                {"value": "yellow", "label": "I believe so, but never formally reviewed.", "points": 2, "trigger_flag": False},
-                {"value": "red", "label": "I am not confident they would survive an audit.", "points": 1, "trigger_flag": True}
-            ],
-            "area": "employment"
-        },
-        {
-            "id": "q15",
-            "text": "Do you follow a documented process, with written records, before letting an employee go?",
-            "why_it_matters": "Wrongful termination claims often succeed not because the termination was actually illegal, but because the employer cannot prove it was justified. Without a documented process, consistent application, and a paper trail, a terminated employee's attorney only needs to show inconsistency or missing records to build a case. The cost of defending even a weak wrongful termination claim averages $75,000 to $250,000.",
-            "options": [
-                {"value": "green", "label": "Yes, documented warnings, records, and a final review.", "points": 3, "trigger_flag": False},
-                {"value": "yellow", "label": "We try, but it is not consistent.", "points": 2, "trigger_flag": False},
-                {"value": "red", "label": "No formal process or documentation.", "points": 1, "trigger_flag": True}
-            ],
-            "area": "employment"
-        },
-        {
-            "id": "q16",
-            "text": "Have your key employees signed confidentiality and non-solicitation agreements?",
-            "why_it_matters": "When a key employee leaves and takes your client list, your pricing data, or your best employees with them, the damage is immediate and often irreversible. Without a signed confidentiality and non-solicitation agreement, you have very limited legal ability to stop them. These agreements need to be in place before the information is shared, not after someone gives notice.",
-            "options": [
-                {"value": "green", "label": "Yes, all key employees have signed.", "points": 3, "trigger_flag": False},
-                {"value": "yellow", "label": "Some have, but coverage is spotty.", "points": 2, "trigger_flag": False},
-                {"value": "red", "label": "No, we do not have these agreements.", "points": 1, "trigger_flag": True}
-            ],
+            "id": "e2",
+            "text": "Are your pay practices compliant, including overtime and exempt versus non-exempt?",
+            "why_it_matters": "Wage and hour claims are the most common employment lawsuit in the country. They can cover every employee in the same role and often include double damages and attorney fees.",
+            "options": _opts(
+                "Yes, formally reviewed.",
+                "I believe so, but never formally reviewed.",
+                "I am not confident they would survive an audit.",
+            ),
             "area": "employment"
         },
 
-        # AREA 5: Insurance and Risk Management (Q17-Q20)
+        # AREA 5: Insurance and Risk Management
         {
-            "id": "q17",
-            "text": "Has your business insurance been reviewed in the past 12 months against how you operate now?",
-            "why_it_matters": "Most businesses buy insurance when they launch and never update it. If your revenue has doubled, you have added services, hired employees, or expanded locations, your original policy may not cover your current exposure. Discovering a coverage gap after a claim is filed is the most expensive way to find out your policy is outdated.",
-            "options": [
-                {"value": "green", "label": "Yes, reviewed and adjusted within the past year.", "points": 3, "trigger_flag": False},
-                {"value": "yellow", "label": "We have insurance, but no recent review.", "points": 2, "trigger_flag": False},
-                {"value": "red", "label": "Never reviewed, or the business has changed a lot.", "points": 1, "trigger_flag": True}
-            ],
+            "id": "i1",
+            "text": "Has your insurance been reviewed in the past 12 months, including where the gaps and exclusions are?",
+            "why_it_matters": "Most businesses buy insurance once and rarely revisit it. If you have grown, added services, or hired, your policy may not match how you operate today, and the gaps usually show up only when a claim is filed.",
+            "options": _opts(
+                "Yes, reviewed and gaps addressed.",
+                "We have coverage, but no recent review.",
+                "Never reviewed, or the business has changed a lot.",
+            ),
             "area": "insurance"
         },
         {
-            "id": "q18",
-            "text": "Does your insurance actually cover the promises your contracts make, like indemnifying a client?",
-            "why_it_matters": "It is common for businesses to sign contracts with indemnification or insurance requirements that exceed what their policy covers. You are contractually promising protection that does not exist. When a claim arises and the insurance company denies it because the obligation was outside your coverage terms, you pay the full amount out of pocket.",
-            "options": [
-                {"value": "green", "label": "Yes, my attorney and broker have compared them.", "points": 3, "trigger_flag": False},
-                {"value": "yellow", "label": "I think so, but no one has checked.", "points": 2, "trigger_flag": False},
-                {"value": "red", "label": "I have never compared them.", "points": 1, "trigger_flag": True}
-            ],
-            "area": "insurance"
-        },
-        {
-            "id": "q19",
-            "text": "Does your team know exactly what to do in the 24 hours after an accident or serious complaint?",
-            "why_it_matters": "The first 24 hours after an incident determine whether your insurance claim succeeds or fails and whether your legal exposure grows or shrinks. Delayed reporting, destroyed evidence, inconsistent statements, and social media posts by employees can all undermine your defense. A documented procedure ensures the right steps happen immediately, not after the damage is done.",
-            "options": [
-                {"value": "green", "label": "Yes, written procedure, and the team is trained.", "points": 3, "trigger_flag": False},
-                {"value": "yellow", "label": "Informal understanding only, nothing written.", "points": 2, "trigger_flag": False},
-                {"value": "red", "label": "No procedure at all.", "points": 1, "trigger_flag": True}
-            ],
-            "area": "insurance"
-        },
-        {
-            "id": "q20",
-            "text": "Do you know where your insurance has gaps, like exclusions or limits that are too low?",
-            "why_it_matters": "Every insurance policy has exclusions, caps, and limitations. The businesses that get hurt are the ones who discover those gaps when filing a claim. A proactive coverage gap analysis costs very little compared to discovering after a $500,000 claim that your policy caps out at $250,000 or excludes the specific type of work that caused the loss.",
-            "options": [
-                {"value": "green", "label": "Yes, we did a gap analysis and addressed them.", "points": 3, "trigger_flag": False},
-                {"value": "yellow", "label": "Aware of some limits, but no full review.", "points": 2, "trigger_flag": False},
-                {"value": "red", "label": "No idea what my policy excludes.", "points": 1, "trigger_flag": True}
-            ],
+            "id": "i2",
+            "text": "Does your insurance actually cover the promises your contracts make, like indemnifying a customer?",
+            "why_it_matters": "It is common to sign contracts promising protection your policy does not provide. When the insurer denies a claim that falls outside your coverage, the business pays out of pocket.",
+            "options": _opts(
+                "Yes, my attorney and broker have compared them.",
+                "I think so, but no one has checked.",
+                "I have never compared them.",
+            ),
             "area": "insurance"
         },
 
-        # AREA 6: Systems, Records & Digital Risk (Q21-Q24)
+        # AREA 6: Systems, Records & Digital Risk
         {
-            "id": "q21",
-            "text": "Could you produce your key business records within 48 hours for an audit or lawsuit?",
-            "why_it_matters": "When a lawsuit, audit, or buyer due diligence request arrives, you do not get weeks to organize your records. Businesses that cannot produce clean documentation quickly lose leverage in negotiations, face sanctions in litigation, and kill potential deals. Record disorganization is also a red flag in any legal proceeding that suggests broader operational problems.",
-            "options": [
-                {"value": "green", "label": "Yes, organized, digitized, and accessible.", "points": 3, "trigger_flag": False},
-                {"value": "yellow", "label": "Most exist, but scattered and slow to compile.", "points": 2, "trigger_flag": False},
-                {"value": "red", "label": "No, disorganized or incomplete.", "points": 1, "trigger_flag": True}
-            ],
+            "id": "r1",
+            "text": "If a buyer, lender, or lawsuit asked tomorrow, could you pull together your key records within two weeks?",
+            "why_it_matters": "Buyers walk away when records are incomplete, and lenders and courts expect documents on a deadline. Organized records keep you in control of the outcome.",
+            "options": _opts(
+                "Yes, organized and ready.",
+                "Most of it, but it would be a scramble.",
+                "No, we are not close.",
+            ),
             "area": "systems"
         },
         {
-            "id": "q22",
-            "text": "Do your data security and privacy practices meet the standards for your industry?",
-            "why_it_matters": "Data breach notification laws now exist in all 50 states, and many industries have specific compliance requirements (HIPAA, PCI, state consumer privacy acts). A single data breach can trigger mandatory notifications, regulatory investigations, class action lawsuits, and reputational damage. The average cost of a data breach for a small business is enough to close the doors permanently.",
-            "options": [
-                {"value": "green", "label": "Yes, documented and reviewed for compliance.", "points": 3, "trigger_flag": False},
-                {"value": "yellow", "label": "Some measures, but never formally reviewed.", "points": 2, "trigger_flag": False},
-                {"value": "red", "label": "No, or I do not know our obligations.", "points": 1, "trigger_flag": True}
-            ],
-            "area": "systems"
-        },
-        {
-            "id": "q23",
-            "text": "Is access to sensitive information limited to the people who actually need it?",
-            "why_it_matters": "Most internal data breaches and information theft happen because everyone has access to everything. When a disgruntled employee, departing partner, or compromised account can access all of your sensitive information without restriction, the damage potential is unlimited. Access controls are the difference between a contained problem and a catastrophic one.",
-            "options": [
-                {"value": "green", "label": "Yes, role-based access controls are in place.", "points": 3, "trigger_flag": False},
-                {"value": "yellow", "label": "Some restrictions, but most people can access most things.", "points": 2, "trigger_flag": False},
-                {"value": "red", "label": "No, everyone can access essentially everything.", "points": 1, "trigger_flag": True}
-            ],
-            "area": "systems"
-        },
-        {
-            "id": "q24",
-            "text": "If you sold the business or faced a lawsuit tomorrow, could you produce complete records within two weeks?",
-            "why_it_matters": "Whether you are selling the business, defending a lawsuit, or responding to a regulatory inquiry, your ability to produce organized documentation determines your outcome. Buyers walk away from deals when records are incomplete. Judges penalize parties that cannot produce evidence. Regulators assume the worst when documentation is missing. This question tests the overall health of your entire records system.",
-            "options": [
-                {"value": "green", "label": "Yes, we could be due diligence ready in two weeks.", "points": 3, "trigger_flag": False},
-                {"value": "yellow", "label": "Most of it, but it would be a scramble.", "points": 2, "trigger_flag": False},
-                {"value": "red", "label": "No, we are not close to ready.", "points": 1, "trigger_flag": True}
-            ],
+            "id": "r2",
+            "text": "Is customer and employee information secured, with access limited to people who need it?",
+            "why_it_matters": "Every state has data breach notification laws. When everyone can see everything, one lost laptop or departing employee can turn into notices, investigations, and claims.",
+            "options": _opts(
+                "Yes, documented and access is limited.",
+                "Some measures, but most people can see most things.",
+                "No, or I do not know our obligations.",
+            ),
             "area": "systems"
         }
     ]
 }
 
-# Risk descriptions for RED answers - organized by area
+# Risk descriptions per question, organized by area.
+# Older assessments (q1 to q24) keep their stored details, so only the
+# current questions are needed here.
 RISK_DESCRIPTIONS = {
     "contracts": {
-        "q1": {"title": "Vague Contract Terms", "description": "Your contracts lack clear scope, pricing, or payment terms, exposing you to disputes and cash flow problems."},
-        "q2": {"title": "No Change Order Process", "description": "Without documented change orders, you risk doing extra work for free with no billing recourse."},
-        "q3": {"title": "No Liability Cap", "description": "Without a liability cap, a single project could result in a company-ending judgment."},
-        "q4": {"title": "Relying on Handshake Deals", "description": "Verbal agreements and unreviewed templates offer zero legal protection in disputes."}
+        "c1": {"title": "Unsigned or Vague Customer Contracts", "description": "Jobs without a clear signed contract leave you exposed to scope disputes and slow payment."},
+        "c2": {"title": "No Change Order Process", "description": "Without documented change orders, you risk doing extra work for free with no billing recourse."}
     },
     "ownership": {
-        "q5": {"title": "No Ownership Agreement", "description": "Without a written agreement, state default rules govern your business, often unfavorably."},
-        "q6": {"title": "No Buy-Sell Provisions", "description": "Missing buyout provisions for death, disability, or departure can force dissolution."},
-        "q7": {"title": "No Deadlock Resolution", "description": "Without clear decision-making rules, partner disagreements can paralyze the business."},
-        "q8": {"title": "Mismatched Entity Structure", "description": "Your entity structure may be costing you money or creating liability exposure."}
+        "o1": {"title": "No Owner Exit Plan", "description": "Without a current agreement covering departure, divorce, disability, or death, an owner event can put the business at risk."},
+        "o2": {"title": "Company Records Not Current", "description": "Lapsed filings and missing minutes can weaken your liability protection and slow a sale or loan."}
     },
     "subcontractor": {
-        "q9": {"title": "No Subcontractor Agreements", "description": "Working without signed agreements exposes you to disputes and liability for their actions."},
-        "q10": {"title": "Contractor Misclassification Risk", "description": "Misclassifying workers can result in six-figure liability in an IRS or state audit."},
-        "q11": {"title": "No Indemnification Protection", "description": "Without indemnification, you pay for others' mistakes with no recovery rights."},
-        "q12": {"title": "Unverified Insurance Coverage", "description": "Uninsured subcontractors make you financially responsible for their damages."}
+        "v1": {"title": "Unprotected Vendor Relationships", "description": "Subs and vendors working without signed agreements can leave you paying for their mistakes."},
+        "v2": {"title": "Contractor Misclassification Risk", "description": "Misclassifying workers can result in six-figure liability in an IRS or state audit."}
     },
     "employment": {
-        "q13": {"title": "Outdated Employee Handbook", "description": "An outdated or missing handbook can work against you in employment lawsuits."},
-        "q14": {"title": "Wage & Hour Compliance Risk", "description": "Wage misclassification is the most common employment lawsuit, with double damages."},
-        "q15": {"title": "No Termination Documentation", "description": "Missing documentation makes wrongful termination claims easier to pursue."},
-        "q16": {"title": "No Employee Protections", "description": "Missing confidentiality agreements leave you vulnerable when key employees leave."}
+        "e1": {"title": "Outdated Employee Handbook", "description": "An outdated or missing handbook can work against you in employment claims."},
+        "e2": {"title": "Wage & Hour Compliance Risk", "description": "Wage and hour claims are the most common employment lawsuit, often with double damages."}
     },
     "insurance": {
-        "q17": {"title": "Outdated Insurance Coverage", "description": "Your policy may not cover your current operations, revenue, or risk exposure."},
-        "q18": {"title": "Contract-Insurance Mismatch", "description": "You may be contractually promising coverage that your insurance doesn't provide."},
-        "q19": {"title": "No Incident Response Plan", "description": "Poor incident handling in the first 24 hours can undermine your insurance claim."},
-        "q20": {"title": "Unknown Coverage Gaps", "description": "Policy exclusions and limits you don't know about will hurt you when you file a claim."}
+        "i1": {"title": "Unreviewed Insurance Coverage", "description": "Your policy may not match how you operate today, and its gaps are unknown until a claim."},
+        "i2": {"title": "Contract-Insurance Mismatch", "description": "You may be promising coverage in your contracts that your insurance does not provide."}
     },
     "systems": {
-        "q21": {"title": "Disorganized Records", "description": "You cannot produce key documents quickly for audits, lawsuits, or due diligence."},
-        "q22": {"title": "Inadequate Data Security", "description": "A data breach without proper security can close your business permanently."},
-        "q23": {"title": "No Access Controls", "description": "Everyone having access to everything maximizes damage potential from any breach."},
-        "q24": {"title": "Not Due Diligence Ready", "description": "Incomplete records can kill deals, lose lawsuits, and invite regulatory problems."}
+        "r1": {"title": "Records Not Ready", "description": "Records you cannot produce quickly can stall a sale, a loan, or your defense in a lawsuit."},
+        "r2": {"title": "Sensitive Data Not Secured", "description": "Open access to customer and employee data raises the cost of any breach or departure."}
     }
 }
 
@@ -1071,11 +1134,18 @@ AREA_NAMES = {
     "systems": "Systems, Records & Digital Risk"
 }
 
+QUESTION_AREAS = {q["id"]: q["area"] for module in QUESTIONS.values() for q in module}
+
 # ----- HELPER FUNCTIONS -----
 
 def get_area_for_question(question_id: str) -> str:
-    """Get the area for a given question ID"""
-    q_num = int(question_id.replace("q", ""))
+    """Get the area for a given question ID (current or legacy q1-q24)."""
+    if question_id in QUESTION_AREAS:
+        return QUESTION_AREAS[question_id]
+    try:
+        q_num = int(question_id.replace("q", ""))
+    except ValueError:
+        return ""
     if q_num <= 4:
         return "contracts"
     elif q_num <= 8:
@@ -1089,16 +1159,26 @@ def get_area_for_question(question_id: str) -> str:
     else:
         return "systems"
 
-def calculate_area_risk_level(score: int) -> str:
-    """Calculate risk level for an area (4 questions, max 12 points)"""
-    if score >= 10:
+def area_max_score(area_id: str) -> int:
+    """Max points for an area: 3 points per question."""
+    return len(AREAS.get(area_id, {}).get("questions", [])) * 3
+
+def calculate_area_risk_level(score: int, max_score: int = 6) -> str:
+    """Area risk level by percentage, so it works for any question count.
+    2 questions (max 6): 5-6 GREEN, 4 YELLOW, 2-3 RED.
+    Same cut points as the old 4-question version (10-12, 7-9, 4-6 of 12).
+    """
+    if max_score <= 0:
         return "green"
-    elif score >= 7:
+    pct = score / max_score * 100
+    if pct >= 80:
+        return "green"
+    elif pct >= 58:
         return "yellow"
     else:
         return "red"
 
-def calculate_overall_risk_level(total_score: int, max_score: int = 72) -> str:
+def calculate_overall_risk_level(total_score: int, max_score: int = 36) -> str:
     """Calculate overall risk level using percentage-based thresholds.
     GREEN: 81%+ of max possible
     YELLOW: 56-80%
@@ -1190,19 +1270,20 @@ def calculate_score_and_risks(answers: List[AssessmentAnswer], modules: List[str
             continue
         area_name = AREA_NAMES[area_id]
         score = area_points[area_id]
-        risk_level = calculate_area_risk_level(score)
+        area_max = area_max_score(area_id)
+        risk_level = calculate_area_risk_level(score, area_max)
         area_scores.append({
             "area_id": area_id,
             "area_name": area_name,
             "score": score,
-            "max_score": 12,
+            "max_score": area_max,
             "risk_level": risk_level,
             "red_flags": area_red_flags[area_id]
         })
 
     # Calculate totals (scaled to selected areas)
     total_score = sum(a.points for a in answers if get_area_for_question(a.question_id) in selected_areas)
-    max_score = len(selected_areas) * 12  # 4 questions x 3 points per area
+    max_score = sum(area_max_score(a) for a in selected_areas)  # 3 points per question
     score_percentage = (total_score / max_score * 100) if max_score > 0 else 0
 
     # Determine overall risk level using percentage-based thresholds
@@ -1266,7 +1347,7 @@ def generate_action_plan(top_risks: List[Dict], risk_level: str, area_scores: Li
         action_plan.append({
             "priority": priority,
             "action": f"Address {area['area_name']} Immediately",
-            "description": f"This area scored {area['score']}/12, indicating significant exposure that needs professional review.",
+            "description": f"This area scored {area['score']}/{area.get('max_score', 6)}, indicating significant exposure that needs professional review.",
             "urgency": "high"
         })
         priority += 1
@@ -1289,7 +1370,7 @@ def generate_action_plan(top_risks: List[Dict], risk_level: str, area_scores: Li
             action_plan.append({
                 "priority": priority,
                 "action": f"Review {area['area_name']}",
-                "description": f"This area scored {area['score']}/12. Address gaps within 30-90 days.",
+                "description": f"This area scored {area['score']}/{area.get('max_score', 6)}. Address gaps within 30-90 days.",
                 "urgency": "medium"
             })
             priority += 1
@@ -1329,7 +1410,16 @@ async def get_questions(module: str, areas: Optional[str] = None):
         selected_areas = [a.strip() for a in areas.split(",")]
         questions = [q for q in questions if q.get("area") in selected_areas]
 
-    return {"module": module, "questions": questions, "areas": AREAS}
+    return {
+        "module": module,
+        "questions": questions,
+        "areas": AREAS,
+        "profile": {
+            "questions": PROFILE_QUESTIONS,
+            "documents": PROFILE_DOCUMENTS,
+            "concern_prompt": PROFILE_CONCERN_PROMPT,
+        },
+    }
 
 @api_router.get("/questions")
 async def get_all_questions():
@@ -1346,6 +1436,7 @@ async def create_assessment(data: AssessmentCreate):
     doc = assessment.model_dump()
     doc['timestamp'] = doc['timestamp'].isoformat()
     doc['internal'] = bool(data.internal)
+    doc['version'] = CHECKUP_VERSION
     await db.assessments.insert_one(doc)
     return {"id": assessment.id, "modules": assessment.modules, "selected_areas": assessment.selected_areas}
 
@@ -1356,6 +1447,9 @@ class ProgressUpdate(BaseModel):
 # Question-by-question progress tracking went live at this time. Checkups started
 # earlier have no progress data, so the per-question funnel only counts newer ones.
 PROGRESS_TRACKING_START = "2026-09-28T23:00:00+00:00"
+
+# Version 2 = the shortened 12-question checkup with the About your business step.
+CHECKUP_VERSION = 2
 
 @api_router.post("/assessments/{assessment_id}/progress")
 async def record_progress(assessment_id: str, data: ProgressUpdate):
@@ -1403,6 +1497,8 @@ async def submit_assessment(data: AssessmentSubmit):
         "confidence_level": results["confidence_level"],
         "completed": True
     }
+    if data.profile is not None:
+        update_data["business_profile"] = clean_profile(data.profile)
 
     await db.assessments.update_one(
         {"id": data.assessment_id},
@@ -1483,6 +1579,7 @@ async def create_lead(data: LeadCreate):
 
             # Pillar-level scores so the email matches the results page exactly
             area_scores_data = assessment.get('area_scores', []) or []
+            lead.business_profile = assessment.get('business_profile', {}) or {}
 
             # Prepare data for Kit API
             score_str = lead.score
@@ -1518,6 +1615,8 @@ async def create_lead(data: LeadCreate):
         email_yellow_risks = list(yellow_risks) if yellow_risks else []
         email_green_risks = list(green_risks) if green_risks else []
         email_area_scores = list(area_scores_data) if area_scores_data else []
+        intake_profile = dict(lead.business_profile or {})
+        intake_last_name = data.last_name
 
         def send_email_thread():
             logger.info(f"Background: Sending email via {SMTP_SERVER} to {email_to}")
@@ -1535,6 +1634,19 @@ async def create_lead(data: LeadCreate):
                 logger.info(f"Background: Email result: {result}")
             except Exception as e:
                 logger.error(f"Background: Email failed: {e}")
+            try:
+                intake = send_intake_email(
+                    first_name=email_first_name,
+                    last_name=intake_last_name,
+                    email=email_to,
+                    risk_level=email_risk,
+                    score=email_score,
+                    area_scores=email_area_scores,
+                    profile=intake_profile,
+                )
+                logger.info(f"Background: Intake email result: {intake}")
+            except Exception as e:
+                logger.error(f"Background: Intake email failed: {e}")
 
         thread = threading.Thread(target=send_email_thread, daemon=True)
         thread.start()
@@ -1549,7 +1661,8 @@ async def create_lead(data: LeadCreate):
         last_name=data.last_name,
         risk_level=risk_level_str,
         score=score_str,
-        top_risks=top_risks_str
+        top_risks=top_risks_str,
+        extra_fields=kit_profile_fields(lead.business_profile)
     )
 
     return {
@@ -1577,6 +1690,7 @@ async def get_leads(request: Request):
     internal_ids = await _internal_assessment_ids(db, [l.get("assessment_id") for l in leads if l.get("assessment_id")])
     for lead in leads:
         lead["is_test"] = bool(lead.get("is_test")) or (lead.get("assessment_id") in internal_ids)
+        lead["profile_labels"] = profile_labels(lead.get("business_profile") or {})
     return {"leads": leads}
 
 class TestFlag(BaseModel):
@@ -1604,7 +1718,7 @@ async def get_funnel(request: Request, days: int = 30):
     since = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
     docs = await db.assessments.find(
         {"timestamp": {"$gte": since}},
-        {"_id": 0, "id": 1, "completed": 1, "max_question_reached": 1, "timestamp": 1, "internal": 1},
+        {"_id": 0, "id": 1, "completed": 1, "max_question_reached": 1, "timestamp": 1, "internal": 1, "version": 1},
     ).to_list(50000)
 
     ids = [d["id"] for d in docs]
@@ -1623,11 +1737,15 @@ async def get_funnel(request: Request, days: int = 30):
     completed = sum(1 for d in docs if d.get("completed"))
     emails = sum(1 for d in docs if d["id"] in lead_ids)
 
-    # Per-question funnel, only for checkups started after progress tracking began
-    tracked = [d for d in docs if (d.get("timestamp") or "") >= PROGRESS_TRACKING_START]
-    total_q = 24
-    area_order = list(AREA_NAMES.keys())
+    # Per-question funnel, only for checkups on the current (12-question) version.
+    # Older 24-question checkups would skew the per-question counts.
+    tracked = [
+        d for d in docs
+        if (d.get("timestamp") or "") >= PROGRESS_TRACKING_START
+        and (d.get("version") or 1) == CHECKUP_VERSION
+    ]
     question_list = QUESTIONS.get("clbh", [])
+    total_q = len(question_list)
     reached = []
     stopped = []
     for n in range(1, total_q + 1):
@@ -1639,8 +1757,8 @@ async def get_funnel(request: Request, days: int = 30):
                 count += 1
             if not d.get("completed") and furthest == n:
                 stop += 1
-        area_id = area_order[(n - 1) // 4] if (n - 1) // 4 < len(area_order) else ""
         q = question_list[n - 1] if n - 1 < len(question_list) else {}
+        area_id = q.get("area", "")
         reached.append({
             "question_number": n,
             "area": area_id,
@@ -1681,7 +1799,9 @@ async def export_leads(request: Request):
     output = io.StringIO()
     writer = csv.DictWriter(output, fieldnames=[
         "name", "email", "phone", "business_name", "state",
-        "modules", "situation", "score", "risk_level", "top_risks", "timestamp"
+        "modules", "situation", "score", "risk_level", "top_risks",
+        "industry", "revenue", "team", "ownership", "documents_on_hand",
+        "documents_missing", "concern", "timestamp"
     ])
     writer.writeheader()
 
@@ -1699,6 +1819,9 @@ async def export_leads(request: Request):
             "top_risks": ", ".join(lead.get("top_risks", [])),
             "timestamp": lead.get("timestamp", "")
         }
+        labels = profile_labels(lead.get("business_profile") or {})
+        for key in ("industry", "revenue", "team", "ownership", "documents_on_hand", "documents_missing", "concern"):
+            row[key] = labels.get(key, "")
         writer.writerow(row)
 
     output.seek(0)

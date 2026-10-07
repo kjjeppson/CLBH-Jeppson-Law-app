@@ -76,7 +76,7 @@ const areas = [
 ];
 
 const steps = [
-  { title: "Answer 24 questions", text: "Plain English, multiple choice. About 5 to 10 minutes." },
+  { title: "Answer 12 questions", text: "Plain English, multiple choice. About 5 to 10 minutes." },
   { title: "Get your Legal Health Report", text: "A healthy, worth a look, or fix now score for each of the six areas." },
   { title: "Fix what matters most", text: "Start with your lowest score. Most gaps are ordinary paperwork, and paperwork is fixable." },
 ];
@@ -140,7 +140,7 @@ export default function LandingPage() {
             Starting your checkup...
           </h1>
           <p className="text-slate-600 text-lg">
-            24 quick questions. 5 to 10 minutes. Confidential.
+            12 quick questions. 5 to 10 minutes. Confidential.
           </p>
         </div>
       </div>
@@ -207,7 +207,7 @@ export default function LandingPage() {
             <div className="flex flex-col items-stretch sm:items-center sm:self-start sm:inline-flex gap-3 animate-fade-in-up animate-delay-300">
               <StartButton testId="hero-start-checkup-btn" />
               <p className="text-slate-400 text-sm text-center">
-                24 questions · 5 to 10 minutes · confidential
+                12 questions · 5 to 10 minutes · confidential
               </p>
             </div>
             <div className="mt-8 pt-6 border-t border-slate-700 flex items-center gap-4">
