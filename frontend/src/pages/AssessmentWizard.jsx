@@ -497,7 +497,7 @@ export default function AssessmentWizard() {
             <Building2 className="w-4 h-4" />
           </span>
           <span className="text-slate-900 font-medium text-sm">
-            A few quick facts so Eric can prepare for your audit
+            A few quick facts so your report fits your business
           </span>
         </div>
 
