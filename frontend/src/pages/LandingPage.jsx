@@ -23,29 +23,17 @@ const isInternalBrowser = () => {
 const ALL_AREAS = ["contracts", "ownership", "subcontractor", "employment", "insurance", "systems"];
 
 // Decide BEFORE first paint whether this visit should skip the landing page
-// and start the checkup immediately: links carrying ?start=1, or visitors
-// arriving from our own websites. sessionStorage-guarded so Back from
-// question 1 shows the landing page normally.
+// and start the checkup immediately. Only links that explicitly carry
+// ?start=1 auto-start. Visitors from our own websites see the landing page
+// first (Oct 8, 2026: Kristin wants every site link to open the welcome page).
+// sessionStorage-guarded so Back from question 1 shows the landing page.
 const shouldAutoStart = () => {
   try {
     if (sessionStorage.getItem("clbh_autostart_done") === "1") return false;
   } catch (e) { /* private mode; continue */ }
   const params = new URLSearchParams(window.location.search);
   const startParam = params.get("start");
-  if (startParam === "1" || startParam === "true") return true;
-  try {
-    if (document.referrer) {
-      const refHost = new URL(document.referrer).hostname;
-      // Old checkup addresses redirect here; those visitors came from a DM,
-      // email or bio link, not from our site, so show them the landing page.
-      if (/^(quiz|assessment)\./.test(refHost)) return false;
-      return (
-        refHost !== window.location.hostname &&
-        (refHost.endsWith("cleanlegalbillofhealth.com") || refHost.endsWith("jeppsonlaw.com"))
-      );
-    }
-  } catch (e) { /* unparseable referrer */ }
-  return false;
+  return startParam === "1" || startParam === "true";
 };
 
 const TM = () => <span className="align-super text-[0.4em] font-normal">™</span>;
