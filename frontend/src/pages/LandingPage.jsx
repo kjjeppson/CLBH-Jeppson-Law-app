@@ -119,9 +119,9 @@ export default function LandingPage() {
       <div className="min-h-screen bg-slate-50 flex items-center justify-center px-6">
         <div className="text-center">
           <img
-            src="/clbh-logo.png"
-            alt="Clean Legal Bill of Health — A Jeppson Law Product"
-            className="h-20 w-auto mx-auto mb-8"
+            src="/jeppsonlaw-clbh-logo.png"
+            alt="Jeppson Law and Clean Legal Bill of Health"
+            className="h-12 w-auto mx-auto mb-8"
           />
           <Loader2 className="w-10 h-10 text-orange-500 animate-spin mx-auto mb-6" />
           <h1 className="font-heading text-2xl md:text-3xl font-bold text-slate-900 mb-3">
@@ -159,13 +159,9 @@ export default function LandingPage() {
       {/* Navigation: one quiet booking link, no competing buttons */}
       <nav className="bg-white border-b border-slate-200 sticky top-0 z-50 nav-grid">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center relative z-10">
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/")}>
-            <img
-              src="/clbh-logo.png"
-              alt="Clean Legal Bill of Health — A Jeppson Law Product"
-              className="h-14 w-auto"
-            />
-          </div>
+          <a href="https://www.cleanlegalbillofhealth.com" aria-label="Jeppson Law home" className="flex items-center shrink-0 hover:opacity-80 transition-opacity">
+            <img src="/jeppsonlaw-clbh-logo.png" alt="Jeppson Law and Clean Legal Bill of Health" className="h-7 sm:h-10 md:h-12 w-auto" />
+          </a>
           <a
             href={BOOKING_URL}
             target="_blank"
@@ -317,8 +313,8 @@ export default function LandingPage() {
       <footer className="py-10">
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
-            <a href="https://cleanlegalbillofhealth.com" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity">
-              <img src="/clbh-logo.png" alt="Clean Legal Bill of Health — A Jeppson Law Product" className="h-16 w-auto" />
+            <a href="https://www.cleanlegalbillofhealth.com" className="hover:opacity-80 transition-opacity">
+              <img src="/jeppsonlaw-clbh-logo.png" alt="Jeppson Law and Clean Legal Bill of Health" className="h-10 w-auto" />
             </a>
             <a href="tel:916-780-7008" className="flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-colors">
               <Phone className="w-4 h-4" />

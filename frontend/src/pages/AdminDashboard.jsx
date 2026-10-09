@@ -175,9 +175,9 @@ export default function AdminDashboard() {
               onClick={() => navigate("/")}
             >
               <img
-                src="/clbh-logo.png"
-                alt="Clean Legal Bill of Health — A Jeppson Law Product"
-                className="h-24 w-auto"
+                src="/jeppsonlaw-clbh-logo.png"
+                alt="Jeppson Law and Clean Legal Bill of Health"
+                className="h-12 w-auto"
               />
             </div>
             <Badge variant="outline" className="ml-2">Admin</Badge>

@@ -318,13 +318,9 @@ export default function AssessmentWizard() {
         {/* Navigation */}
         <nav className="bg-white border-b border-slate-200 sticky top-0 z-50 nav-grid">
           <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center relative z-10">
-            <div className="flex items-center gap-2">
-              <img
-                src="/clbh-logo.png"
-                alt="Clean Legal Bill of Health — A Jeppson Law Product"
-                className="h-14 w-auto"
-              />
-            </div>
+            <a href="https://www.cleanlegalbillofhealth.com" aria-label="Jeppson Law home" className="flex items-center shrink-0 hover:opacity-80 transition-opacity">
+              <img src="/jeppsonlaw-clbh-logo.png" alt="Jeppson Law and Clean Legal Bill of Health" className="h-7 sm:h-10 md:h-12 w-auto" />
+            </a>
             <span className="text-slate-500 text-sm hidden md:block">
               Clean Legal Bill of Health Quick Checkup
             </span>
@@ -434,13 +430,9 @@ export default function AssessmentWizard() {
     <div className="min-h-screen bg-slate-50">
       <nav className="bg-white border-b border-slate-200 sticky top-0 z-50 nav-grid">
         <div className="max-w-7xl mx-auto px-6 py-2 flex justify-between items-center relative z-10">
-          <div className="flex items-center gap-2">
-            <img
-              src="/clbh-logo.png"
-              alt="Clean Legal Bill of Health — A Jeppson Law Product"
-              className="h-10 md:h-12 w-auto"
-            />
-          </div>
+          <a href="https://www.cleanlegalbillofhealth.com" aria-label="Jeppson Law home" className="flex items-center shrink-0 hover:opacity-80 transition-opacity">
+            <img src="/jeppsonlaw-clbh-logo.png" alt="Jeppson Law and Clean Legal Bill of Health" className="h-7 sm:h-10 md:h-12 w-auto" />
+          </a>
           <span className="text-slate-500 text-sm hidden md:block">
             Clean Legal Bill of Health Quick Checkup
           </span>
@@ -654,13 +646,9 @@ export default function AssessmentWizard() {
       {/* Navigation */}
       <nav className="bg-white border-b border-slate-200 sticky top-0 z-50 nav-grid">
         <div className="max-w-7xl mx-auto px-6 py-2 flex justify-between items-center relative z-10">
-          <div className="flex items-center gap-2">
-            <img
-              src="/clbh-logo.png"
-              alt="Clean Legal Bill of Health — A Jeppson Law Product"
-              className="h-10 md:h-12 w-auto"
-            />
-          </div>
+          <a href="https://www.cleanlegalbillofhealth.com" aria-label="Jeppson Law home" className="flex items-center shrink-0 hover:opacity-80 transition-opacity">
+            <img src="/jeppsonlaw-clbh-logo.png" alt="Jeppson Law and Clean Legal Bill of Health" className="h-7 sm:h-10 md:h-12 w-auto" />
+          </a>
           <span className="text-slate-500 text-sm hidden md:block">
             Clean Legal Bill of Health Quick Checkup
           </span>
