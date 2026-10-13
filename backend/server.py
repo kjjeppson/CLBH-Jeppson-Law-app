@@ -53,7 +53,7 @@ SMTP_PORT = 587
 
 
 # Squarespace shop products, keyed by the quiz's internal area IDs
-SHOP_BASE_URL = "https://www.cleanlegalbillofhealth.com"
+SHOP_BASE_URL = "https://www.jeppsonlaw.com"
 BUNDLE_PRODUCT_URL = f"{SHOP_BASE_URL}/shop/p/6-pillars-bundle"
 PILLAR_PRODUCTS = {
     "contracts": {"pillar": 1, "url": f"{SHOP_BASE_URL}/shop/p/pillar-1-checklist-customer-contracts-project-risks"},

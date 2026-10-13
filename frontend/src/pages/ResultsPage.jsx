@@ -13,7 +13,7 @@ import {
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 // Squarespace shop products, keyed by the quiz's internal area IDs
-const SHOP_BASE = "https://www.cleanlegalbillofhealth.com";
+const SHOP_BASE = "https://www.jeppsonlaw.com";
 const BUNDLE_URL = `${SHOP_BASE}/shop/p/6-pillars-bundle`;
 const PILLAR_PRODUCTS = {
   contracts: {
@@ -215,7 +215,7 @@ export default function ResultsPage() {
       {/* Navigation */}
       <nav className="bg-white border-b border-slate-200 sticky top-0 z-50 no-print nav-grid">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-3 relative z-10">
-          <a href="https://www.cleanlegalbillofhealth.com" aria-label="Jeppson Law home" className="flex items-center shrink-0 hover:opacity-80 transition-opacity">
+          <a href="https://www.jeppsonlaw.com" aria-label="Jeppson Law home" className="flex items-center shrink-0 hover:opacity-80 transition-opacity">
             <img src="/jeppsonlaw-clbh-logo.png" alt="Jeppson Law and Clean Legal Bill of Health" className="h-6 sm:h-10 md:h-12 w-auto" />
           </a>
           <div className="flex items-center gap-2">
@@ -579,7 +579,7 @@ export default function ResultsPage() {
       <footer className="py-6 pb-24 sm:pb-6 bg-white border-t border-slate-200 grid-pattern-light">
         <div className="max-w-7xl mx-auto px-6 relative z-10">
           <div className="flex flex-col md:flex-row md:justify-between items-center gap-4">
-            <a href="https://www.cleanlegalbillofhealth.com" className="md:flex-1 flex items-center gap-2 hover:opacity-80 transition-opacity">
+            <a href="https://www.jeppsonlaw.com" className="md:flex-1 flex items-center gap-2 hover:opacity-80 transition-opacity">
               <img
                 src="/jeppsonlaw-clbh-logo.png"
                 alt="Jeppson Law and Clean Legal Bill of Health"

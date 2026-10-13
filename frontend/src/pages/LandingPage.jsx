@@ -3,7 +3,7 @@ import { track } from "../lib/analytics";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast } from "sonner";
-import { FileCheck, Loader2, Phone, Users, Truck, HardHat, ShieldCheck, FolderOpen } from "lucide-react";
+import { FileCheck, Loader2, Phone, Users, Truck, HardHat, ShieldCheck, FolderOpen, ArrowLeft } from "lucide-react";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const BOOKING_URL = "https://jeppsonlaw.cliogrow.com/book/5d7625ad3292b0e84db81965f80ee5f4";
@@ -156,21 +156,34 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-stone-50 text-slate-900">
+      {/* Mobile-only way back to the main site (desktop shows it in the nav) */}
+      <div className="sm:hidden bg-slate-100 border-b border-slate-200 px-6 py-2">
+        <a href="https://www.jeppsonlaw.com" className="inline-flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-orange-600" data-testid="back-to-site-link-mobile">
+          <ArrowLeft className="w-4 h-4" aria-hidden="true" />
+          Back to jeppsonlaw.com
+        </a>
+      </div>
       {/* Navigation: one quiet booking link, no competing buttons */}
       <nav className="bg-white border-b border-slate-200 sticky top-0 z-50 nav-grid">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center relative z-10">
-          <a href="https://www.cleanlegalbillofhealth.com" aria-label="Jeppson Law home" className="flex items-center shrink-0 hover:opacity-80 transition-opacity">
+          <a href="https://www.jeppsonlaw.com" aria-label="Jeppson Law home" className="flex items-center shrink-0 hover:opacity-80 transition-opacity">
             <img src="/jeppsonlaw-clbh-logo.png" alt="Jeppson Law and Clean Legal Bill of Health" className="h-7 sm:h-10 md:h-12 w-auto" />
           </a>
-          <a
-            href={BOOKING_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm md:text-base font-semibold text-slate-900 underline underline-offset-4 hover:text-orange-600"
-            data-testid="nav-schedule-btn"
-          >
-            <span className="hidden sm:inline">Prefer to talk? </span>Book a free call
-          </a>
+          <div className="flex items-center gap-4 sm:gap-6">
+            <a href="https://www.jeppsonlaw.com" className="hidden sm:inline-flex items-center gap-1 text-sm md:text-base font-medium text-slate-600 hover:text-orange-600" data-testid="back-to-site-link">
+              <ArrowLeft className="w-4 h-4" aria-hidden="true" />
+              Back to jeppsonlaw.com
+            </a>
+            <a
+              href={BOOKING_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="whitespace-nowrap text-sm md:text-base font-semibold text-slate-900 underline underline-offset-4 hover:text-orange-600"
+              data-testid="nav-schedule-btn"
+            >
+              <span className="hidden sm:inline">Prefer to talk? </span>Book a free call
+            </a>
+          </div>
         </div>
       </nav>
 
@@ -313,7 +326,7 @@ export default function LandingPage() {
       <footer className="py-10">
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
-            <a href="https://www.cleanlegalbillofhealth.com" className="hover:opacity-80 transition-opacity">
+            <a href="https://www.jeppsonlaw.com" className="hover:opacity-80 transition-opacity">
               <img src="/jeppsonlaw-clbh-logo.png" alt="Jeppson Law and Clean Legal Bill of Health" className="h-10 w-auto" />
             </a>
             <a href="tel:916-780-7008" className="flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-colors">

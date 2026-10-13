@@ -318,12 +318,14 @@ export default function AssessmentWizard() {
         {/* Navigation */}
         <nav className="bg-white border-b border-slate-200 sticky top-0 z-50 nav-grid">
           <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center relative z-10">
-            <a href="https://www.cleanlegalbillofhealth.com" aria-label="Jeppson Law home" className="flex items-center shrink-0 hover:opacity-80 transition-opacity">
+            <a href="https://www.jeppsonlaw.com" aria-label="Jeppson Law home" className="flex items-center shrink-0 hover:opacity-80 transition-opacity">
               <img src="/jeppsonlaw-clbh-logo.png" alt="Jeppson Law and Clean Legal Bill of Health" className="h-7 sm:h-10 md:h-12 w-auto" />
             </a>
-            <span className="text-slate-500 text-sm hidden md:block">
-              Clean Legal Bill of Health Quick Checkup
-            </span>
+            <a href="https://www.jeppsonlaw.com" className="inline-flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-orange-600" data-testid="back-to-site-link">
+              <ArrowLeft className="w-4 h-4" aria-hidden="true" />
+              <span className="hidden sm:inline">Back to jeppsonlaw.com</span>
+              <span className="sm:hidden">Back to site</span>
+            </a>
           </div>
         </nav>
 
@@ -430,12 +432,14 @@ export default function AssessmentWizard() {
     <div className="min-h-screen bg-slate-50">
       <nav className="bg-white border-b border-slate-200 sticky top-0 z-50 nav-grid">
         <div className="max-w-7xl mx-auto px-6 py-2 flex justify-between items-center relative z-10">
-          <a href="https://www.cleanlegalbillofhealth.com" aria-label="Jeppson Law home" className="flex items-center shrink-0 hover:opacity-80 transition-opacity">
+          <a href="https://www.jeppsonlaw.com" aria-label="Jeppson Law home" className="flex items-center shrink-0 hover:opacity-80 transition-opacity">
             <img src="/jeppsonlaw-clbh-logo.png" alt="Jeppson Law and Clean Legal Bill of Health" className="h-7 sm:h-10 md:h-12 w-auto" />
           </a>
-          <span className="text-slate-500 text-sm hidden md:block">
-            Clean Legal Bill of Health Quick Checkup
-          </span>
+          <a href="https://www.jeppsonlaw.com" className="inline-flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-orange-600" data-testid="back-to-site-link">
+            <ArrowLeft className="w-4 h-4" aria-hidden="true" />
+            <span className="hidden sm:inline">Back to jeppsonlaw.com</span>
+            <span className="sm:hidden">Back to site</span>
+          </a>
         </div>
       </nav>
       <main className="max-w-2xl mx-auto px-4 sm:px-6 py-3 md:py-5 min-h-[calc(100dvh-65px)] flex flex-col">
@@ -646,12 +650,14 @@ export default function AssessmentWizard() {
       {/* Navigation */}
       <nav className="bg-white border-b border-slate-200 sticky top-0 z-50 nav-grid">
         <div className="max-w-7xl mx-auto px-6 py-2 flex justify-between items-center relative z-10">
-          <a href="https://www.cleanlegalbillofhealth.com" aria-label="Jeppson Law home" className="flex items-center shrink-0 hover:opacity-80 transition-opacity">
+          <a href="https://www.jeppsonlaw.com" aria-label="Jeppson Law home" className="flex items-center shrink-0 hover:opacity-80 transition-opacity">
             <img src="/jeppsonlaw-clbh-logo.png" alt="Jeppson Law and Clean Legal Bill of Health" className="h-7 sm:h-10 md:h-12 w-auto" />
           </a>
-          <span className="text-slate-500 text-sm hidden md:block">
-            Clean Legal Bill of Health Quick Checkup
-          </span>
+          <a href="https://www.jeppsonlaw.com" className="inline-flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-orange-600" data-testid="back-to-site-link">
+            <ArrowLeft className="w-4 h-4" aria-hidden="true" />
+            <span className="hidden sm:inline">Back to jeppsonlaw.com</span>
+            <span className="sm:hidden">Back to site</span>
+          </a>
         </div>
       </nav>
 
