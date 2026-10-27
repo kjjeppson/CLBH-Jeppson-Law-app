@@ -43,6 +43,10 @@ KIT_API_KEY = os.getenv("KIT_API_KEY")
 KIT_FORM_ID = os.getenv("KIT_FORM_ID")
 KIT_TAG_ID = os.getenv("KIT_TAG_ID")  # Staging tag for creating subscribers with fields
 KIT_API_URL = "https://api.convertkit.com/v3"
+# Kit V4 API key (preferred). When set, subscribe_to_kit() uses the V4 API
+# instead of the legacy V3 endpoint, which needs the V3 API Secret.
+KIT_V4_API_KEY = os.getenv("KIT_V4_API_KEY")
+KIT_V4_API_URL = "https://api.kit.com/v4"
 
 # SMTP configuration for sending results emails
 # Credentials must be set in Railway environment variables
@@ -532,6 +536,81 @@ def send_intake_email(
     return {"success": False, "error": "Intake email failed after 3 attempts"}
 
 
+async def _subscribe_to_kit_v4(
+    email: str,
+    first_name: str,
+    last_name: str,
+    risk_level: str,
+    score: str,
+    top_risks: str,
+    extra_fields: Optional[Dict[str, str]],
+) -> Dict[str, Any]:
+    """
+    Kit V4: create or update the subscriber (with custom fields), then add
+    them to the checkup form so the form's automations and sequence run.
+    """
+    headers = {
+        "X-Kit-Api-Key": KIT_V4_API_KEY,
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+    }
+    fields = {
+        "last_name": last_name,
+        "risk_level": risk_level,
+        "score": score,
+        "top_risks": top_risks,
+        **(extra_fields or {}),
+    }
+    # Only send fields that have a value, so blanks never overwrite real data
+    fields = {k: v for k, v in fields.items() if v}
+
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            # Step 1: create or update the subscriber (upsert by email)
+            sub_payload: Dict[str, Any] = {"email_address": email, "fields": fields}
+            if first_name:
+                sub_payload["first_name"] = first_name
+            url = f"{KIT_V4_API_URL}/subscribers"
+            logger.info(f"POST {url} (Kit V4)")
+            resp = await client.post(url, json=sub_payload, headers=headers)
+            logger.info(f"Kit V4 subscriber response: {resp.status_code}")
+            try:
+                sub_data = resp.json()
+            except Exception:
+                sub_data = {"raw_response": resp.text}
+            if resp.status_code not in (200, 201, 202):
+                logger.error(f"FAILED: Kit V4 subscriber upsert returned {resp.status_code}: {sub_data}")
+                return {"success": False, "status_code": resp.status_code, "error": sub_data}
+            if isinstance(sub_data, dict) and sub_data.get("warnings"):
+                logger.warning(f"Kit V4 warnings: {sub_data.get('warnings')}")
+
+            # Step 2: add the subscriber to the checkup form
+            url = f"{KIT_V4_API_URL}/forms/{KIT_FORM_ID}/subscribers"
+            logger.info(f"POST {url} (Kit V4)")
+            resp = await client.post(url, json={"email_address": email}, headers=headers)
+            logger.info(f"Kit V4 form response: {resp.status_code}")
+            try:
+                form_data = resp.json()
+            except Exception:
+                form_data = {"raw_response": resp.text}
+            if resp.status_code in (200, 201):
+                logger.info("SUCCESS: Subscriber added to Kit form via V4!")
+                return {"success": True, "data": form_data}
+            logger.error(f"FAILED: Kit V4 form add returned {resp.status_code}: {form_data}")
+            return {"success": False, "status_code": resp.status_code, "error": form_data}
+
+    except httpx.TimeoutException as e:
+        logger.error(f"Kit V4 API Timeout: {str(e)}")
+        return {"success": False, "error": f"Timeout: {str(e)}"}
+    except httpx.RequestError as e:
+        logger.error(f"Kit V4 API Request Error: {str(e)}")
+        return {"success": False, "error": f"Request error: {str(e)}"}
+    except Exception as e:
+        logger.error(f"Kit V4 API Unexpected Error: {str(e)}")
+        logger.exception("Full traceback:")
+        return {"success": False, "error": f"Unexpected error: {str(e)}"}
+
+
 async def subscribe_to_kit(
     email: str,
     first_name: str = "",
@@ -550,14 +629,21 @@ async def subscribe_to_kit(
     logger.info("KIT API - FORM SUBSCRIPTION FOR MARKETING LIST")
     logger.info("=" * 50)
 
-    # Check if Kit is configured
-    if not KIT_API_KEY:
-        logger.error("KIT_API_KEY environment variable is not set!")
-        return {"success": False, "error": "KIT_API_KEY not configured"}
-
     if not KIT_FORM_ID:
         logger.error("KIT_FORM_ID environment variable is not set!")
         return {"success": False, "error": "KIT_FORM_ID not configured"}
+
+    # Prefer the V4 API when its key is configured
+    if KIT_V4_API_KEY:
+        return await _subscribe_to_kit_v4(
+            email, first_name, last_name, risk_level, score, top_risks, extra_fields
+        )
+
+    # Legacy V3 path. Note: the V3 form subscribe call here authenticates with
+    # the V3 API *Secret*, so KIT_API_KEY must hold the secret, not the API key.
+    if not KIT_API_KEY:
+        logger.error("Neither KIT_V4_API_KEY nor KIT_API_KEY is set!")
+        return {"success": False, "error": "Kit API key not configured"}
 
     # Log all fields being sent
     logger.info(f"  email: '{email}'")

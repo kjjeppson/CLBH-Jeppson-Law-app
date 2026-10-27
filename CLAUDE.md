@@ -90,7 +90,7 @@ Two collections:
 
 ### External Services
 - **SMTP** (PPE Hosted) — sends results email from Eric's account. Env vars: `ERIC_EMAIL`, `ERIC_EMAIL_PASSWORD`
-- **ConvertKit (Kit)** — subscribes leads to marketing list. Env vars: `KIT_API_KEY`, `KIT_FORM_ID`, `KIT_TAG_ID`. Custom fields sent per subscriber:
+- **ConvertKit (Kit)** — subscribes leads to marketing list. Env vars: `KIT_V4_API_KEY` (preferred), `KIT_API_KEY` (legacy V3 fallback; must hold the V3 API *Secret*), `KIT_FORM_ID`, `KIT_TAG_ID`. With `KIT_V4_API_KEY` set, `subscribe_to_kit()` upserts the subscriber via `POST /v4/subscribers` and then adds them to the form via `POST /v4/forms/{id}/subscribers`. Custom fields sent per subscriber:
   - `last_name` — subscriber's last name
   - `risk_level` — overall result: "green", "yellow", or "red"
   - `score` — percentage string, e.g. "62.5%"
@@ -123,7 +123,8 @@ Backend runs via `Procfile`: `uvicorn server:app --host 0.0.0.0 --port ${PORT:-8
 | `ADMIN_KEY` | Backend | Protects admin endpoints |
 | `ERIC_EMAIL` | Backend | SMTP sender address |
 | `ERIC_EMAIL_PASSWORD` | Backend | SMTP password |
-| `KIT_API_KEY` | Backend | ConvertKit API key |
+| `KIT_V4_API_KEY` | Backend | Kit V4 API key (preferred) |
+| `KIT_API_KEY` | Backend | Legacy: Kit V3 API Secret, used only if `KIT_V4_API_KEY` is unset |
 | `KIT_FORM_ID` | Backend | ConvertKit form ID |
 | `KIT_TAG_ID` | Backend | ConvertKit tag ID |
 | `REACT_APP_BACKEND_URL` | Frontend | Backend API base URL |
