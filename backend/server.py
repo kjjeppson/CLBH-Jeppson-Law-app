@@ -42,6 +42,11 @@ db = None
 KIT_API_KEY = os.getenv("KIT_API_KEY")
 KIT_FORM_ID = os.getenv("KIT_FORM_ID")
 KIT_TAG_ID = os.getenv("KIT_TAG_ID")  # Staging tag for creating subscribers with fields
+# Home checkup leads go to their own Kit form so they never enter the business
+# sequence. If this is unset, Home leads are saved but not sent to Kit.
+KIT_HOME_FORM_ID = os.getenv("KIT_HOME_FORM_ID")
+# Where the Home checkup sends people next (the Home Edition sales page)
+HOME_CTA_URL = os.getenv("HOME_CTA_URL", "https://www.jeppsonlaw.com/athome")
 KIT_API_URL = "https://api.convertkit.com/v3"
 # Kit V4 API key (preferred). When set, subscribe_to_kit() uses the V4 API
 # instead of the legacy V3 endpoint, which needs the V3 API Secret.
@@ -469,6 +474,110 @@ style="display:inline-block;background:#1e2d4a;color:#ffffff;font-size:16px;font
     logger.error(f"EMAIL FAILED after {max_retries} attempts. Last error: {last_error}")
     return {"success": False, "error": f"Failed after {max_retries} attempts: {last_error}"}
 
+def send_home_results_email(
+    to_email: str,
+    first_name: str,
+    risk_level: str,
+    score: str,
+    red_risks: List[Dict[str, str]],
+    yellow_risks: List[Dict[str, str]],
+    green_risks: List[Dict[str, str]],
+    area_scores: Optional[List[Dict[str, Any]]] = None,
+) -> Dict[str, Any]:
+    """Results email for the Home checkup. Same look as the business email,
+    household wording, and one next step: the Home Edition workbook."""
+    if not ERIC_EMAIL or not ERIC_EMAIL_PASSWORD:
+        logger.warning("SMTP credentials not configured - skipping Home email")
+        return {"success": False, "error": "SMTP credentials not configured"}
+
+    labels = {"green": ("HEALTHY", "#16A34A", "#F0FDF4"),
+              "yellow": ("WORTH A LOOK", "#D97706", "#FFFBEB"),
+              "red": ("FIX NOW", "#DC2626", "#FEF2F2")}
+    risk_label, risk_color, risk_bg = labels.get(risk_level, labels["yellow"])
+    intro = {
+        "green": "Your household is in good shape. A few things are worth keeping current, and the details are below.",
+        "yellow": "You have a solid start and a few gaps worth closing. Nothing here is unusual, and every item is fixable.",
+        "red": "A few important pieces are not in place yet. That is common, and every one of them is fixable. Start with the items below.",
+    }.get(risk_level, "")
+
+    def section(title: str, risks: List[Dict[str, str]], color: str, bg: str) -> str:
+        if not risks:
+            return ""
+        rows = "".join(
+            f'<tr><td style="padding:8px 0;border-bottom:1px solid #f0f0f0;">'
+            f'<span style="font-size:14px;font-weight:600;color:#333;display:block;margin-bottom:4px;">{r.get("title", "")}</span>'
+            f'<span style="font-size:13px;color:#666;display:block;">{r.get("description", "")}</span>'
+            f'<span style="font-size:11px;font-style:italic;color:{color};display:block;margin-top:4px;">{r.get("area_name", "")}</span>'
+            f'</td></tr>'
+            for r in risks
+        )
+        return (f'<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;"><tr>'
+                f'<td style="background:{bg};border-radius:8px;padding:16px;"><table width="100%" cellpadding="0" cellspacing="0">'
+                f'<tr><td style="padding-bottom:12px;"><span style="display:inline-block;background:{color};color:#fff;font-size:12px;'
+                f'font-weight:700;padding:6px 14px;border-radius:4px;text-transform:uppercase;">{title}</span></td></tr>'
+                f'{rows}</table></td></tr></table>')
+
+    risk_sections = (section("Fix now", red_risks, "#DC2626", "#FEF2F2")
+                     + section("Worth a look", yellow_risks, "#D97706", "#FFFBEB")
+                     + section("Healthy", green_risks, "#16A34A", "#F0FDF4"))
+    cta = f"{HOME_CTA_URL}?utm_source=quiz&utm_medium=email&utm_campaign=clbh_home&utm_content=results"
+    business = "https://checkup.cleanlegalbillofhealth.com/?utm_source=quiz&utm_medium=email&utm_campaign=clbh_home&utm_content=cross-offer"
+    name = first_name or "there"
+
+    html_body = f"""<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,Helvetica,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:20px 0;"><tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:8px;overflow:hidden;">
+<tr><td style="background:#1e2d4a;padding:24px 32px;">
+<span style="color:#ffffff;font-size:20px;font-weight:700;">Your Home Legal Health Checkup</span><br>
+<span style="color:#a0b0c8;font-size:13px;">Jeppson Law | Clean Legal Bill of Health</span></td></tr>
+<tr><td style="padding:28px 32px;">
+<p style="font-size:16px;color:#333;margin:0 0 16px;">Hi {name},</p>
+<p style="font-size:15px;color:#555;margin:0 0 20px;">Thank you for taking the Home checkup. Here is where your household stands.</p>
+<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;"><tr>
+<td style="background:{risk_bg};border-radius:8px;padding:18px;text-align:center;">
+<span style="font-size:13px;color:#666;display:block;margin-bottom:6px;">Overall result</span>
+<span style="font-size:24px;font-weight:800;color:{risk_color};display:block;">{risk_label}</span>
+<span style="font-size:14px;color:#666;display:block;margin-top:6px;">Score: {score}</span></td></tr></table>
+<p style="font-size:15px;color:#555;margin:0 0 20px;">{intro}</p>
+{risk_sections}
+<table width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0 24px;"><tr>
+<td style="background:#FFF7ED;border:1px solid #FED7AA;border-radius:8px;padding:20px;">
+<span style="font-size:17px;font-weight:700;color:#1e2d4a;display:block;margin-bottom:8px;">Close every gap, one page at a time</span>
+<span style="font-size:14px;color:#555;display:block;margin-bottom:16px;">The Clean Legal Bill of Health: Home Edition walks your household through forty short, plain-English steps, so the people you love can find what they need and keep the bills paid.</span>
+<a href="{cta}" style="display:inline-block;background:#f97316;color:#ffffff;font-size:15px;font-weight:700;padding:12px 26px;border-radius:8px;text-decoration:none;">See the Home Edition</a>
+</td></tr></table>
+<p style="font-size:14px;color:#666;margin:0 0 8px;">Own a business? It deserves the same care. <a href="{business}" style="color:#1e2d4a;font-weight:600;">Take the free business checkup</a>.</p>
+<p style="font-size:12px;color:#999;margin:16px 0 0;">This checkup is educational and is not legal advice.</p>
+</td></tr>
+<tr><td style="background:#1e2d4a;padding:20px 32px;text-align:center;">
+<span style="color:#a0b0c8;font-size:13px;display:block;">Eric Jeppson | Jeppson Law, LLP</span>
+<span style="color:#6a7f9a;font-size:12px;display:block;">jeppsonlaw.com</span></td></tr>
+</table></td></tr></table></body></html>"""
+
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = "Your Home Legal Health Checkup results"
+    msg["From"] = f"Eric Jeppson | Jeppson Law <{ERIC_EMAIL}>"
+    msg["To"] = to_email
+    msg.attach(MIMEText(html_body, "html"))
+
+    for attempt in range(1, 4):
+        try:
+            with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=30) as server:
+                server.starttls()
+                server.login(ERIC_EMAIL, ERIC_EMAIL_PASSWORD)
+                server.sendmail(ERIC_EMAIL, to_email, msg.as_string())
+                logger.info("Home results email sent")
+                return {"success": True}
+        except smtplib.SMTPAuthenticationError as e:
+            return {"success": False, "error": f"Authentication failed: {e}"}
+        except Exception as e:
+            logger.warning(f"Home email attempt {attempt} failed: {e}")
+            if attempt < 3:
+                time.sleep(5)
+    return {"success": False, "error": "Home email failed after 3 attempts"}
+
+
 def send_intake_email(
     first_name: str,
     last_name: str,
@@ -544,6 +653,7 @@ async def _subscribe_to_kit_v4(
     score: str,
     top_risks: str,
     extra_fields: Optional[Dict[str, str]],
+    form_id: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Kit V4: create or update the subscriber (with custom fields), then add
@@ -585,7 +695,7 @@ async def _subscribe_to_kit_v4(
                 logger.warning(f"Kit V4 warnings: {sub_data.get('warnings')}")
 
             # Step 2: add the subscriber to the checkup form
-            url = f"{KIT_V4_API_URL}/forms/{KIT_FORM_ID}/subscribers"
+            url = f"{KIT_V4_API_URL}/forms/{form_id or KIT_FORM_ID}/subscribers"
             logger.info(f"POST {url} (Kit V4)")
             resp = await client.post(url, json={"email_address": email}, headers=headers)
             logger.info(f"Kit V4 form response: {resp.status_code}")
@@ -618,7 +728,8 @@ async def subscribe_to_kit(
     risk_level: str = "",
     score: str = "",
     top_risks: str = "",
-    extra_fields: Optional[Dict[str, str]] = None
+    extra_fields: Optional[Dict[str, str]] = None,
+    form_id: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Subscribe a user to Kit (ConvertKit) for marketing list purposes.
@@ -629,14 +740,15 @@ async def subscribe_to_kit(
     logger.info("KIT API - FORM SUBSCRIPTION FOR MARKETING LIST")
     logger.info("=" * 50)
 
-    if not KIT_FORM_ID:
+    form_id = form_id or KIT_FORM_ID
+    if not form_id:
         logger.error("KIT_FORM_ID environment variable is not set!")
         return {"success": False, "error": "KIT_FORM_ID not configured"}
 
     # Prefer the V4 API when its key is configured
     if KIT_V4_API_KEY:
         return await _subscribe_to_kit_v4(
-            email, first_name, last_name, risk_level, score, top_risks, extra_fields
+            email, first_name, last_name, risk_level, score, top_risks, extra_fields, form_id
         )
 
     # Legacy V3 path. Note: the V3 form subscribe call here authenticates with
@@ -669,7 +781,7 @@ async def subscribe_to_kit(
                 }
             }
 
-            url = f"{KIT_API_URL}/forms/{KIT_FORM_ID}/subscribe"
+            url = f"{KIT_API_URL}/forms/{form_id}/subscribe"
             logger.info(f"POST {url}")
 
             response = await client.post(
@@ -798,6 +910,7 @@ class AssessmentCreate(BaseModel):
     modules: List[str]  # Will just be ["clbh"] for the unified quiz
     selected_areas: Optional[List[str]] = None  # If None, defaults to all 6 areas
     internal: bool = False  # True when taken in a browser used for the admin page (team testing)
+    helper_name: Optional[str] = None  # Home checkup: first name of the person who would sort things out
 
 class AssessmentSubmit(BaseModel):
     assessment_id: str
@@ -1220,6 +1333,305 @@ AREA_NAMES = {
     "systems": "Systems, Records & Digital Risk"
 }
 
+# ----- HOME CHECKUP MODULE (household version) -----
+# Added Oct 2026. A second question set run through the same scoring engine.
+# Module key "home", areas home_*, questions h1-h12. Nothing in the business
+# checkup is renamed or reused. Question text may carry a {them} token that
+# the front end replaces with the helper's first name ("that person" if
+# none was given). See frontend/src/lib/home.js.
+
+HOME_AREAS = {
+    "home_money": {
+        "id": "home_money",
+        "name": "Income, cash flow and what you owe",
+        "description": "2 questions on whether your household knows what it has and what it owes",
+        "questions": ["h1", "h2"]
+    },
+    "home_estate": {
+        "id": "home_estate",
+        "name": "Estate, ownership and succession",
+        "description": "2 questions on whether your documents do what you think they do",
+        "questions": ["h3", "h4"]
+    },
+    "home_business": {
+        "id": "home_business",
+        "name": "The business bridge",
+        "description": "2 questions on what happens to your business if you are suddenly not there",
+        "questions": ["h5", "h6"]
+    },
+    "home_advisors": {
+        "id": "home_advisors",
+        "name": "Advisors, access and authority",
+        "description": "2 questions on whether the people who would help can get in",
+        "questions": ["h7", "h8"]
+    },
+    "home_insurance": {
+        "id": "home_insurance",
+        "name": "Insurance and protection",
+        "description": "2 questions on whether the coverage you pay for could be found and claimed",
+        "questions": ["h9", "h10"]
+    },
+    "home_records": {
+        "id": "home_records",
+        "name": "Records, digital access and continuity",
+        "description": "2 questions on whether anything could be found without you",
+        "questions": ["h11", "h12"]
+    }
+}
+
+AREAS.update(HOME_AREAS)
+
+
+# ---------------------------------------------------------------------------
+# BLOCK 2 of 6
+# Add a "home" key to the existing QUESTIONS dict, alongside "clbh".
+# ---------------------------------------------------------------------------
+
+QUESTIONS["home"] = [
+
+    # AREA 1: Income, cash flow and what you owe
+    {
+        "id": "h1",
+        "text": "Is there a written list of every account, policy and debt your household has, built from statements rather than memory?",
+        "why_it_matters": "Almost every household underestimates how many accounts it has. An old 401(k) from two jobs ago, a credit union account opened for a car loan, a small policy bought through work. Built from memory, the list is always short, and the things left off are the things nobody ever finds.",
+        "options": _opts(
+            "Yes, written down and current.",
+            "Roughly, but it lives in our heads.",
+            "No, or not since years ago.",
+        ),
+        "area": "home_money"
+    },
+    {
+        # Reworded Oct 27. Mark read "waiting on a lawyer" as regional, and
+        # stumbled on "reach enough money". "Get to" is plainer than either
+        # "reach" or his suggested "access".
+        "id": "h2",
+        "text": "If you died this week, could {them} get to enough money to cover three months of bills without waiting for a lawyer, a court, or a death certificate?",
+        "why_it_matters": "Accounts in one name alone freeze. A death certificate takes a week or two, probate takes months, and the mortgage is due on the first either way. Having money is not the same as being able to get to it.",
+        "options": _opts(
+            "Yes, and we have worked out the number.",
+            "There is money, but we do not know how much of it {them} could get to.",
+            "No, or we do not know.",
+        ),
+        "area": "home_money"
+    },
+
+    # AREA 2: Estate, ownership and succession
+    {
+        # Rewritten Oct 30 (Kristin, option B). The old question asked two
+        # things at once. This asks whether a plan exists and is current, which
+        # matches the workbook's two paths (H-09 get one, H-10 check it) and is
+        # fair to a household with a sound will-only plan. The deed fact moved
+        # into why_it_matters so it is not lost.
+        "id": "h3",
+        "text": "Do you have a will or trust, and has anyone read it in the last five years?",
+        "why_it_matters": "Without a will or trust, your state decides who inherits and a judge chooses the guardian for your children. And a plan signed years ago can quietly stop matching your life. If you have a trust, check that your house is titled in it: a trust only controls what has been put into it, and an unfunded trust sends the house through probate anyway.",
+        "options": _opts(
+            "Yes, and it is current.",
+            "We have one, but have not looked at it in years.",
+            "No, or I am not sure.",
+        ),
+        "area": "home_estate"
+    },
+    {
+        "id": "h4",
+        "text": "When did you last read out loud who is named on every retirement account and life insurance policy?",
+        "why_it_matters": "A beneficiary designation beats your will. Whoever is named on the account gets the account, even if your will says otherwise, and even if the name on it is an ex-spouse or a parent who has since died. These forms are signed once and then never looked at again.",
+        "options": _opts(
+            "Within the last two years.",
+            "Longer ago than that.",
+            "Never, or we do not know.",
+        ),
+        "area": "home_estate"
+    },
+
+    # AREA 3: The business bridge
+    # Leave "home_business" out of selected_areas for a household that does
+    # not own a business. The percentage scoring adjusts on its own.
+    #
+    # Note h5 deliberately says "a second person" rather than {them}. The
+    # person who can run the business is often not the person who would sort
+    # out the household, and conflating them would score the wrong thing.
+    {
+        "id": "h5",
+        "text": "If you were in the hospital for a month, is there a second person who could already sign on the business bank account, run payroll, and get into the company email?",
+        "why_it_matters": "Payroll does not pause while you recover. A second signer has to be added by the bank in advance, and access that has never been used usually turns out not to work. The gap between being named and being able to act is where the damage happens.",
+        "options": _opts(
+            "Yes, one named person who has done all three.",
+            "They have some of that access, or have never used it.",
+            "No, it all runs through one person.",
+        ),
+        "area": "home_business"
+    },
+    {
+        "id": "h6",
+        "text": "Could {them} say what the business is worth, and whether anyone is obligated to buy your share?",
+        "why_it_matters": "Without a value and a buyer, your family inherits a job they cannot do and cannot sell. A buy-sell agreement funded by insurance turns an unsellable share into cash. Without one, the business is often worth far less than the years you put into it.",
+        "options": _opts(
+            "Yes, both, with a number.",
+            "One of the two.",
+            "No, or we do not know.",
+        ),
+        "area": "home_business"
+    },
+
+    # AREA 4: Advisors, access and authority
+    {
+        # The red option used to read "No, they are names on a phone", where
+        # "they" meant the advisors, not the helper. With a real name in the
+        # question that collision became obvious. Reworded Oct 27.
+        # Rewritten Oct 30. Eric questioned whether people want their helper
+        # talking to their advisors. Same topic, an ask everyone is comfortable
+        # with. The introduction call stays in the workbook as H-21.
+        "id": "h7",
+        "text": "Would {them} know which advisor to call about what, and how to reach them?",
+        "why_it_matters": "In the first hard week, the first question is always who do I call. If your attorney, accountant and insurance agent are written down with what each one handles, nobody has to search an inbox or guess.",
+        "options": _opts(
+            "Yes, it is written down.",
+            "For some of them.",
+            "No, they would be starting from scratch.",
+        ),
+        "area": "home_advisors"
+    },
+    {
+        # Oct 30: the safe deposit box half removed. A box is optional in the
+        # workbook (H-23), and the safe place for originals is now h12.
+        "id": "h8",
+        "text": "Is {them} authorized on your phone carrier account?",
+        "why_it_matters": "Your phone is the key to almost every account you have, through the codes texted to it. If nobody else is authorized on the carrier account, the line can be shut off and those codes stop arriving.",
+        "options": _opts(
+            "Yes, and we have tested it.",
+            "I think so, but we have never checked.",
+            "No.",
+        ),
+        "area": "home_advisors"
+    },
+
+    # AREA 5: Insurance and protection
+    {
+        "id": "h9",
+        "text": "If you died this week, could {them} find every insurance policy and annuity you have, including any through an employer, and know who to call to claim it?",
+        "why_it_matters": "Insurers do not call the family. A policy nobody knows about is simply never claimed, and employer coverage is the one most often missed because it never generates a bill at home. The money is sitting there waiting to be asked for.",
+        "options": _opts(
+            "Yes, it is written down with the numbers to call.",
+            "Some of it would turn up, eventually.",
+            "No, the search would start from nothing.",
+        ),
+        "area": "home_insurance"
+    },
+    {
+        "id": "h10",
+        # Oct 30: the disability half dropped (double-barreled). Disability is
+        # still covered in the workbook at H-28.
+        "text": "If you have a permanent life insurance policy, do you know whether it is on track to stay in force?",
+        "why_it_matters": "A permanent policy funded by its own cash value can quietly run short and cancel itself, often at the worst possible age. One request to the carrier for an in-force illustration shows whether yours is on track.",
+        "options": _opts(
+            "Yes, we have checked recently, or we have no permanent policy.",
+            "We have one but have never checked.",
+            "No, or we do not know.",
+        ),
+        "area": "home_insurance"
+    },
+
+    # AREA 6: Records, digital access and continuity
+    {
+        "id": "h11",
+        "text": "If your phone were locked and you could not help, could {them} get into your email and your passwords?",
+        "why_it_matters": "Email is the reset button for everything else. Without it, each account has to be recovered one at a time through a process built to keep strangers out, which is exactly what your family looks like to a bank's fraud department.",
+        "options": _opts(
+            "Yes, and we have tested it.",
+            "Probably, but we have not tried.",
+            "No.",
+        ),
+        "area": "home_records"
+    },
+    {
+        # Oct 30 (Kristin): a safe, secure home for the originals, in place of
+        # the safe deposit box question. Originals only: digital files live in a
+        # different place, and digital access is already Q11.
+        "id": "h12",
+        "text": "Are your original documents kept together in one safe, secure place that {them} could find without you?",
+        "why_it_matters": "Original wills, deeds and titles are hard or impossible to replace, and banks and courts want the originals. A fireproof safe at home, with a note on top saying what to do first, turns a frantic search through drawers into a ten-minute task.",
+        "options": _opts(
+            "Yes, and {them} knows where it is.",
+            "Some are, but others are scattered.",
+            "No.",
+        ),
+        "area": "home_records"
+    },
+]
+
+
+# ---------------------------------------------------------------------------
+# BLOCK 3 of 6
+# Add these six entries to the existing RISK_DESCRIPTIONS dict.
+# ---------------------------------------------------------------------------
+
+RISK_DESCRIPTIONS.update({
+    "home_money": {
+        "h1": {"title": "No written list of what you have", "description": "Accounts, policies and debts held only in memory are the ones nobody finds."},
+        "h2": {"title": "Money that cannot be reached", "description": "Accounts in one name alone freeze, and the bills keep arriving while probate runs."}
+    },
+    "home_estate": {
+        "h3": {"title": "No current will or trust", "description": "Without one the state decides who inherits. With an old one, the plan may no longer match your life."},
+        "h4": {"title": "Beneficiary designations not checked", "description": "The name on the account beats the will, and these forms are signed once and forgotten."}
+    },
+    "home_business": {
+        "h5": {"title": "Everything runs through one person", "description": "Without a second signer who has used the access, payroll stops the week you do."},
+        "h6": {"title": "No value and no buyer", "description": "A share nobody is obligated to buy leaves your family with a job they cannot do or sell."}
+    },
+    "home_advisors": {
+        "h7": {"title": "Nobody knows who to call", "description": "Without a list of advisors and what each one handles, the first hard week starts with searching."},
+        "h8": {"title": "Nobody else on the phone account", "description": "The phone is the key to most accounts, and a line in one name can be shut off."}
+    },
+    "home_insurance": {
+        "h9": {"title": "Policies nobody could find", "description": "Insurers do not call the family. An unknown policy or annuity is simply never claimed."},
+        "h10": {"title": "A policy that may lapse", "description": "A permanent policy can run short of cash and cancel itself, usually discovered too late."}
+    },
+    "home_records": {
+        "h11": {"title": "No way into email or passwords", "description": "Email is the reset for everything else, and recovery is built to keep strangers out."},
+        "h12": {"title": "No safe place for the originals", "description": "Original documents that are scattered or unprotected leave the first week starting with a search."}
+    }
+})
+
+
+# ---------------------------------------------------------------------------
+# BLOCK 4 of 6
+# Add these six entries to the existing AREA_NAMES dict.
+# ---------------------------------------------------------------------------
+
+AREA_NAMES.update({
+    "home_money": "Income, cash flow and what you owe",
+    "home_estate": "Estate, ownership and succession",
+    "home_business": "The business bridge",
+    "home_advisors": "Advisors, access and authority",
+    "home_insurance": "Insurance and protection",
+    "home_records": "Records, digital access and continuity",
+})
+
+# Which areas belong to which module, in display order. Used whenever an
+# assessment does not say which areas it covers, so a business checkup never
+# picks up household areas and the other way round.
+MODULE_AREAS = {
+    "clbh": ["contracts", "ownership", "subcontractor", "employment", "insurance", "systems"],
+    "home": list(HOME_AREAS.keys()),
+}
+
+
+def default_areas(modules: Optional[List[str]]) -> List[str]:
+    """All areas for the given modules (defaults to the business checkup)."""
+    out: List[str] = []
+    for m in (modules or ["clbh"]):
+        for a in MODULE_AREAS.get(m, []):
+            if a not in out:
+                out.append(a)
+    return out or list(MODULE_AREAS["clbh"])
+
+
+def is_home(modules: Optional[List[str]]) -> bool:
+    return "home" in (modules or [])
+
+
 QUESTION_AREAS = {q["id"]: q["area"] for module in QUESTIONS.values() for q in module}
 
 # ----- HELPER FUNCTIONS -----
@@ -1284,9 +1696,9 @@ def calculate_score_and_risks(answers: List[AssessmentAnswer], modules: List[str
     """Calculate scores by area and overall, flag RED answers.
     If selected_areas is provided, only include those areas in scoring.
     """
-    # Default to all areas if none specified
+    # Default to every area of the module(s) if none specified
     if not selected_areas:
-        selected_areas = list(AREA_NAMES.keys())
+        selected_areas = default_areas(modules)
 
     # Initialize area tracking (only for selected areas)
     area_points = {area: 0 for area in selected_areas}
@@ -1402,7 +1814,7 @@ def calculate_score_and_risks(answers: List[AssessmentAnswer], modules: List[str
                     })
 
     # Generate action plan
-    action_plan = generate_action_plan(top_risks, risk_level, area_scores)
+    action_plan = generate_action_plan(top_risks, risk_level, area_scores, modules)
 
     # Calculate confidence level
     confidence = int(score_percentage) - (len(trigger_flags) * 3)
@@ -1422,7 +1834,7 @@ def calculate_score_and_risks(answers: List[AssessmentAnswer], modules: List[str
         "confidence_level": min(100, max(10, confidence))
     }
 
-def generate_action_plan(top_risks: List[Dict], risk_level: str, area_scores: List[Dict]) -> List[Dict[str, Any]]:
+def generate_action_plan(top_risks: List[Dict], risk_level: str, area_scores: List[Dict], modules: Optional[List[str]] = None) -> List[Dict[str, Any]]:
     """Generate prioritized action plan based on risks"""
     action_plan = []
     priority = 1
@@ -1461,6 +1873,16 @@ def generate_action_plan(top_risks: List[Dict], risk_level: str, area_scores: Li
             })
             priority += 1
 
+    # Home: the next step is the workbook, not a review call
+    if is_home(modules):
+        action_plan.append({
+            "priority": priority,
+            "action": "Work through the Clean Legal Bill of Health: Home Edition",
+            "description": "Forty step-by-step walkthroughs, one page each, so your household can close every gap this checkup found.",
+            "urgency": "high" if risk_level == "red" else "medium"
+        })
+        return action_plan
+
     # Always recommend consultation for yellow/red
     if risk_level in ["yellow", "red"] or len([a for a in area_scores if a["risk_level"] == "red"]) > 0:
         action_plan.append({
@@ -1496,16 +1918,20 @@ async def get_questions(module: str, areas: Optional[str] = None):
         selected_areas = [a.strip() for a in areas.split(",")]
         questions = [q for q in questions if q.get("area") in selected_areas]
 
-    return {
+    payload = {
         "module": module,
         "questions": questions,
         "areas": AREAS,
-        "profile": {
+    }
+    # The unscored "About your business" intake belongs to the business
+    # checkup only. The Home checkup goes straight into its twelve questions.
+    if module == "clbh":
+        payload["profile"] = {
             "questions": PROFILE_QUESTIONS,
             "documents": PROFILE_DOCUMENTS,
             "concern_prompt": PROFILE_CONCERN_PROMPT,
-        },
-    }
+        }
+    return payload
 
 @api_router.get("/questions")
 async def get_all_questions():
@@ -1516,15 +1942,20 @@ async def get_all_questions():
 async def create_assessment(data: AssessmentCreate):
     """Create a new assessment session"""
     db = require_db()
-    # Default to all 6 areas if none specified
-    selected_areas = data.selected_areas if data.selected_areas else list(AREA_NAMES.keys())
+    # Default to every area of the chosen module(s), and never let a checkup
+    # pick up another module's areas
+    allowed = default_areas(data.modules)
+    selected_areas = [a for a in (data.selected_areas or allowed) if a in allowed] or allowed
     assessment = AssessmentResult(modules=data.modules, selected_areas=selected_areas)
     doc = assessment.model_dump()
     doc['timestamp'] = doc['timestamp'].isoformat()
     doc['internal'] = bool(data.internal)
+    if is_home(data.modules):
+        helper = " ".join((data.helper_name or "").split())[:40]
+        doc['helper_name'] = helper
     doc['version'] = CHECKUP_VERSION
     await db.assessments.insert_one(doc)
-    return {"id": assessment.id, "modules": assessment.modules, "selected_areas": assessment.selected_areas}
+    return {"id": assessment.id, "modules": assessment.modules, "selected_areas": assessment.selected_areas, "helper_name": doc.get("helper_name", "")}
 
 class ProgressUpdate(BaseModel):
     question_number: int = Field(ge=1, le=24)
@@ -1561,7 +1992,7 @@ async def submit_assessment(data: AssessmentSubmit):
         raise HTTPException(status_code=404, detail="Assessment not found")
 
     # Get selected_areas from assessment (default to all if not set)
-    selected_areas = assessment.get("selected_areas") or list(AREA_NAMES.keys())
+    selected_areas = assessment.get("selected_areas") or default_areas(assessment.get("modules"))
 
     # Calculate results with selected areas
     results = calculate_score_and_risks(data.answers, assessment["modules"], selected_areas)
@@ -1636,6 +2067,7 @@ async def create_lead(data: LeadCreate):
     yellow_risks = []
     green_risks = []
     area_scores_data = []
+    home = is_home(data.modules)
 
     # If assessment_id provided, get score info
     if data.assessment_id:
@@ -1665,6 +2097,9 @@ async def create_lead(data: LeadCreate):
 
             # Pillar-level scores so the email matches the results page exactly
             area_scores_data = assessment.get('area_scores', []) or []
+            home = is_home(assessment.get('modules')) or home
+            if home:
+                lead.modules = ["home"]
             lead.business_profile = assessment.get('business_profile', {}) or {}
 
             # Prepare data for Kit API
@@ -1706,6 +2141,23 @@ async def create_lead(data: LeadCreate):
 
         def send_email_thread():
             logger.info(f"Background: Sending email via {SMTP_SERVER} to {email_to}")
+            if home:
+                # Home: household results email only. No audit intake email to Eric.
+                try:
+                    result = send_home_results_email(
+                        to_email=email_to,
+                        first_name=email_first_name,
+                        risk_level=email_risk,
+                        score=email_score,
+                        red_risks=email_red_risks,
+                        yellow_risks=email_yellow_risks,
+                        green_risks=email_green_risks,
+                        area_scores=email_area_scores,
+                    )
+                    logger.info(f"Background: Home email result: {result}")
+                except Exception as e:
+                    logger.error(f"Background: Home email failed: {e}")
+                return
             try:
                 result = send_results_email(
                     to_email=email_to,
@@ -1740,7 +2192,12 @@ async def create_lead(data: LeadCreate):
     else:
         email_result = {"success": False, "error": "SMTP not configured"}
 
-    # STEP 2: Subscribe to Kit for marketing list
+    # STEP 2: Subscribe to Kit for marketing list. Home leads go to their own
+    # form so they never enter the business sequence.
+    if home and not KIT_HOME_FORM_ID:
+        logger.warning("KIT_HOME_FORM_ID not set - Home lead saved but not sent to Kit")
+        kit_result = {"success": False, "error": "KIT_HOME_FORM_ID not configured"}
+        return {"success": True, "lead_id": lead.id, "email_result": email_result, "kit_result": kit_result}
     kit_result = await subscribe_to_kit(
         email=data.email,
         first_name=data.first_name,
@@ -1748,7 +2205,8 @@ async def create_lead(data: LeadCreate):
         risk_level=risk_level_str,
         score=score_str,
         top_risks=top_risks_str,
-        extra_fields=kit_profile_fields(lead.business_profile)
+        extra_fields=(None if home else kit_profile_fields(lead.business_profile)),
+        form_id=(KIT_HOME_FORM_ID if home else None),
     )
 
     return {
@@ -1796,14 +2254,19 @@ async def set_lead_test(lead_id: str, data: TestFlag, request: Request):
     return {"ok": True, "is_test": data.is_test}
 
 @api_router.get("/admin/funnel")
-async def get_funnel(request: Request, days: int = 30):
-    """Checkup funnel: starts, how far people got, completions and emails."""
+async def get_funnel(request: Request, days: int = 30, module: str = "clbh"):
+    """Checkup funnel: starts, how far people got, completions and emails.
+    One module at a time, so Home checkups never skew the business numbers."""
     require_admin(request)
     db = require_db()
     days = max(1, min(days, 365))
+    if module not in QUESTIONS:
+        module = "clbh"
     since = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+    # Older business checkups may predate the modules field; count them as business
+    module_filter = {"modules": module} if module != "clbh" else {"$or": [{"modules": "clbh"}, {"modules": {"$exists": False}}]}
     docs = await db.assessments.find(
-        {"timestamp": {"$gte": since}},
+        {"timestamp": {"$gte": since}, **module_filter},
         {"_id": 0, "id": 1, "completed": 1, "max_question_reached": 1, "timestamp": 1, "internal": 1, "version": 1},
     ).to_list(50000)
 
@@ -1830,7 +2293,7 @@ async def get_funnel(request: Request, days: int = 30):
         if (d.get("timestamp") or "") >= PROGRESS_TRACKING_START
         and (d.get("version") or 1) == CHECKUP_VERSION
     ]
-    question_list = QUESTIONS.get("clbh", [])
+    question_list = QUESTIONS.get(module, [])
     total_q = len(question_list)
     reached = []
     stopped = []
@@ -1857,6 +2320,7 @@ async def get_funnel(request: Request, days: int = 30):
     tracked_completed = sum(1 for d in tracked if d.get("completed"))
     return {
         "days": days,
+        "module": module,
         "excluded_tests": excluded,
         "started": started,
         "completed": completed,
