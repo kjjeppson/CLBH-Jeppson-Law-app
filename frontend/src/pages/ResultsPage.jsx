@@ -7,8 +7,10 @@ import { toast } from "sonner";
 import {
   Shield, CheckCircle2, AlertTriangle, XCircle,
   Calendar, ArrowRight, Loader2, ChevronDown, Check,
-  Phone, FileText, Users, Briefcase, UserCheck, ShieldCheck, Database, ShoppingCart
+  Phone, FileText, Users, Briefcase, UserCheck, ShieldCheck, Database, ShoppingCart,
+  Wallet, ScrollText, PhoneCall, KeyRound, Home, BookOpen
 } from "lucide-react";
+import { isHomeModules, cleanHelperName, HOME_CTA_URL, HOME_HEALTHY_LABELS, withHomeUtm } from "../lib/home";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -57,7 +59,18 @@ const AREA_ICONS = {
   subcontractor: <Briefcase className="w-5 h-5" />,
   employment: <UserCheck className="w-5 h-5" />,
   insurance: <ShieldCheck className="w-5 h-5" />,
-  systems: <Database className="w-5 h-5" />
+  systems: <Database className="w-5 h-5" />,
+  home_money: <Wallet className="w-5 h-5" />,
+  home_estate: <ScrollText className="w-5 h-5" />,
+  home_business: <Briefcase className="w-5 h-5" />,
+  home_advisors: <PhoneCall className="w-5 h-5" />,
+  home_insurance: <ShieldCheck className="w-5 h-5" />,
+  home_records: <KeyRound className="w-5 h-5" />
+};
+
+const openHomeEdition = (content) => {
+  track("results_cta_click", { target: content, module: "home" });
+  window.open(withHomeUtm(HOME_CTA_URL, content), "_blank");
 };
 
 
@@ -83,7 +96,8 @@ const HEALTHY_LABELS = {
   v1: "Signed, protective vendor agreements", v2: "Workers classified correctly",
   e1: "Current employee handbook", e2: "Pay practices reviewed",
   i1: "Insurance reviewed and gaps addressed", i2: "Contracts match your insurance",
-  r1: "Records ready for a buyer or lender", r2: "Sensitive data secured"
+  r1: "Records ready for a buyer or lender", r2: "Sensitive data secured",
+  ...HOME_HEALTHY_LABELS
 };
 
 const flagsFor = (list, areaId) => (list || []).filter((f) => f.area === areaId);
@@ -117,7 +131,22 @@ export default function ResultsPage() {
     window.open('https://jeppsonlaw.cliogrow.com/book/5d7625ad3292b0e84db81965f80ee5f4', '_blank');
   };
 
+  const isHome = isHomeModules(results?.modules);
+  const helper = cleanHelperName(results?.helper_name);
+
+  const HOME_DESCRIPTIONS = {
+    green: "Your household is in strong shape. If something happened tomorrow, the people you love could find most of what they need. Review the details below for anything to keep an eye on.",
+    yellow: "You have a solid start and a few gaps worth closing. Nothing here is unusual, and every item is fixable, most of them in an evening. Start with the items below.",
+    red: "A few important pieces are not in place yet. That is common, and every one of them is fixable. The items below show where to start."
+  };
+
   const getOverallScoreDisplay = () => {
+    const d = getBaseScoreDisplay();
+    if (isHome && HOME_DESCRIPTIONS[results?.risk_level]) d.description = HOME_DESCRIPTIONS[results.risk_level];
+    return d;
+  };
+
+  const getBaseScoreDisplay = () => {
     switch (results?.risk_level) {
       case "green":
         return {
@@ -218,6 +247,17 @@ export default function ResultsPage() {
           <a href="https://www.jeppsonlaw.com" aria-label="Jeppson Law home" className="flex items-center shrink-0 hover:opacity-80 transition-opacity">
             <img src="/jeppsonlaw-clbh-logo.png" alt="Jeppson Law and Clean Legal Bill of Health" className="h-6 sm:h-10 md:h-12 w-auto" />
           </a>
+          {isHome ? (
+            <Button
+              onClick={() => openHomeEdition("nav-home-edition")}
+              className="bg-orange-500 hover:bg-orange-600 text-white text-xs sm:text-sm px-3 sm:px-4 shrink-0"
+              data-testid="home-edition-nav-btn"
+            >
+              <BookOpen className="w-4 h-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">See the Home Edition</span>
+              <span className="sm:hidden">Home Edition</span>
+            </Button>
+          ) : (
           <div className="flex items-center gap-2">
             <Button
               onClick={() => openShopLink(`${SHOP_BASE}/shop`, "nav-shop")}
@@ -238,6 +278,7 @@ export default function ResultsPage() {
               <span className="sm:hidden">Book a Call</span>
             </Button>
           </div>
+          )}
         </div>
       </nav>
 
@@ -247,7 +288,7 @@ export default function ResultsPage() {
           <div className={`w-16 h-16 sm:w-20 sm:h-20 ${scoreDisplay.bgColor} rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg`}>
             {scoreDisplay.icon}
           </div>
-          <p className="text-xs sm:text-sm font-semibold tracking-[0.15em] text-slate-500 mb-2">YOUR LEGAL HEALTH REPORT</p>
+          <p className="text-xs sm:text-sm font-semibold tracking-[0.15em] text-slate-500 mb-2">{isHome ? "YOUR HOME LEGAL HEALTH REPORT" : "YOUR LEGAL HEALTH REPORT"}</p>
           <h1 className="font-heading text-3xl md:text-4xl font-extrabold text-slate-900 mb-3" data-testid="overall-result">
             Your result:{" "}
             <span className={scoreDisplay.textColor}>{scoreDisplay.label}</span>
@@ -261,7 +302,7 @@ export default function ResultsPage() {
             <span className="text-slate-300">|</span>
             <span className="font-bold text-slate-900">{Math.round(results?.score_percentage || 0)}%</span>
           </div>
-          {results?.selected_areas && results.selected_areas.length < 6 && (
+          {!isHome && results?.selected_areas && results.selected_areas.length < 6 && (
             <p className="text-slate-500 text-sm mt-3">
               Checked {results.selected_areas.length} of 6 areas
             </p>
@@ -276,7 +317,9 @@ export default function ResultsPage() {
               {firstFixes.length === 1 ? "Your first fix" : `Your ${firstFixes.length} first fixes`}
             </h2>
             <p className="text-slate-500 text-sm sm:text-base mb-5">
-              The most important items from your lowest-scoring areas.
+              {isHome
+                ? `The items that would make the biggest difference for ${helper || "the person who would sort things out"}.`
+                : "The most important items from your lowest-scoring areas."}
             </p>
             <ol className="space-y-3">
               {firstFixes.map((flag, i) => {
@@ -308,8 +351,36 @@ export default function ResultsPage() {
           </section>
         )}
 
+        {/* Home Edition offer (household checkup) */}
+        {isHome && areaCount > 0 && (
+          <section className="bg-orange-50 border-2 border-orange-200 rounded-2xl p-5 sm:p-7 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4" data-testid="home-edition-section">
+            <div>
+              <h2 className="font-heading text-lg sm:text-xl font-extrabold text-slate-900 mb-1">
+                {weakAreas.length === 0
+                  ? "Strong result. Keep it that way."
+                  : weakAreas.length === areaCount
+                  ? `All ${areaCount} of your areas need some attention`
+                  : `${weakAreas.length} of your ${areaCount} areas need some attention`}
+              </h2>
+              <p className="text-slate-600 text-sm sm:text-base">
+                {weakAreas.length === 0
+                  ? "The Clean Legal Bill of Health: Home Edition includes a yearly checklist, so your plan stays true as life changes."
+                  : "The Clean Legal Bill of Health: Home Edition walks you through every fix, one page at a time, starting with the ones that matter most. Most families reach the first level in a weekend."}
+              </p>
+            </div>
+            <Button
+              className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-6 py-6 text-base flex-shrink-0"
+              onClick={() => openHomeEdition(weakAreas.length === 0 ? "home-edition-green" : "home-edition")}
+              data-testid="home-edition-cta-btn"
+            >
+              <BookOpen className="w-5 h-5 mr-2" />
+              See the Home Edition
+            </Button>
+          </section>
+        )}
+
         {/* Bundle offer */}
-        {weakAreas.length > 0 ? (
+        {isHome ? null : weakAreas.length > 0 ? (
           <section className="bg-orange-50 border-2 border-orange-200 rounded-2xl p-5 sm:p-7 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4" data-testid="bundle-section">
             <div>
               <h2 className="font-heading text-lg sm:text-xl font-extrabold text-slate-900 mb-1">
@@ -517,7 +588,30 @@ export default function ResultsPage() {
           })}
         </section>
 
+        {/* Home: cross-offer the business checkup */}
+        {isHome && (
+          <section className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-8 shadow-sm" data-testid="business-cross-offer">
+            <p className="text-xs sm:text-sm font-bold tracking-[0.15em] text-orange-700 mb-1">OWN A BUSINESS?</p>
+            <h2 className="font-heading text-2xl sm:text-3xl font-extrabold text-slate-900 mb-2">
+              Give your business the same checkup
+            </h2>
+            <p className="text-slate-600 mb-5 max-w-2xl">
+              The free Clean Legal Bill of Health business checkup looks at your contracts, ownership, vendors,
+              employees, insurance and records. Twelve questions, 5 to 10 minutes.
+            </p>
+            <Button
+              className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-white px-7 py-6 text-base font-bold"
+              onClick={() => { track("results_cta_click", { target: "business-checkup", module: "home" }); navigate("/"); }}
+              data-testid="business-checkup-cta-btn"
+            >
+              Take the business checkup
+              <ArrowRight className="w-5 h-5 ml-2" />
+            </Button>
+          </section>
+        )}
+
         {/* Review call */}
+        {!isHome && (
         <section className="bg-orange-50 border border-orange-200 rounded-2xl p-5 sm:p-8">
           <p className="text-xs sm:text-sm font-bold tracking-[0.15em] text-orange-700 mb-1">NOT SURE WHERE TO START?</p>
           <h2 className="font-heading text-2xl sm:text-3xl font-extrabold text-slate-900 mb-4">
@@ -546,6 +640,29 @@ export default function ResultsPage() {
             Schedule a free review call
           </Button>
         </section>
+        )}
+
+        {/* Business: cross-offer the home checkup */}
+        {!isHome && (
+          <section className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-8 shadow-sm" data-testid="home-cross-offer">
+            <p className="text-xs sm:text-sm font-bold tracking-[0.15em] text-orange-700 mb-1">FOR YOUR FAMILY</p>
+            <h2 className="font-heading text-2xl sm:text-3xl font-extrabold text-slate-900 mb-2">
+              Now do the same for your home
+            </h2>
+            <p className="text-slate-600 mb-5 max-w-2xl">
+              If something happened to you, could your family find the accounts, papers and passwords they would
+              need? The free home checkup shows you in about 5 minutes.
+            </p>
+            <Button
+              className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-white px-7 py-6 text-base font-bold"
+              onClick={() => { track("results_cta_click", { target: "home-checkup", module: "clbh" }); navigate("/home"); }}
+              data-testid="home-checkup-cta-btn"
+            >
+              <Home className="w-5 h-5 mr-2" />
+              Take the home checkup
+            </Button>
+          </section>
+        )}
 
         {/* Disclaimer + navigation */}
         <section className="space-y-5 pb-4">
@@ -556,7 +673,7 @@ export default function ResultsPage() {
           <div className="flex flex-col-reverse sm:flex-row gap-3 justify-center">
             <Button
               variant="outline"
-              onClick={() => navigate("/")}
+              onClick={() => navigate(isHome ? "/home" : "/")}
               className="flex items-center justify-center"
               data-testid="back-to-home-btn"
             >
@@ -564,7 +681,7 @@ export default function ResultsPage() {
               Back to Main Menu
             </Button>
             <Button
-              onClick={() => navigate("/")}
+              onClick={() => navigate(isHome ? "/home" : "/")}
               className="bg-slate-900 hover:bg-slate-800 flex items-center justify-center"
               data-testid="new-assessment-btn"
             >
@@ -598,7 +715,7 @@ export default function ResultsPage() {
       </footer>
 
       {/* Floating Book Now Button (desktop/tablet only — hidden on mobile to avoid covering content) */}
-      <div className="hidden sm:block fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 no-print">
+      <div className={`${isHome ? "hidden" : "hidden sm:block"} fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 no-print`}>
         <Button
           onClick={handleScheduleCall}
           className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-6 text-lg font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 rounded-full group"
