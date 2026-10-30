@@ -52,6 +52,12 @@ KIT_V4_API_URL = "https://api.kit.com/v4"
 # Credentials must be set in Railway environment variables
 ERIC_EMAIL = (os.getenv("ERIC_EMAIL") or "").strip()
 ERIC_EMAIL_PASSWORD = (os.getenv("ERIC_EMAIL_PASSWORD") or "").strip()
+# Sending account. Set SMTP_USER / SMTP_PASSWORD to a dedicated sender such as
+# noreply@jeppsonlaw.com. If they are not set, fall back to Eric's account.
+SMTP_USER = (os.getenv("SMTP_USER") or "").strip() or ERIC_EMAIL
+SMTP_PASSWORD = (os.getenv("SMTP_PASSWORD") or "").strip() or ERIC_EMAIL_PASSWORD
+# Where intake summaries go and where prospect replies should land.
+NOTIFY_EMAIL = ERIC_EMAIL or SMTP_USER
 SMTP_SERVER = "outbound-us1.ppe-hosted.com"
 SMTP_PORT = 587
 
@@ -99,7 +105,7 @@ def send_results_email(
     logger.info(f"Red Risks: {len(red_risks)}, Yellow: {len(yellow_risks)}, Green: {len(green_risks)}")
 
     # Check if SMTP is configured (must have non-empty values)
-    if not ERIC_EMAIL or not ERIC_EMAIL_PASSWORD or len(ERIC_EMAIL.strip()) == 0 or len(ERIC_EMAIL_PASSWORD.strip()) == 0:
+    if not SMTP_USER or not SMTP_PASSWORD:
         logger.warning("SMTP credentials not configured - skipping email send")
         return {"success": False, "error": "SMTP credentials not configured"}
 
@@ -423,8 +429,10 @@ style="display:inline-block;background:#1e2d4a;color:#ffffff;font-size:16px;font
     # Create the email message
     msg = MIMEMultipart("alternative")
     msg["Subject"] = "Your Legal Risk Assessment Results"
-    msg["From"] = f"Eric Jeppson | Jeppson Law <{ERIC_EMAIL}>"
+    msg["From"] = f"Eric Jeppson | Jeppson Law <{SMTP_USER}>"
     msg["To"] = to_email
+    if NOTIFY_EMAIL and NOTIFY_EMAIL.lower() != SMTP_USER.lower():
+        msg["Reply-To"] = NOTIFY_EMAIL
 
     # Attach HTML body
     msg.attach(MIMEText(html_body, "html"))
@@ -439,9 +447,9 @@ style="display:inline-block;background:#1e2d4a;color:#ffffff;font-size:16px;font
             with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=30) as server:
                 server.starttls()
                 logger.info(f"Attempt {attempt}: STARTTLS enabled, logging in...")
-                server.login(ERIC_EMAIL, ERIC_EMAIL_PASSWORD)
+                server.login(SMTP_USER, SMTP_PASSWORD)
                 logger.info(f"Attempt {attempt}: Login successful, sending email...")
-                server.sendmail(ERIC_EMAIL, to_email, msg.as_string())
+                server.sendmail(SMTP_USER, to_email, msg.as_string())
                 logger.info(f"EMAIL SENT SUCCESSFULLY on attempt {attempt}!")
                 return {"success": True}
 
@@ -479,7 +487,7 @@ def send_intake_email(
     profile: Dict[str, Any],
 ) -> Dict[str, Any]:
     """Send Eric a plain-text audit prep summary for a completed checkup."""
-    if not ERIC_EMAIL or not ERIC_EMAIL_PASSWORD:
+    if not SMTP_USER or not SMTP_PASSWORD or not NOTIFY_EMAIL:
         return {"success": False, "error": "SMTP credentials not configured"}
 
     labels = profile_labels(profile)
@@ -516,15 +524,15 @@ def send_intake_email(
 
     msg = MIMEText("\n".join(lines), "plain")
     msg["Subject"] = f"Checkup completed: {name}"
-    msg["From"] = f"CLBH Checkup <{ERIC_EMAIL}>"
-    msg["To"] = ERIC_EMAIL
+    msg["From"] = f"CLBH Checkup <{SMTP_USER}>"
+    msg["To"] = NOTIFY_EMAIL
 
     for attempt in range(1, 4):
         try:
             with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=30) as server:
                 server.starttls()
-                server.login(ERIC_EMAIL, ERIC_EMAIL_PASSWORD)
-                server.sendmail(ERIC_EMAIL, ERIC_EMAIL, msg.as_string())
+                server.login(SMTP_USER, SMTP_PASSWORD)
+                server.sendmail(SMTP_USER, NOTIFY_EMAIL, msg.as_string())
                 logger.info("Intake email sent to Eric")
                 return {"success": True}
         except smtplib.SMTPAuthenticationError as e:
@@ -720,11 +728,12 @@ def test_smtp_connection() -> Dict[str, Any]:
     result = {
         "server": SMTP_SERVER,
         "port": SMTP_PORT,
-        "username": ERIC_EMAIL,
-        "password_set": bool(ERIC_EMAIL_PASSWORD),
+        "username": SMTP_USER,
+        "password_set": bool(SMTP_PASSWORD),
+        "notify_email": NOTIFY_EMAIL,
     }
 
-    if not ERIC_EMAIL or not ERIC_EMAIL_PASSWORD:
+    if not SMTP_USER or not SMTP_PASSWORD:
         result["success"] = False
         result["error"] = "SMTP credentials not configured"
         return result
@@ -732,7 +741,7 @@ def test_smtp_connection() -> Dict[str, Any]:
     try:
         with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=15) as server:
             server.starttls()
-            server.login(ERIC_EMAIL, ERIC_EMAIL_PASSWORD)
+            server.login(SMTP_USER, SMTP_PASSWORD)
             result["success"] = True
             return result
     except smtplib.SMTPAuthenticationError as e:
@@ -1690,7 +1699,7 @@ async def create_lead(data: LeadCreate):
 
     # STEP 1: Send results email via SMTP (background thread - non-blocking)
     email_result = {"success": True, "status": "sending"}
-    if ERIC_EMAIL and ERIC_EMAIL_PASSWORD:
+    if SMTP_USER and SMTP_PASSWORD:
         import threading
         # Capture variables for closure
         email_to = data.email

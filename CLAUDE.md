@@ -89,7 +89,7 @@ Two collections:
 - `leads` — contact info linked to assessment IDs
 
 ### External Services
-- **SMTP** (PPE Hosted) — sends results email from Eric's account. Env vars: `ERIC_EMAIL`, `ERIC_EMAIL_PASSWORD`
+- **SMTP** (Proofpoint Essentials, `outbound-us1.ppe-hosted.com:587`) — sends the results email and Eric's intake summary. Sender login: `SMTP_USER` / `SMTP_PASSWORD` (intended: noreply@jeppsonlaw.com); if unset, falls back to `ERIC_EMAIL` / `ERIC_EMAIL_PASSWORD`. `ERIC_EMAIL` is also where intake summaries go and the Reply-To on results emails when the sender differs.
 - **ConvertKit (Kit)** — subscribes leads to marketing list. Env vars: `KIT_V4_API_KEY` (preferred), `KIT_API_KEY` (legacy V3 fallback; must hold the V3 API *Secret*), `KIT_FORM_ID`, `KIT_TAG_ID`. With `KIT_V4_API_KEY` set, `subscribe_to_kit()` upserts the subscriber via `POST /v4/subscribers` and then adds them to the form via `POST /v4/forms/{id}/subscribers`. Custom fields sent per subscriber:
   - `last_name` — subscriber's last name
   - `risk_level` — overall result: "green", "yellow", or "red"
@@ -121,8 +121,10 @@ Backend runs via `Procfile`: `uvicorn server:app --host 0.0.0.0 --port ${PORT:-8
 | `DB_NAME` | Backend | Database name (default: "clbh") |
 | `CORS_ORIGINS` | Backend | Allowed CORS origins |
 | `ADMIN_KEY` | Backend | Protects admin endpoints |
-| `ERIC_EMAIL` | Backend | SMTP sender address |
-| `ERIC_EMAIL_PASSWORD` | Backend | SMTP password |
+| `SMTP_USER` | Backend | Sending account login and From address (e.g. noreply@jeppsonlaw.com) |
+| `SMTP_PASSWORD` | Backend | Password for `SMTP_USER` |
+| `ERIC_EMAIL` | Backend | Receives intake summaries; Reply-To on results emails; fallback sender |
+| `ERIC_EMAIL_PASSWORD` | Backend | Fallback SMTP password, used only if `SMTP_PASSWORD` is unset |
 | `KIT_V4_API_KEY` | Backend | Kit V4 API key (preferred) |
 | `KIT_API_KEY` | Backend | Legacy: Kit V3 API Secret, used only if `KIT_V4_API_KEY` is unset |
 | `KIT_FORM_ID` | Backend | ConvertKit form ID |
