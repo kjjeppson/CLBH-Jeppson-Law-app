@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
 import LandingPage from "@/pages/LandingPage";
+import HomeLanding from "@/pages/HomeLanding";
 import ModuleSelection from "@/pages/ModuleSelection";
 import AssessmentWizard from "@/pages/AssessmentWizard";
 import ResultsPage from "@/pages/ResultsPage";
@@ -25,6 +26,7 @@ function App() {
         <ScrollToTop />
         <Routes>
           <Route path="/" element={<LandingPage />} />
+          <Route path="/home" element={<HomeLanding />} />
           <Route path="/select-modules" element={<ModuleSelection />} />
           <Route path="/assessment/:assessmentId" element={<AssessmentWizard />} />
           <Route path="/results/:assessmentId" element={<ResultsPage />} />

@@ -68,11 +68,12 @@ export default function AdminDashboard() {
   const [funnel, setFunnel] = useState(null);
   const [funnelDays, setFunnelDays] = useState(30);
   const [funnelLoading, setFunnelLoading] = useState(false);
+  const [funnelModule, setFunnelModule] = useState("clbh");
   const loadFunnel = useCallback(async () => {
     setFunnelLoading(true);
     try {
       const response = await axios.get(`${API}/admin/funnel`, {
-        params: { days: funnelDays },
+        params: { days: funnelDays, module: funnelModule },
         headers: adminHeaders
       });
       setFunnel(response.data);
@@ -82,7 +83,7 @@ export default function AdminDashboard() {
     } finally {
       setFunnelLoading(false);
     }
-  }, [adminHeaders, funnelDays]);
+  }, [adminHeaders, funnelDays, funnelModule]);
 
   useEffect(() => {
     loadFunnel();
@@ -352,7 +353,20 @@ export default function AdminDashboard() {
                   {funnel?.excluded_tests > 0 && ` ${funnel.excluded_tests} team test ${funnel.excluded_tests === 1 ? "run is" : "runs are"} left out.`}
                 </p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                {[["clbh", "Business"], ["home", "Home"]].map(([m, label]) => (
+                  <Button
+                    key={m}
+                    size="sm"
+                    variant={funnelModule === m ? "default" : "outline"}
+                    className={funnelModule === m ? "bg-orange-500 hover:bg-orange-600" : ""}
+                    onClick={() => setFunnelModule(m)}
+                    data-testid={`funnel-module-${m}`}
+                  >
+                    {label}
+                  </Button>
+                ))}
+                <span className="w-px h-6 bg-slate-200 mx-1" />
                 {[7, 30, 90].map((d) => (
                   <Button
                     key={d}

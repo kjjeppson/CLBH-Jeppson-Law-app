@@ -13,6 +13,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Shield, ArrowRight, ArrowLeft, Loader2, Mail, Building2, FileCheck } from "lucide-react";
 
+import { HOME_AREA_LABELS, HOME_AREA_ORDER, isHomeModules, fillThem } from "../lib/home";
+
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const AREA_LABELS = {
@@ -65,7 +67,8 @@ export default function AssessmentWizard() {
         setAssessment(assessmentRes.data);
 
         // Get selected areas (default to all if not specified)
-        const selectedAreas = assessmentRes.data.selected_areas || Object.keys(AREA_LABELS);
+        const home = isHomeModules(assessmentRes.data.modules);
+        const selectedAreas = assessmentRes.data.selected_areas || (home ? HOME_AREA_ORDER : AREA_ORDER);
         const areasParam = selectedAreas.join(",");
 
         // Get questions for all selected modules, filtered by selected areas
@@ -73,7 +76,13 @@ export default function AssessmentWizard() {
         let profileConfigLoaded = null;
         for (const module of assessmentRes.data.modules) {
           const questionsRes = await axios.get(`${API}/questions/${module}?areas=${areasParam}`);
-          allQuestions.push(...questionsRes.data.questions);
+          // Home questions carry a {them} token for the helper's first name
+          const helper = assessmentRes.data.helper_name || "";
+          allQuestions.push(...questionsRes.data.questions.map(q => ({
+            ...q,
+            text: fillThem(q.text, helper),
+            options: (q.options || []).map(o => ({ ...o, label: fillThem(o.label, helper) }))
+          })));
           if (questionsRes.data.profile && !profileConfigLoaded) {
             profileConfigLoaded = questionsRes.data.profile;
           }
@@ -124,6 +133,10 @@ export default function AssessmentWizard() {
       requestAnimationFrame(() => window.scrollTo(0, 0));
     }
   }, [showLeadCapture]);
+
+  const isHome = isHomeModules(assessment?.modules);
+  const areaLabels = isHome ? HOME_AREA_LABELS : AREA_LABELS;
+  const areaOrder = isHome ? HOME_AREA_ORDER : AREA_ORDER;
 
   const currentQuestion = questions[currentQuestionIndex];
   const progress = questions.length > 0
@@ -183,7 +196,7 @@ export default function AssessmentWizard() {
       setAboutIndex(profileConfig.questions.length - 1);
       setPhase("about");
     } else {
-      navigate("/");
+      navigate(isHome ? "/home" : "/");
     }
   };
 
@@ -297,11 +310,11 @@ export default function AssessmentWizard() {
   }
 
   const currentArea = currentQuestion?.area;
-  const currentAreaLabel = AREA_LABELS[currentArea] || currentArea;
+  const currentAreaLabel = areaLabels[currentArea] || currentArea;
 
   // Get selected areas from assessment, sorted in canonical order
-  const rawSelectedAreas = assessment?.selected_areas || AREA_ORDER;
-  const selectedAreas = AREA_ORDER.filter(area => rawSelectedAreas.includes(area));
+  const rawSelectedAreas = assessment?.selected_areas || areaOrder;
+  const selectedAreas = areaOrder.filter(area => rawSelectedAreas.includes(area));
 
   // Calculate area number as position within selected areas (1-based)
   const currentAreaNumber = selectedAreas.indexOf(currentArea) + 1;
@@ -348,7 +361,9 @@ export default function AssessmentWizard() {
                 Where should we send your results?
               </h2>
               <p className="text-slate-600 text-center mb-8">
-                Your Clean Legal Bill of Health score is ready. Enter your name and email to see your results and get a copy sent to your inbox.
+                {isHome
+                  ? "Your Home Legal Health Report is ready. Enter your name and email to see it, and we will send you a copy to keep."
+                  : "Your Clean Legal Bill of Health score is ready. Enter your name and email to see your results and get a copy sent to your inbox."}
               </p>
 
               <form onSubmit={handleLeadSubmit} className="space-y-4 max-w-md mx-auto">
@@ -371,7 +386,7 @@ export default function AssessmentWizard() {
                     type="email"
                     value={leadForm.email}
                     onChange={(e) => setLeadForm(prev => ({ ...prev, email: e.target.value }))}
-                    placeholder="john@company.com"
+                    placeholder={isHome ? "you@email.com" : "john@company.com"}
                     className="mt-1"
                     data-testid="lead-email-input"
                   />
@@ -692,7 +707,7 @@ export default function AssessmentWizard() {
             <span className="text-slate-400 text-sm ml-2">
               (Q{questionInArea} of {questionsInCurrentArea.length})
             </span>
-            {selectedAreas.length < 6 && (
+            {selectedAreas.length < areaOrder.length && !isHome && (
               <span className="text-slate-400 text-xs ml-2">
                 • Area {currentAreaNumber} of {selectedAreas.length}
               </span>
