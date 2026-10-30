@@ -123,6 +123,8 @@ Backend runs via `Procfile`: `uvicorn server:app --host 0.0.0.0 --port ${PORT:-8
 | `ADMIN_KEY` | Backend | Protects admin endpoints |
 | `SMTP_USER` | Backend | Sending account login and From address (e.g. noreply@jeppsonlaw.com) |
 | `SMTP_PASSWORD` | Backend | Password for `SMTP_USER` |
+| `SMTP_HOST` | Backend | Mail server (default `outbound-us1.ppe-hosted.com`; `smtp.office365.com` sends via Microsoft 365) |
+| `SMTP_PORT` | Backend | Mail server port (default 587) |
 | `ERIC_EMAIL` | Backend | Receives intake summaries; Reply-To on results emails; fallback sender |
 | `ERIC_EMAIL_PASSWORD` | Backend | Fallback SMTP password, used only if `SMTP_PASSWORD` is unset |
 | `KIT_V4_API_KEY` | Backend | Kit V4 API key (preferred) |

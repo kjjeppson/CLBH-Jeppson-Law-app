@@ -58,8 +58,10 @@ SMTP_USER = (os.getenv("SMTP_USER") or "").strip() or ERIC_EMAIL
 SMTP_PASSWORD = (os.getenv("SMTP_PASSWORD") or "").strip() or ERIC_EMAIL_PASSWORD
 # Where intake summaries go and where prospect replies should land.
 NOTIFY_EMAIL = ERIC_EMAIL or SMTP_USER
-SMTP_SERVER = "outbound-us1.ppe-hosted.com"
-SMTP_PORT = 587
+# Mail server. Defaults to Proofpoint; set SMTP_HOST=smtp.office365.com to send
+# directly through Microsoft 365 with the SMTP_USER account's M365 password.
+SMTP_SERVER = (os.getenv("SMTP_HOST") or "").strip() or "outbound-us1.ppe-hosted.com"
+SMTP_PORT = int((os.getenv("SMTP_PORT") or "").strip() or 587)
 
 
 # Squarespace shop products, keyed by the quiz's internal area IDs
