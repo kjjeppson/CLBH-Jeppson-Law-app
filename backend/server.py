@@ -1409,7 +1409,8 @@ QUESTIONS["home"] = [
         # stumbled on "reach enough money". "Get to" is plainer than either
         # "reach" or his suggested "access".
         "id": "h2",
-        "text": "If you died this week, could {them} get to enough money to cover three months of bills without waiting for a lawyer, a court, or a death certificate?",
+        # Oct 30: all twelve reworded to put the helper in a real moment (Kristin).
+        "text": "If you died this week, could {them} keep the lights on for three months without waiting for a court, a lawyer or a death certificate?",
         "why_it_matters": "Accounts in one name alone freeze. A death certificate takes a week or two, probate takes months, and the mortgage is due on the first either way. Having money is not the same as being able to get to it.",
         "options": _opts(
             "Yes, and we have worked out the number.",
@@ -1427,7 +1428,7 @@ QUESTIONS["home"] = [
         # fair to a household with a sound will-only plan. The deed fact moved
         # into why_it_matters so it is not lost.
         "id": "h3",
-        "text": "Do you have a will or trust, and has anyone read it in the last five years?",
+        "text": "Does your will or trust say what you want today, and has anyone read it in the last five years?",
         "why_it_matters": "Without a will or trust, your state decides who inherits and a judge chooses the guardian for your children. And a plan signed years ago can quietly stop matching your life. If you have a trust, check that your house is titled in it: a trust only controls what has been put into it, and an unfunded trust sends the house through probate anyway.",
         "options": _opts(
             "Yes, and it has been read in the last five years.",
@@ -1438,7 +1439,7 @@ QUESTIONS["home"] = [
     },
     {
         "id": "h4",
-        "text": "When did you last read out loud who is named on every retirement account and life insurance policy?",
+        "text": "Would your retirement accounts and life insurance go exactly where you want them to? When did you last check the name on every one?",
         "why_it_matters": "A beneficiary designation beats your will. Whoever is named on the account gets the account, even if your will says otherwise, and even if the name on it is an ex-spouse or a parent who has since died. These forms are signed once and then never looked at again.",
         "options": _opts(
             "In the last two years, and every name is still who we want.",
@@ -1457,7 +1458,7 @@ QUESTIONS["home"] = [
     # out the household, and conflating them would score the wrong thing.
     {
         "id": "h5",
-        "text": "If you were in the hospital for a month, is there a second person who could already sign on the business bank account, run payroll, and get into the company email?",
+        "text": "If you were in the hospital for a month, would your employees still get paid? Could someone else already sign at the bank, run payroll and get into the company email?",
         "why_it_matters": "Payroll does not pause while you recover. A second signer has to be added by the bank in advance, and access that has never been used usually turns out not to work. The gap between being named and being able to act is where the damage happens.",
         "options": _opts(
             "Yes, one named person who has done all three.",
@@ -1468,7 +1469,7 @@ QUESTIONS["home"] = [
     },
     {
         "id": "h6",
-        "text": "Could {them} say what the business is worth, and whether anyone is obligated to buy your share?",
+        "text": "If {them} inherited your share of the business, would it be worth something, or just a job nobody else can do? Does {them} know what it is worth and who has to buy it?",
         "why_it_matters": "Without a value and a buyer, your family inherits a job they cannot do and cannot sell. A buy-sell agreement funded by insurance turns an unsellable share into cash. Without one, the business is often worth far less than the years you put into it.",
         "options": _opts(
             "Yes, both, with a number.",
@@ -1487,7 +1488,7 @@ QUESTIONS["home"] = [
         # talking to their advisors. Same topic, an ask everyone is comfortable
         # with. The introduction call stays in the workbook as H-21.
         "id": "h7",
-        "text": "Would {them} know which advisor to call about what, and how to reach them?",
+        "text": "In the first hard week, would {them} know who to call about what, like your attorney, accountant, financial advisor or insurance agent, and how to reach them?",
         "why_it_matters": "In the first hard week, the first question is always who do I call. If your attorney, accountant and insurance agent are written down with what each one handles, nobody has to search an inbox or guess.",
         "options": _opts(
             "Yes, it is written down.",
@@ -1500,7 +1501,7 @@ QUESTIONS["home"] = [
         # Oct 30: the safe deposit box half removed. A box is optional in the
         # workbook (H-23), and the safe place for originals is now h12.
         "id": "h8",
-        "text": "Is {them} authorized on your phone carrier account?",
+        "text": "Your phone gets the codes for almost every account you own. Is {them} authorized on your phone carrier account, so the line stays on?",
         "why_it_matters": "Your phone is the key to almost every account you have, through the codes texted to it. If nobody else is authorized on the carrier account, the line can be shut off and those codes stop arriving.",
         "options": _opts(
             "Yes, and we have tested it.",
@@ -1513,7 +1514,7 @@ QUESTIONS["home"] = [
     # AREA 5: Insurance and protection
     {
         "id": "h9",
-        "text": "If you died this week, could {them} find every insurance policy and annuity you have, including any through an employer, and know who to call to claim it?",
+        "text": "If you died, could {them} find every life insurance policy and annuity you have, including any through your job, and know who to call to claim it?",
         "why_it_matters": "Insurers do not call the family. A policy nobody knows about is simply never claimed, and employer coverage is the one most often missed because it never generates a bill at home. The money is sitting there waiting to be asked for.",
         "options": _opts(
             "Yes, it is written down with the numbers to call.",
@@ -1526,11 +1527,11 @@ QUESTIONS["home"] = [
         "id": "h10",
         # Oct 30: the disability half dropped (double-barreled). Disability is
         # still covered in the workbook at H-28.
-        "text": "If you have a permanent life insurance policy, do you know whether it is on track to stay in force?",
+        "text": "Some life insurance can quietly run out of money and cancel itself. If you have whole life or universal life insurance, have you checked that yours is on track?",
         "why_it_matters": "A permanent policy funded by its own cash value can quietly run short and cancel itself, often at the worst possible age. One request to the carrier for an in-force illustration shows whether yours is on track.",
         "options": _opts(
-            "Yes, we have checked recently, or we have no permanent policy.",
-            "We have one but have never checked.",
+            "Yes, we checked recently, or we do not have that kind of policy.",
+            "We have one, but have never checked.",
             "No, or we do not know.",
         ),
         "area": "home_insurance"
@@ -1539,7 +1540,7 @@ QUESTIONS["home"] = [
     # AREA 6: Records, digital access and continuity
     {
         "id": "h11",
-        "text": "If your phone were locked and you could not help, could {them} get into your email and your passwords?",
+        "text": "If you could not help, could {them} get into your email, the key that unlocks almost every other account?",
         "why_it_matters": "Email is the reset button for everything else. Without it, each account has to be recovered one at a time through a process built to keep strangers out, which is exactly what your family looks like to a bank's fraud department.",
         "options": _opts(
             "Yes, and we have tested it.",
@@ -1553,7 +1554,7 @@ QUESTIONS["home"] = [
         # the safe deposit box question. Originals only: digital files live in a
         # different place, and digital access is already Q11.
         "id": "h12",
-        "text": "Are your original documents kept together in one safe, secure place that {them} could find without you?",
+        "text": "If {them} needed your will or the deed tomorrow, are the originals kept together in one safe place that is easy to find?",
         "why_it_matters": "Original wills, deeds and titles are hard or impossible to replace, and banks and courts want the originals. A fireproof safe at home, with a note on top saying what to do first, turns a frantic search through drawers into a ten-minute task.",
         "options": _opts(
             "Yes, and {them} knows where it is.",
