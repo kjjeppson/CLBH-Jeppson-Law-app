@@ -1438,8 +1438,8 @@ QUESTIONS["home"] = [
         "text": "When did you last read out loud who is named on every retirement account and life insurance policy?",
         "why_it_matters": "A beneficiary designation beats your will. Whoever is named on the account gets the account, even if your will says otherwise, and even if the name on it is an ex-spouse or a parent who has since died. These forms are signed once and then never looked at again.",
         "options": _opts(
-            "Within the last two years.",
-            "More than two years ago.",
+            "In the last two years, and every name is still who we want.",
+            "More than two years ago, or only some of them.",
             "Never, or we do not know.",
         ),
         "area": "home_estate"
