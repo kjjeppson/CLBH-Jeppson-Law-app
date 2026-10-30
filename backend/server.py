@@ -1427,8 +1427,8 @@ QUESTIONS["home"] = [
         "text": "Do you have a will or trust, and has anyone read it in the last five years?",
         "why_it_matters": "Without a will or trust, your state decides who inherits and a judge chooses the guardian for your children. And a plan signed years ago can quietly stop matching your life. If you have a trust, check that your house is titled in it: a trust only controls what has been put into it, and an unfunded trust sends the house through probate anyway.",
         "options": _opts(
-            "Yes, and it is current.",
-            "We have one, but have not looked at it in years.",
+            "Yes, and it has been read in the last five years.",
+            "Yes, but nobody has read it in five years or more.",
             "No, or I am not sure.",
         ),
         "area": "home_estate"
@@ -1439,7 +1439,7 @@ QUESTIONS["home"] = [
         "why_it_matters": "A beneficiary designation beats your will. Whoever is named on the account gets the account, even if your will says otherwise, and even if the name on it is an ex-spouse or a parent who has since died. These forms are signed once and then never looked at again.",
         "options": _opts(
             "Within the last two years.",
-            "Longer ago than that.",
+            "More than two years ago.",
             "Never, or we do not know.",
         ),
         "area": "home_estate"
