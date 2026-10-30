@@ -1392,12 +1392,15 @@ QUESTIONS["home"] = [
     # AREA 1: Income, cash flow and what you owe
     {
         "id": "h1",
-        "text": "Is there a written list of every account, policy and debt your household has, built from statements rather than memory?",
+        # Oct 30 (Kristin, option 2): opens with the helper's name so the first
+        # question explains what the checkup is about. The statements point
+        # lives on in why_it_matters.
+        "text": "If {them} needed it tomorrow, is there a written list of every account, policy and debt your household has?",
         "why_it_matters": "Almost every household underestimates how many accounts it has. An old 401(k) from two jobs ago, a credit union account opened for a car loan, a small policy bought through work. Built from memory, the list is always short, and the things left off are the things nobody ever finds.",
         "options": _opts(
-            "Yes, written down and current.",
-            "Roughly, but it lives in our heads.",
-            "No, or not since years ago.",
+            "Yes, and it is up to date.",
+            "Some of it, or most of it is in our heads.",
+            "No, or it is years out of date.",
         ),
         "area": "home_money"
     },
