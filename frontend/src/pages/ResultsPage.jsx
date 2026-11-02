@@ -234,8 +234,8 @@ export default function ResultsPage() {
               data-testid="schedule-call-nav-btn"
             >
               <Calendar className="w-4 h-4 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">Book a free review call</span>
-              <span className="sm:hidden">Book a Call</span>
+              <span className="hidden sm:inline">Book a free call</span>
+              <span className="sm:hidden">Book a call</span>
             </Button>
           </div>
         </div>
@@ -346,7 +346,7 @@ export default function ResultsPage() {
                 data-testid="bundle-green-cta-btn"
               >
                 <ShoppingCart className="w-4 h-4 mr-2" />
-                Get the Bundle ($299)
+                Get the bundle ($299)
               </Button>
             </section>
           )
@@ -521,7 +521,7 @@ export default function ResultsPage() {
         <section className="bg-orange-50 border border-orange-200 rounded-2xl p-5 sm:p-8">
           <p className="text-xs sm:text-sm font-bold tracking-[0.15em] text-orange-700 mb-1">NOT SURE WHERE TO START?</p>
           <h2 className="font-heading text-2xl sm:text-3xl font-extrabold text-slate-900 mb-4">
-            Book a free CLBH review call
+            Book a free 15-minute legal health call
           </h2>
           <ul className="grid md:grid-cols-3 gap-3 mb-6">
             <li className="flex items-start gap-2.5 text-slate-700">
@@ -543,7 +543,7 @@ export default function ResultsPage() {
             data-testid="book-review-call-btn"
           >
             <Calendar className="w-5 h-5 mr-2" />
-            Schedule a free review call
+            Book my free 15-minute call
           </Button>
         </section>
 
@@ -605,7 +605,7 @@ export default function ResultsPage() {
           data-testid="floating-book-btn"
         >
           <Calendar className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
-          Book Now
+          Book now
         </Button>
       </div>
 
