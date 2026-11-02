@@ -77,6 +77,25 @@ PILLAR_PRODUCTS = {
 }
 
 
+def display_first_name(name: Optional[str]) -> str:
+    """Capitalize a first name typed in all lowercase ("kristin" -> "Kristin").
+
+    Names with any capital letter are left as typed, so "McKenna" or "DeShawn" stay intact.
+    """
+    name = (name or "").strip()
+    if name and name == name.lower():
+        return name.title()
+    return name
+
+
+def display_score(score: str) -> str:
+    """Show a stored score like "61.1%" as a whole number ("61%")."""
+    try:
+        return f"{round(float(str(score).rstrip('%')))}%"
+    except (TypeError, ValueError):
+        return score
+
+
 def email_shop_url(url: str, content: str) -> str:
     """Add UTM tags so email-driven purchases show up in analytics."""
     return f"{url}?utm_source=quiz&utm_medium=email&utm_campaign=clbh&utm_content={content}"
@@ -217,7 +236,7 @@ def send_results_email(
 <td style="padding:14px 16px;">
 <span style="font-size:14px;font-weight:600;color:#333;display:block;margin-bottom:2px;word-break:normal;white-space:normal;">{area_display_names.get(aid, aid)}</span>
 <span style="font-size:12px;font-weight:600;color:{tag_color};display:block;margin-bottom:10px;word-break:normal;white-space:normal;">{tag_text}</span>
-<a href="{product_link}" style="display:inline-block;background:#1e2d4a;color:#ffffff;font-size:14px;font-weight:600;padding:10px 20px;border-radius:6px;text-decoration:none;word-break:normal;white-space:nowrap;">Get the Pillar {product["pillar"]} Checklist ($67) &rarr;</a>
+<a href="{product_link}" style="display:inline-block;background:#1e2d4a;color:#ffffff;font-size:14px;font-weight:600;padding:10px 20px;border-radius:6px;text-decoration:none;word-break:normal;white-space:nowrap;">Get the Pillar {product["pillar"]} checklist ($67) &rarr;</a>
 </td>
 </tr>
 </table>'''
@@ -231,13 +250,13 @@ def send_results_email(
 <td style="padding:16px;">
 <span style="font-size:15px;font-weight:700;color:#333;display:block;margin-bottom:4px;word-break:normal;white-space:normal;">{len(weak_area_ids)} of your 6 pillars need work. Get all 6 checklists and save.</span>
 <span style="font-size:13px;color:#555;display:block;margin-bottom:12px;word-break:normal;white-space:normal;">The 6 Pillar Bundle covers every area of your business for $299 instead of $402 when purchased separately.</span>
-<a href="{bundle_link}" style="display:inline-block;background:#F97316;color:#ffffff;font-size:14px;font-weight:600;padding:12px 24px;border-radius:6px;text-decoration:none;word-break:normal;white-space:nowrap;">Get the Complete Bundle ($299)</a>
+<a href="{bundle_link}" style="display:inline-block;background:#F97316;color:#ffffff;font-size:14px;font-weight:600;padding:12px 24px;border-radius:6px;text-decoration:none;word-break:normal;white-space:nowrap;">Get the complete bundle ($299)</a>
 </td>
 </tr>
 </table>'''
         fix_it_section = f'''<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
 <tr>
-<td style="font-size:16px;font-weight:700;color:#1e2d4a;padding-bottom:6px;word-break:normal;white-space:normal;">Your Next Step: Fix What This Quiz Found</td>
+<td style="font-size:16px;font-weight:700;color:#1e2d4a;padding-bottom:6px;word-break:normal;white-space:normal;">Your next step: fix what this checkup found</td>
 </tr>
 <tr>
 <td style="font-size:13px;color:#555;padding-bottom:14px;word-break:normal;white-space:normal;">Each pillar below has a step-by-step self-assessment checklist that shows you exactly what to fix and how, in plain English. Start with your weakest pillar.</td>
@@ -257,7 +276,7 @@ def send_results_email(
 <td style="padding:16px;text-align:center;">
 <span style="font-size:15px;font-weight:700;color:#333;display:block;margin-bottom:4px;word-break:normal;white-space:normal;">Strong score. Keep it that way.</span>
 <span style="font-size:13px;color:#555;display:block;margin-bottom:12px;word-break:normal;white-space:normal;">Laws and businesses both change. The 6 Pillar Checklist Bundle gives you a repeatable annual checkup you can run yourself, for $299.</span>
-<a href="{bundle_link}" style="display:inline-block;background:#1e2d4a;color:#ffffff;font-size:14px;font-weight:600;padding:12px 24px;border-radius:6px;text-decoration:none;word-break:normal;white-space:nowrap;">Get the Bundle ($299)</a>
+<a href="{bundle_link}" style="display:inline-block;background:#1e2d4a;color:#ffffff;font-size:14px;font-weight:600;padding:12px 24px;border-radius:6px;text-decoration:none;word-break:normal;white-space:nowrap;">Get the bundle ($299)</a>
 </td>
 </tr>
 </table>'''
@@ -296,10 +315,10 @@ def send_results_email(
 <td style="padding:32px;">
 <table width="100%" cellpadding="0" cellspacing="0">
 <tr>
-<td style="font-size:16px;color:#333;padding-bottom:8px;word-break:normal;white-space:normal;">Hi {first_name or "there"},</td>
+<td style="font-size:16px;color:#333;padding-bottom:8px;word-break:normal;white-space:normal;">Hi {display_first_name(first_name) or "there"},</td>
 </tr>
 <tr>
-<td style="font-size:15px;color:#555;padding-bottom:24px;word-break:normal;white-space:normal;">Thank you for completing the Clean Legal Bill of Health Assessment. Here are your personalized results.</td>
+<td style="font-size:15px;color:#555;padding-bottom:24px;word-break:normal;white-space:normal;">Thank you for completing the Clean Legal Bill of Health&trade; checkup. Here are your personalized results.</td>
 </tr>
 </table>
 
@@ -309,17 +328,17 @@ def send_results_email(
 <td style="padding:24px;">
 <table width="100%" cellpadding="0" cellspacing="0">
 <tr>
-<td style="font-size:13px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:1px;padding-bottom:16px;word-break:normal;white-space:normal;">Your Results</td>
+<td style="font-size:13px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:1px;padding-bottom:16px;word-break:normal;white-space:normal;">Your results</td>
 </tr>
 </table>
 
-<!-- Risk Level Card -->
+<!-- Result Card -->
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;border:1px solid #e2e8f0;margin-bottom:12px;">
 <tr>
 <td style="padding:16px;text-align:center;">
 <table width="100%" cellpadding="0" cellspacing="0">
 <tr>
-<td style="font-size:12px;color:#888;text-transform:uppercase;padding-bottom:8px;word-break:normal;white-space:normal;">Risk Level</td>
+<td style="font-size:12px;color:#888;text-transform:uppercase;padding-bottom:8px;word-break:normal;white-space:normal;">Your result</td>
 </tr>
 <tr>
 <td align="center">
@@ -337,10 +356,10 @@ def send_results_email(
 <td style="padding:16px;text-align:center;">
 <table width="100%" cellpadding="0" cellspacing="0">
 <tr>
-<td style="font-size:12px;color:#888;text-transform:uppercase;padding-bottom:8px;word-break:normal;white-space:normal;">Overall Score</td>
+<td style="font-size:12px;color:#888;text-transform:uppercase;padding-bottom:8px;word-break:normal;white-space:normal;">Overall score</td>
 </tr>
 <tr>
-<td style="font-size:28px;font-weight:700;color:#1e2d4a;word-break:normal;white-space:normal;">{score}</td>
+<td style="font-size:28px;font-weight:700;color:#1e2d4a;word-break:normal;white-space:normal;">{display_score(score)}</td>
 </tr>
 </table>
 </td>
@@ -353,7 +372,7 @@ def send_results_email(
 <td style="padding:16px;">
 <table width="100%" cellpadding="0" cellspacing="0">
 <tr>
-<td style="font-size:13px;font-weight:600;color:#1e2d4a;padding-bottom:16px;word-break:normal;white-space:normal;">Your Risk Areas</td>
+<td style="font-size:13px;font-weight:600;color:#1e2d4a;padding-bottom:16px;word-break:normal;white-space:normal;">Where to start</td>
 </tr>
 <tr>
 <td>
@@ -372,11 +391,11 @@ def send_results_email(
 <!-- Message -->
 <table width="100%" cellpadding="0" cellspacing="0">
 <tr>
-<td style="font-size:15px;color:#555;padding-bottom:24px;word-break:normal;white-space:normal;">These are areas where your business may have legal exposure that could cost you significantly if left unaddressed. The good news? Most of these risks can be resolved quickly with the right legal foundation in place.</td>
+<td style="font-size:15px;color:#555;padding-bottom:24px;word-break:normal;white-space:normal;">These are the areas where a gap could cost your business if it is left alone. The good news is that most of them can be fixed quickly with the right legal foundation in place.</td>
 </tr>
 </table>
 
-<!-- Fix What This Quiz Found -->
+<!-- Fix what this checkup found -->
 {fix_it_section}
 
 <!-- CTA Buttons -->
@@ -384,13 +403,13 @@ def send_results_email(
 <tr>
 <td align="center" style="padding-bottom:12px;">
 <a href="https://jeppsonlaw.cliogrow.com/book/5d7625ad3292b0e84db81965f80ee5f4"
-style="display:inline-block;background:#F97316;color:#ffffff;font-size:16px;font-weight:600;padding:14px 32px;border-radius:8px;text-decoration:none;word-break:normal;white-space:nowrap;"><img src="https://checkup.cleanlegalbillofhealth.com/email-calendar.png" width="18" height="18" alt="" style="vertical-align:middle;margin-right:8px;border:0;"><span style="vertical-align:middle;">Schedule Your Free Legal Risk Review</span></a>
+style="display:inline-block;background:#F97316;color:#ffffff;font-size:16px;font-weight:600;padding:14px 32px;border-radius:8px;text-decoration:none;word-break:normal;white-space:nowrap;"><img src="https://checkup.jeppsonlaw.com/email-calendar.png" width="18" height="18" alt="" style="vertical-align:middle;margin-right:8px;border:0;"><span style="vertical-align:middle;">Book my free 15-minute legal health call</span></a>
 </td>
 </tr>
 <tr>
 <td align="center" style="padding-bottom:24px;">
 <a href="{shop_cta_link}"
-style="display:inline-block;background:#1e2d4a;color:#ffffff;font-size:16px;font-weight:600;padding:14px 32px;border-radius:8px;text-decoration:none;word-break:normal;white-space:nowrap;"><img src="https://checkup.cleanlegalbillofhealth.com/email-cart.png" width="18" height="18" alt="" style="vertical-align:middle;margin-right:8px;border:0;"><span style="vertical-align:middle;">Purchase a Checklist</span></a>
+style="display:inline-block;background:#1e2d4a;color:#ffffff;font-size:16px;font-weight:600;padding:14px 32px;border-radius:8px;text-decoration:none;word-break:normal;white-space:nowrap;"><img src="https://checkup.jeppsonlaw.com/email-cart.png" width="18" height="18" alt="" style="vertical-align:middle;margin-right:8px;border:0;"><span style="vertical-align:middle;">Shop the checklists</span></a>
 </td>
 </tr>
 </table>
@@ -398,6 +417,9 @@ style="display:inline-block;background:#1e2d4a;color:#ffffff;font-size:16px;font
 <table width="100%" cellpadding="0" cellspacing="0">
 <tr>
 <td style="font-size:14px;color:#888;word-break:normal;white-space:normal;">No obligation. We will walk you through exactly what these results mean for your business and what steps make sense next.</td>
+</tr>
+<tr>
+<td style="font-size:12px;color:#999;padding-top:16px;word-break:normal;white-space:normal;">This email is general information, not legal advice, and no attorney-client relationship is created by reading or replying. Eric Jeppson is licensed in California and Utah.</td>
 </tr>
 </table>
 
@@ -430,7 +452,7 @@ style="display:inline-block;background:#1e2d4a;color:#ffffff;font-size:16px;font
 
     # Create the email message
     msg = MIMEMultipart("alternative")
-    msg["Subject"] = "Your Legal Risk Assessment Results"
+    msg["Subject"] = "Your Clean Legal Bill of Health™ checkup results"
     msg["From"] = f"Eric Jeppson | Jeppson Law <{SMTP_USER}>"
     msg["To"] = to_email
     if NOTIFY_EMAIL and NOTIFY_EMAIL.lower() != SMTP_USER.lower():
@@ -1631,6 +1653,9 @@ async def create_lead(data: LeadCreate):
     logger.info("=" * 50)
     logger.info("LEAD CAPTURE FORM SUBMITTED")
     logger.info("=" * 50)
+    data.first_name = display_first_name(data.first_name)
+    if data.last_name:
+        data.last_name = display_first_name(data.last_name)
     logger.info(f"First Name: {data.first_name}")
     logger.info(f"Last Name: {data.last_name}")
     logger.info(f"Email: {data.email}")
