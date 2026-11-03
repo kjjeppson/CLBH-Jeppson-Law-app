@@ -96,6 +96,9 @@ Two collections:
   - `score` — percentage string, e.g. "62.5%"
   - `top_risks` — comma-separated risk titles, e.g. "No Change Order Process, No Operating Agreement"
 
+### Home checkup in Kit
+Home leads (module `home`) skip the business form. They are upserted, tagged `KIT_HOME_TAG_ID` (default 25393196, "home: checkup completed") and added to `KIT_HOME_SEQUENCE_ID` (default 2956462, "CLBH Home Checkup Follow-Up"). Email 1 links the two free crisis guides at `/guides/` (static files in `frontend/public/guides/`).
+
 ### Deployment — Railway.app
 Auto-deploys from `main` branch. Config in `railway.json` (Nixpacks builder). Pushing to `main` triggers deploys for both services.
 

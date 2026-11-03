@@ -45,6 +45,10 @@ KIT_TAG_ID = os.getenv("KIT_TAG_ID")  # Staging tag for creating subscribers wit
 # Home checkup leads go to their own Kit form so they never enter the business
 # sequence. If this is unset, Home leads are saved but not sent to Kit.
 KIT_HOME_FORM_ID = os.getenv("KIT_HOME_FORM_ID")
+# Home checkup leads are tagged and added straight to their own sequence
+# (created Nov 3, 2026). Override with env vars if they are ever rebuilt.
+KIT_HOME_TAG_ID = os.getenv("KIT_HOME_TAG_ID", "25393196")  # "home: checkup completed"
+KIT_HOME_SEQUENCE_ID = os.getenv("KIT_HOME_SEQUENCE_ID", "2956462")  # "CLBH Home Checkup Follow-Up"
 # Where the Home checkup sends people next (the Home Edition sales page)
 HOME_CTA_URL = os.getenv("HOME_CTA_URL", "https://www.jeppsonlaw.com/athome")
 KIT_API_URL = "https://api.convertkit.com/v3"
@@ -654,10 +658,12 @@ async def _subscribe_to_kit_v4(
     top_risks: str,
     extra_fields: Optional[Dict[str, str]],
     form_id: Optional[str] = None,
+    targets: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
     """
     Kit V4: create or update the subscriber (with custom fields), then add
     them to the checkup form so the form's automations and sequence run.
+    `targets` (e.g. ["tags/123", "sequences/456"]) replaces the form step.
     """
     headers = {
         "X-Kit-Api-Key": KIT_V4_API_KEY,
@@ -693,6 +699,18 @@ async def _subscribe_to_kit_v4(
                 return {"success": False, "status_code": resp.status_code, "error": sub_data}
             if isinstance(sub_data, dict) and sub_data.get("warnings"):
                 logger.warning(f"Kit V4 warnings: {sub_data.get('warnings')}")
+
+            if targets:
+                results = {}
+                for target in targets:
+                    url = f"{KIT_V4_API_URL}/{target}/subscribers"
+                    logger.info(f"POST {url} (Kit V4)")
+                    r = await client.post(url, json={"email_address": email}, headers=headers)
+                    results[target] = r.status_code
+                    if r.status_code not in (200, 201):
+                        logger.error(f"FAILED: Kit V4 {target} returned {r.status_code}: {r.text[:300]}")
+                ok = all(code in (200, 201) for code in results.values())
+                return {"success": ok, "data": results}
 
             # Step 2: add the subscriber to the checkup form
             url = f"{KIT_V4_API_URL}/forms/{form_id or KIT_FORM_ID}/subscribers"
@@ -2196,11 +2214,18 @@ async def create_lead(data: LeadCreate):
     else:
         email_result = {"success": False, "error": "SMTP not configured"}
 
-    # STEP 2: Subscribe to Kit for marketing list. Home leads go to their own
-    # form so they never enter the business sequence.
-    if home and not KIT_HOME_FORM_ID:
-        logger.warning("KIT_HOME_FORM_ID not set - Home lead saved but not sent to Kit")
-        kit_result = {"success": False, "error": "KIT_HOME_FORM_ID not configured"}
+    # STEP 2: Subscribe to Kit for marketing list. Home leads are tagged and added
+    # to the Home follow-up sequence, so they never enter the business sequence.
+    if home:
+        if not KIT_V4_API_KEY:
+            logger.warning("KIT_V4_API_KEY not set - Home lead saved but not sent to Kit")
+            kit_result = {"success": False, "error": "KIT_V4_API_KEY not configured"}
+        else:
+            kit_result = await _subscribe_to_kit_v4(
+                data.email, data.first_name, data.last_name,
+                risk_level_str, score_str, top_risks_str, None,
+                targets=[f"tags/{KIT_HOME_TAG_ID}", f"sequences/{KIT_HOME_SEQUENCE_ID}"],
+            )
         return {"success": True, "lead_id": lead.id, "email_result": email_result, "kit_result": kit_result}
     kit_result = await subscribe_to_kit(
         email=data.email,
