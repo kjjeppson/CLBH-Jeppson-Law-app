@@ -244,8 +244,8 @@ export default function HomeLanding() {
             </h1>
             <p className="text-slate-300 text-lg md:text-xl leading-relaxed mb-8 animate-fade-in-up animate-delay-200">
               Twelve plain questions about the accounts, papers and passwords your family would need if something
-              happened to you. You find out what is in good shape, what is worth a look, and the first three
-              things to do. Most of them take an evening.
+              happened to you. There's no failing grade. You'll see what's already in good shape, what's worth a
+              look, and a simple first step for everything else.
             </p>
             <div className="flex flex-col items-stretch sm:items-center sm:self-start sm:inline-flex gap-3 animate-fade-in-up animate-delay-300">
               <StartButton testId="hero-start-home-checkup-btn" source="hero" />
