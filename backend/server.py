@@ -381,13 +381,13 @@ def send_results_email(
 <tr>
 <td align="center" style="padding-bottom:12px;">
 <a href="https://jeppsonlaw.cliogrow.com/book/5d7625ad3292b0e84db81965f80ee5f4"
-style="display:inline-block;background:#F97316;color:#ffffff;font-size:16px;font-weight:600;padding:14px 32px;border-radius:8px;text-decoration:none;word-break:normal;white-space:nowrap;"><img src="https://checkup.cleanlegalbillofhealth.com/email-calendar.png" width="18" height="18" alt="" style="vertical-align:middle;margin-right:8px;border:0;"><span style="vertical-align:middle;">Schedule Your Free Legal Risk Review</span></a>
+style="display:inline-block;background:#F97316;color:#ffffff;font-size:16px;font-weight:600;padding:14px 32px;border-radius:8px;text-decoration:none;word-break:normal;white-space:nowrap;"><img src="https://checkup.jeppsonlaw.com/email-calendar.png" width="18" height="18" alt="" style="vertical-align:middle;margin-right:8px;border:0;"><span style="vertical-align:middle;">Schedule Your Free Legal Risk Review</span></a>
 </td>
 </tr>
 <tr>
 <td align="center" style="padding-bottom:24px;">
 <a href="{shop_cta_link}"
-style="display:inline-block;background:#1e2d4a;color:#ffffff;font-size:16px;font-weight:600;padding:14px 32px;border-radius:8px;text-decoration:none;word-break:normal;white-space:nowrap;"><img src="https://checkup.cleanlegalbillofhealth.com/email-cart.png" width="18" height="18" alt="" style="vertical-align:middle;margin-right:8px;border:0;"><span style="vertical-align:middle;">Purchase a Checklist</span></a>
+style="display:inline-block;background:#1e2d4a;color:#ffffff;font-size:16px;font-weight:600;padding:14px 32px;border-radius:8px;text-decoration:none;word-break:normal;white-space:nowrap;"><img src="https://checkup.jeppsonlaw.com/email-cart.png" width="18" height="18" alt="" style="vertical-align:middle;margin-right:8px;border:0;"><span style="vertical-align:middle;">Purchase a Checklist</span></a>
 </td>
 </tr>
 </table>
@@ -521,7 +521,7 @@ def send_home_results_email(
                      + section("Worth a look", yellow_risks, "#D97706", "#FFFBEB")
                      + section("Healthy", green_risks, "#16A34A", "#F0FDF4"))
     cta = f"{HOME_CTA_URL}?utm_source=quiz&utm_medium=email&utm_campaign=clbh_home&utm_content=results"
-    business = "https://checkup.cleanlegalbillofhealth.com/?utm_source=quiz&utm_medium=email&utm_campaign=clbh_home&utm_content=cross-offer"
+    business = "https://checkup.jeppsonlaw.com/?utm_source=quiz&utm_medium=email&utm_campaign=clbh_home&utm_content=cross-offer"
     name = first_name or "there"
 
     html_body = f"""<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>

@@ -101,7 +101,7 @@ Auto-deploys from `main` branch. Config in `railway.json` (Nixpacks builder). Pu
 
 | Railway Service | Role | Domain |
 |----------------|------|--------|
-| **selfless-adaptation** | Frontend (React) | `checkup.cleanlegalbillofhealth.com` (quiz.cleanlegalbillofhealth.com and assessment.jeppsonlaw.com redirect here via index.html) |
+| **selfless-adaptation** | Frontend (React) | `checkup.jeppsonlaw.com` (checkup.cleanlegalbillofhealth.com, quiz.cleanlegalbillofhealth.com and assessment.jeppsonlaw.com redirect here via index.html). Kristin's rule (Nov 2026): never print checkup.cleanlegalbillofhealth.com in any copy |
 | **CLBH-Jeppson-Law-app** | Backend (FastAPI) | `clbh-jeppson-law-app-prod...railway.app` |
 
 Backend runs via `Procfile`: `uvicorn server:app --host 0.0.0.0 --port ${PORT:-8000}`

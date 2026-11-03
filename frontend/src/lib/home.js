@@ -28,7 +28,7 @@ export const HOME_AREA_ORDER = [
 export const HOME_CTA_URL =
   process.env.REACT_APP_HOME_CTA_URL || "https://www.jeppsonlaw.com/athome";
 
-export const BUSINESS_CHECKUP_URL = "https://checkup.cleanlegalbillofhealth.com";
+export const BUSINESS_CHECKUP_URL = "https://checkup.jeppsonlaw.com";
 
 export const isHomeModules = (modules) => (modules || []).includes(HOME_MODULE);
 
