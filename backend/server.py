@@ -49,6 +49,9 @@ KIT_HOME_FORM_ID = os.getenv("KIT_HOME_FORM_ID")
 # (created Nov 3, 2026). Override with env vars if they are ever rebuilt.
 KIT_HOME_TAG_ID = os.getenv("KIT_HOME_TAG_ID", "25393196")  # "home: checkup completed"
 KIT_HOME_SEQUENCE_ID = os.getenv("KIT_HOME_SEQUENCE_ID", "2956462")  # "CLBH Home Checkup Follow-Up"
+# Buyers of the Home Edition already get the post-purchase series, so the checkup
+# never adds them to the Home follow-up sequence (Kristin, Nov 11 2026).
+KIT_HOME_BUYER_TAG_ID = os.getenv("KIT_HOME_BUYER_TAG_ID", "25733963")  # "home-workbook-buyer"
 # Where the Home checkup sends people next (the Home Edition sales page)
 HOME_CTA_URL = os.getenv("HOME_CTA_URL", "https://www.jeppsonlaw.com/athome")
 KIT_API_URL = "https://api.convertkit.com/v3"
@@ -659,11 +662,14 @@ async def _subscribe_to_kit_v4(
     extra_fields: Optional[Dict[str, str]],
     form_id: Optional[str] = None,
     targets: Optional[List[str]] = None,
+    skip_sequences_if_tag: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Kit V4: create or update the subscriber (with custom fields), then add
     them to the checkup form so the form's automations and sequence run.
     `targets` (e.g. ["tags/123", "sequences/456"]) replaces the form step.
+    `skip_sequences_if_tag`: when the subscriber already has this tag ID, the
+    sequence targets are dropped (tags are still applied).
     """
     headers = {
         "X-Kit-Api-Key": KIT_V4_API_KEY,
@@ -699,6 +705,21 @@ async def _subscribe_to_kit_v4(
                 return {"success": False, "status_code": resp.status_code, "error": sub_data}
             if isinstance(sub_data, dict) and sub_data.get("warnings"):
                 logger.warning(f"Kit V4 warnings: {sub_data.get('warnings')}")
+
+            if targets and skip_sequences_if_tag:
+                sub_id = (sub_data.get("subscriber") or {}).get("id") if isinstance(sub_data, dict) else None
+                if sub_id:
+                    r = await client.get(
+                        f"{KIT_V4_API_URL}/subscribers/{sub_id}/tags",
+                        params={"per_page": 1000}, headers=headers,
+                    )
+                    if r.status_code == 200:
+                        tag_ids = {str(tg.get("id")) for tg in r.json().get("tags", [])}
+                        if str(skip_sequences_if_tag) in tag_ids:
+                            logger.info("Subscriber already has the buyer tag; skipping sequence targets")
+                            targets = [x for x in targets if not x.startswith("sequences/")]
+                    else:
+                        logger.warning(f"Kit V4 tag lookup returned {r.status_code}; adding to sequence as usual")
 
             if targets:
                 results = {}
@@ -2225,6 +2246,7 @@ async def create_lead(data: LeadCreate):
                 data.email, data.first_name, data.last_name,
                 risk_level_str, score_str, top_risks_str, None,
                 targets=[f"tags/{KIT_HOME_TAG_ID}", f"sequences/{KIT_HOME_SEQUENCE_ID}"],
+                skip_sequences_if_tag=KIT_HOME_BUYER_TAG_ID or None,
             )
         return {"success": True, "lead_id": lead.id, "email_result": email_result, "kit_result": kit_result}
     kit_result = await subscribe_to_kit(
