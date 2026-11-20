@@ -50,7 +50,7 @@ export const HOME_HEALTHY_LABELS = {
   h5: "A second person can run the business",
   h6: "A value and a buyer for the business",
   h7: "Advisors written down",
-  h8: "A second person on the phone account",
+  h8: "Someone else can unlock your phone and laptop",
   h9: "Policies that could be found",
   h10: "Life insurance on track",
   h11: "Email and passwords reachable",
